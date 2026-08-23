@@ -22,6 +22,46 @@ const CUT_COLOR = rgb(0, 0, 0);
 const SEAM_COLOR = rgb(0.3, 0.3, 0.3);
 const LABEL_COLOR = rgb(0.2, 0.2, 0.2);
 
+/** 조각 라벨 글자 크기. 출처 문구가 라벨 자리를 얼마나 비켜야 하는지 계산할 때도 같은 값을 쓴다. */
+const LABEL_SIZE = 9;
+
+/** 완성선(시접 안쪽 끝)에서 라벨 기준선까지 내려오는 여백 (mm). */
+const LABEL_TOP_OFFSET_MM = 4;
+
+/** 라벨 글자 아래에서 출처 문구 덩어리가 시작되기까지 남기는 틈 (mm). */
+const LABEL_SOURCE_GAP_MM = 2;
+
+/**
+ * 사각 조각 위쪽에 라벨이 차지하는 세로 높이 (mm). 완성선에서 이만큼은
+ * 라벨 몫으로 비워 둔다.
+ *
+ * 라벨 글자 실제 높이를 폰트에서 직접 잰다. 대충 어림한 값을 쓰면 폰트나
+ * 라벨 크기를 바꿀 때 조용히 다시 겹친다 — 골든 케이스(130/130/30)처럼 큰
+ * 조각에서는 안 보이다가 짧은 조각(예: 80/60/20의 앞면 아랫단, 완성 높이
+ * 30mm)에서만 드러나는 버그였다.
+ */
+export function labelZoneHeightMm(font: PDFFont): number {
+  return LABEL_TOP_OFFSET_MM + font.heightAtSize(LABEL_SIZE) / MM_TO_PT + LABEL_SOURCE_GAP_MM;
+}
+
+/**
+ * 출처 문구에게 내줄 자리. 라벨 몫(labelZoneHeightMm)을 조각 위쪽에서 뺀
+ * 나머지 영역의 한가운데를 기준점으로 돌려준다.
+ *
+ * buildRoundPdf 안에서도 쓰고, 테스트에서도 이 함수 하나만 보면 "라벨 자리를
+ * 침범하지 않는가"를 좌표로 확인할 수 있도록 따로 뗐다.
+ */
+export function titleBlockRegion(
+  titlePiece: RoundPiece,
+  seamMm: number,
+  font: PDFFont,
+): { centerYMm: number; availableHeightMm: number } {
+  const reservedTopMm = labelZoneHeightMm(font);
+  const availableHeightMm = Math.max(0, titlePiece.finishedHeightMm - reservedTopMm);
+  const centerYMm = titlePiece.yMm + titlePiece.heightMm / 2 + reservedTopMm / 2;
+  return { centerYMm, availableHeightMm };
+}
+
 /** 조각 하나의 재단선. 원과 사각형을 같은 함수로 받는다. */
 function drawPieceOutline(
   ctx: PageContext,
@@ -52,22 +92,23 @@ function drawPieceOutline(
 /**
  * 조각 이름과 장수. 몇 장을 재단할지 여기서만 알 수 있다.
  *
- * 사각 조각은 시접선 바로 안쪽에, 위쪽 여백에 둔다. 가운데 두면 네 조각 중
+ * 사각 조각은 완성선 바로 안쪽, 위쪽 여백에 둔다. 가운데 두면 네 조각 중
  * 가장 큰 조각(roundTitlePiece가 고르는 자리) 한가운데 찍히는 출처 문구와
- * 자리가 겹친다. 출처 문구는 그 조각의 완성선 안쪽에서만 그려지므로, 라벨을
- * 시접 폭만큼 위로 올려 두면 어떤 조각이 골라지든 절대 겹치지 않는다.
+ * 자리가 겹친다. 출처 문구 쪽에서 라벨 몫(labelZoneHeightMm)을 미리 비워
+ * 두므로, 라벨은 언제나 그 비워 둔 자리 안에 들어간다.
  * 원 조각은 위쪽으로 갈수록 폭이 좁아져 라벨이 밖으로 삐져나가므로 그대로
  * 가운데에 둔다 — 원은 애초에 출처 문구 후보에서 빠져 있어 겹칠 일도 없다.
  */
 function drawPieceLabel(ctx: PageContext, piece: RoundPiece, font: PDFFont, seamMm: number) {
-  const size = 9;
   const text = piece.count > 1 ? `${piece.label} ${piece.count}장` : piece.label;
-  const yMm = piece.shape === 'circle' ? piece.yMm + piece.heightMm / 2 : piece.yMm + seamMm + 4;
+  const yMm = piece.shape === 'circle'
+    ? piece.yMm + piece.heightMm / 2
+    : piece.yMm + seamMm + LABEL_TOP_OFFSET_MM;
   const anchor = toPagePoint(ctx.pagination, ctx.page, piece.xMm + piece.widthMm / 2, yMm);
   ctx.pdfPage.drawText(text, {
-    x: anchor.x - font.widthOfTextAtSize(text, size) / 2,
+    x: anchor.x - font.widthOfTextAtSize(text, LABEL_SIZE) / 2,
     y: anchor.y,
-    size,
+    size: LABEL_SIZE,
     font,
     color: LABEL_COLOR,
   });
@@ -97,11 +138,19 @@ export async function buildRoundPdf(layout: RoundLayout, pagination: Pagination)
     }
 
     if (titlePiece !== undefined) {
+      /*
+       * 출처 문구는 조각 한가운데가 아니라, 위쪽에 라벨 몫을 비워 둔 나머지
+       * 자리의 한가운데에 앉힌다. 라벨을 조각 맨 위(완성선 바로 안쪽)에
+       * 그렸으므로 그만큼 덩어리를 아래로 내리고, drawSourceBlock에 넘기는
+       * availableHeightMm도 그만큼 줄인다 — 안 줄이면 배율이 라벨 자리까지
+       * 채우도록 커져서 결국 라벨과 겹친다.
+       */
+      const { centerYMm, availableHeightMm } = titleBlockRegion(titlePiece, layout.seamMm, font);
       drawSourceBlock(
         ctx, font,
         titlePiece.xMm + titlePiece.widthMm / 2,
-        titlePiece.yMm + titlePiece.heightMm / 2,
-        titlePiece.finishedHeightMm,
+        centerYMm,
+        availableHeightMm,
         roundPatternTitle(layout.dimensions, layout.seamMm),
       );
     }
