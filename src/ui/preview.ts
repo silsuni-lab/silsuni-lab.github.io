@@ -23,19 +23,19 @@ export function escapeXml(value: string): string {
  * "페이지"라는 개념이 한 색으로 묶인다. 회색으로 두면 접힘선과 헷갈린다.
  * 배경 #fbf7f0 위에서 5.04:1 — 선(3:1)과 글자(4.5:1) 기준을 모두 넘는다.
  */
-const TILE_COLOR = '#2a7387';
+export const TILE_COLOR = '#2a7387';
 
 /*
  * 완성선. 시접 바탕(#fce7f0)과 도안 채움(#fffdf5) 양쪽에서 3:1을 넘어야 한다.
  * 시접색을 바꾸면 여기도 다시 계산할 것.
  */
-const SEAM_COLOR = '#94682f';
+export const SEAM_COLOR = '#94682f';
 /** 골선. 접는 자리라 재단선·완성선과 섞이면 안 된다. */
 const FOLD_EDGE_COLOR = '#b42318';
 /** 세로 중앙선. 제도에서 중심선에 쓰는 일점쇄선으로 긋는다. */
 const CENTER_COLOR = '#8a8175';
 /** 재단선. 도안에서 가장 굵고 진한 선이다. */
-const CUT_COLOR = '#222222';
+export const CUT_COLOR = '#222222';
 /*
  * 출처 두 줄의 글자색. 진하기를 반으로 낮춰 두었으므로(WATERMARK_OPACITY)
  * 바탕색까지 옅게 잡으면 옅은 잉크로 뽑을 때 종이에서 사라진다. 물러나
@@ -44,7 +44,7 @@ const CUT_COLOR = '#222222';
 const WATERMARK_COLOR = '#555555';
 
 /** 도안 안쪽 채움과 시접 띠 채움. */
-const PATTERN_FILL = '#fffdf5';
+export const PATTERN_FILL = '#fffdf5';
 const SEAM_BAND_FILL = '#fce7f0';
 
 /*
