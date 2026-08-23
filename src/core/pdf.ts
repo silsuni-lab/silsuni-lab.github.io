@@ -568,7 +568,8 @@ function drawJoinMarks(ctx: PageContext, font: PDFFont) {
 }
 
 /**
- * 축척 확인용 사각형의 위치와 크기 (mm). 안내 페이지 오른쪽 위에 놓는다.
+ * 축척 확인용 사각형의 위치와 크기 (mm). 첫 도안 장 오른쪽 위에 놓는다.
+ * 안내 페이지는 없다 — 도안 장으로만 이루어진다.
  * 안내 문구는 왼쪽에 짧게 깔리므로 이 자리가 비어 있다.
  */
 export function scaleSquareRectMm(pagination: Pagination): {

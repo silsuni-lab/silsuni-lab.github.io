@@ -165,14 +165,14 @@ describe('축척 확인용 3cm 정사각형', () => {
     }
   });
 
-  it('안내 문구와 겹치지 않도록 오른쪽 위에 놓인다', () => {
+  it('도안 이름과 멀도록 오른쪽 위에 놓인다', () => {
     const pagination = paginate(layout, 'a4');
     const rect = scaleSquareRectMm(pagination);
     expect(rect.xMm).toBeGreaterThan(pagination.pageWidthMm / 2);
     expect(rect.yMm).toBeLessThan(pagination.pageHeightMm / 2);
   });
 
-  it('안내 페이지에만 그리고 도안 장은 건드리지 않는다', async () => {
+  it('첫 도안 장에만 그리고 나머지 장은 건드리지 않는다', async () => {
     const pagination = paginate(layout, 'a4');
     expect(pagination.pages.length).toBeGreaterThan(1);
     const doc = await PDFDocument.load(await buildPdf(layout, pagination));
