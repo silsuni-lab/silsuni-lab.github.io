@@ -105,3 +105,20 @@ describe('countTiles — 장수 계산', () => {
     }
   });
 });
+
+describe('paginate — Layout이 아니라 크기만 받는다', () => {
+  it('totalWidthMm·totalHeightMm만 있는 객체를 받는다', () => {
+    // 원통 파우치는 Layout이 아니다. 이 문이 좁아야 통과할 수 있다.
+    const sheet = { totalWidthMm: 346.7, totalHeightMm: 320 };
+    const pagination = paginate(sheet, 'a4');
+    expect(pagination.pages.length).toBe(4);
+  });
+
+  it('Layout을 그대로 넘겨도 예전과 같다', () => {
+    const layout = buildLayout({ widthMm: 200, heightMm: 50, depthMm: 50 });
+    expect(paginate(layout, 'a4').pages.length).toBe(paginate(
+      { totalWidthMm: layout.totalWidthMm, totalHeightMm: layout.totalHeightMm },
+      'a4',
+    ).pages.length);
+  });
+});

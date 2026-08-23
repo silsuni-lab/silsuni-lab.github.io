@@ -1,10 +1,17 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 choisuing
 
-import type { Layout } from './layout';
-
 export type PaperSize = 'a4' | 'a3';
 export type Orientation = 'portrait' | 'landscape';
+
+/**
+ * 종이에 놓을 도안의 전체 크기. 타일링은 이것 말고는 아무것도 안 본다.
+ * Layout을 통째로 받으면 사각 파우치 전용이 되어 원통이 못 지나간다.
+ */
+export interface SheetSize {
+  readonly totalWidthMm: number;
+  readonly totalHeightMm: number;
+}
 
 export const PAPER_MM: Record<PaperSize, { widthMm: number; heightMm: number }> = {
   a4: { widthMm: 210, heightMm: 297 },
@@ -56,7 +63,7 @@ function gridLabel(row: number, col: number): string {
   return `${String.fromCharCode(65 + row)}${col + 1}`;
 }
 
-export function paginate(layout: Layout, paper: PaperSize): Pagination {
+export function paginate(sheet: SheetSize, paper: PaperSize): Pagination {
   const spec = PAPER_MM[paper];
 
   const candidates: readonly { orientation: Orientation; pageWidthMm: number; pageHeightMm: number }[] = [
@@ -69,8 +76,8 @@ export function paginate(layout: Layout, paper: PaperSize): Pagination {
   for (const candidate of candidates) {
     const contentWidthMm = candidate.pageWidthMm - 2 * PAGE_MARGIN_MM;
     const contentHeightMm = candidate.pageHeightMm - 2 * PAGE_MARGIN_MM;
-    const cols = countTiles(layout.totalWidthMm, contentWidthMm);
-    const rows = countTiles(layout.totalHeightMm, contentHeightMm);
+    const cols = countTiles(sheet.totalWidthMm, contentWidthMm);
+    const rows = countTiles(sheet.totalHeightMm, contentHeightMm);
 
     if (best !== null && rows * cols >= best.rows * best.cols) continue;
 
