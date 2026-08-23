@@ -12,6 +12,7 @@ import {
 } from '../src/core/dimensions';
 import { paginate, PAGE_MARGIN_MM, PAGE_OVERLAP_MM, type Page, type Pagination } from '../src/core/tiling';
 import { RANGES, SEAM_MM } from '../src/core/constants';
+import { CUT_COLOR, hexToRgb01, SCALE_COLOR } from '../src/core/colors';
 import {
   MM_TO_PT,
   SCALE_SQUARE_MM,
@@ -201,7 +202,12 @@ describe('축척 확인용 3cm 정사각형', () => {
  * 도안 하단 문구도 같은 빨강이지만 글자라서 채움 색(rg)을 쓴다.
  * 이 둘을 구분해야 "사각형이 도안 장에 없다"를 제대로 검사할 수 있다.
  */
-const SCALE_SQUARE_STROKE = '0.85 0.1 0.1 RG';
+function colorOp(hex: string, op: 'RG' | 'rg'): string {
+  const { r, g, b } = hexToRgb01(hex);
+  return `${r} ${g} ${b} ${op}`;
+}
+
+const SCALE_SQUARE_STROKE = colorOp(SCALE_COLOR, 'RG');
 
 /**
  * 3cm 사각형을 콘텐츠 스트림에서 알아보는 표식.
@@ -275,7 +281,7 @@ describe('빨간 문구와 사각형의 분업', () => {
     const doc = await PDFDocument.load(await buildPdf(layout, pagination));
     for (let i = 1; i < doc.getPageCount(); i++) {
       const content = pageContent(doc, i);
-      expect(content).toContain('0.85 0.1 0.1 rg');   // 문구
+      expect(content).toContain(colorOp(SCALE_COLOR, 'rg')); // 문구
       expect(hasScaleSquare(doc, i)).toBe(false);       // 사각형은 없다
     }
   });
@@ -297,7 +303,7 @@ describe('3cm 사각형은 첫 도안 장에 있다', () => {
     const pagination = paginate(layout, 'a4');
     const doc = await PDFDocument.load(await buildPdf(layout, pagination));
     for (let i = 0; i < doc.getPageCount(); i++) {
-      expect(pageContent(doc, i)).toContain('0.85 0.1 0.1 rg');
+      expect(pageContent(doc, i)).toContain(colorOp(SCALE_COLOR, 'rg'));
     }
   });
 
@@ -305,7 +311,9 @@ describe('3cm 사각형은 첫 도안 장에 있다', () => {
     const doc = await PDFDocument.load(await buildPdf(layout, paginate(layout, 'a4')));
     const content = pageContent(doc, 0);
     // 빨간 사각형 지정이 검은 재단선 지정보다 앞서야 한다.
-    expect(content.indexOf('0.85 0.1 0.1 RG')).toBeLessThan(content.indexOf('0 0 0 RG'));
+    expect(content.indexOf(colorOp(SCALE_COLOR, 'RG'))).toBeLessThan(
+      content.indexOf(colorOp(CUT_COLOR, 'RG')),
+    );
   });
 });
 

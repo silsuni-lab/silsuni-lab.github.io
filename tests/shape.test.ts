@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { renderShapeSvg } from '../src/ui/shape';
 import type { Dimensions } from '../src/core/dimensions';
+import { SHAPE_EDGE_COLOR, ZIPPER_COLOR } from '../src/core/colors';
 
 const cosmetic: Dimensions = { widthMm: 150, heightMm: 90, depthMm: 50 };
 const pencil: Dimensions = { widthMm: 200, heightMm: 50, depthMm: 50 };
@@ -243,8 +244,8 @@ describe('renderShapeSvg — 지퍼는 빨간 한 줄이다', () => {
 
   it('두 줄 모두 빨간색이다', () => {
     const svg = renderShapeSvg(pencil);
-    expect(lineList(svg, 'zipper')[0]!.stroke).toBe('#b42318');
-    expect(lineList(svg, 'zipper-side')[0]!.stroke).toBe('#b42318');
+    expect(lineList(svg, 'zipper')[0]!.stroke).toBe(ZIPPER_COLOR);
+    expect(lineList(svg, 'zipper-side')[0]!.stroke).toBe(ZIPPER_COLOR);
   });
 
   it('윗면 지퍼가 바닥폭 한가운데에 놓인다', () => {
@@ -309,7 +310,7 @@ describe('renderShapeSvg — 옆면 완성선', () => {
 
   it('검정 실선이라 지퍼와 구별된다', () => {
     const svg = renderShapeSvg(pencil);
-    expect(svg).toMatch(/class="side-seam"[^>]*stroke="#222"/);
+    expect(svg).toMatch(new RegExp(`class="side-seam"[^>]*stroke="${SHAPE_EDGE_COLOR}"`));
     expect(svg).not.toMatch(/class="side-seam"[^>]*stroke-dasharray/);
   });
 });

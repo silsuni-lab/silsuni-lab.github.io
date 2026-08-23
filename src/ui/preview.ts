@@ -9,6 +9,18 @@ import {
   WATERMARK_OPACITY,
   WATERMARK_MESSAGE,
 } from '../core/dimensions';
+import {
+  BAND_LABEL_COLOR,
+  CENTER_COLOR,
+  CUT_COLOR,
+  DIM_LABEL_COLOR,
+  FOLD_EDGE_COLOR,
+  PATTERN_FILL,
+  PATTERN_TITLE_COLOR,
+  SEAM_BAND_FILL,
+  SEAM_COLOR,
+  TILE_COLOR,
+} from '../core/colors';
 
 export function escapeXml(value: string): string {
   return value
@@ -17,35 +29,6 @@ export function escapeXml(value: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 }
-
-/**
- * 인쇄 페이지 경계와 칸 번호. 화면 요약줄(--info)과 같은 청록 계열이라
- * "페이지"라는 개념이 한 색으로 묶인다. 회색으로 두면 접힘선과 헷갈린다.
- * 배경 #fbf7f0 위에서 5.04:1 — 선(3:1)과 글자(4.5:1) 기준을 모두 넘는다.
- */
-const TILE_COLOR = '#2a7387';
-
-/*
- * 완성선. 시접 바탕(#fce7f0)과 도안 채움(#fffdf5) 양쪽에서 3:1을 넘어야 한다.
- * 시접색을 바꾸면 여기도 다시 계산할 것.
- */
-const SEAM_COLOR = '#94682f';
-/** 골선. 접는 자리라 재단선·완성선과 섞이면 안 된다. */
-const FOLD_EDGE_COLOR = '#b42318';
-/** 세로 중앙선. 제도에서 중심선에 쓰는 일점쇄선으로 긋는다. */
-const CENTER_COLOR = '#8a8175';
-/** 재단선. 도안에서 가장 굵고 진한 선이다. */
-const CUT_COLOR = '#222222';
-/*
- * 출처 두 줄의 글자색. 진하기를 반으로 낮춰 두었으므로(WATERMARK_OPACITY)
- * 바탕색까지 옅게 잡으면 옅은 잉크로 뽑을 때 종이에서 사라진다. 물러나
- * 보이는 일은 투명도가 맡고, 색은 인쇄에서 살아남을 만큼 진하게 둔다.
- */
-const WATERMARK_COLOR = '#555555';
-
-/** 도안 안쪽 채움과 시접 띠 채움. */
-const PATTERN_FILL = '#fffdf5';
-const SEAM_BAND_FILL = '#fce7f0';
 
 /*
  * 선 두께와 글자 크기는 도안 폭에 비례시킨다. mm 고정값으로 두면 작은 도안에서
@@ -175,30 +158,30 @@ export function renderPreviewSvg(layout: Layout, pagination: Pagination): string
     titlePoint === undefined
       ? ''
       : `<text class="pattern-title" x="${round1(titlePoint.xMm)}" y="${round1(titlePoint.yMm + bandLabelSize * 1.6)}"` +
-        ` text-anchor="middle" dominant-baseline="middle" font-size="${bandLabelSize}" fill="#666">` +
+        ` text-anchor="middle" dominant-baseline="middle" font-size="${bandLabelSize}" fill="${PATTERN_TITLE_COLOR}">` +
         `${escapeXml(patternTitle(layout.dimensions, layout.seamMm))}</text>` +
         // 권유 한 줄은 계정보다 작게. 옅어 보이는 일은 색이 아니라
         // 투명도가 맡는다 — 색까지 옅으면 인쇄에서 사라진다.
         `<text class="watermark" x="${round1(titlePoint.xMm)}" y="${round1(titlePoint.yMm + bandLabelSize * 2.9)}"` +
-        ` text-anchor="middle" dominant-baseline="middle" font-size="${round1(bandLabelSize * 0.8)}" fill="${WATERMARK_COLOR}"` +
+        ` text-anchor="middle" dominant-baseline="middle" font-size="${round1(bandLabelSize * 0.8)}" fill="${PATTERN_TITLE_COLOR}"` +
         ` fill-opacity="${WATERMARK_OPACITY}">` +
         `${escapeXml(WATERMARK_MESSAGE)}</text>` +
         // 계정은 이름보다도 크게. 여기가 강조하고 싶은 자리다.
         `<text class="watermark-handle" x="${round1(titlePoint.xMm)}" y="${round1(titlePoint.yMm + bandLabelSize * 4.6)}"` +
-        ` text-anchor="middle" dominant-baseline="middle" font-size="${round1(bandLabelSize * 1.35)}" fill="${WATERMARK_COLOR}"` +
+        ` text-anchor="middle" dominant-baseline="middle" font-size="${round1(bandLabelSize * 1.35)}" fill="${PATTERN_TITLE_COLOR}"` +
         ` fill-opacity="${WATERMARK_OPACITY}">` +
         `${escapeXml(WATERMARK_HANDLE)}</text>`;
 
   const labels = layout.bands
     .map(
       (band) =>
-        `<text x="${round1(band.xMm + band.widthMm / 2)}" y="${round1(band.yMm + band.heightMm / 2)}" class="band-label" text-anchor="middle" dominant-baseline="middle" font-size="${bandLabelSize}" fill="#333">${escapeXml(band.label)}</text>`,
+        `<text x="${round1(band.xMm + band.widthMm / 2)}" y="${round1(band.yMm + band.heightMm / 2)}" class="band-label" text-anchor="middle" dominant-baseline="middle" font-size="${bandLabelSize}" fill="${BAND_LABEL_COLOR}">${escapeXml(band.label)}</text>`,
     )
     .join('');
 
   const dims =
-    `<text x="${round1(w / 2)}" y="${round1(-w * 0.03)}" text-anchor="middle" font-size="${dimLabelSize}" fill="#555">${round1(w)}mm</text>` +
-    `<text x="${round1(-w * 0.03)}" y="${round1(h / 2)}" text-anchor="middle" font-size="${dimLabelSize}" fill="#555" transform="rotate(-90 ${round1(-w * 0.03)} ${round1(h / 2)})">${round1(h)}mm</text>`;
+    `<text x="${round1(w / 2)}" y="${round1(-w * 0.03)}" text-anchor="middle" font-size="${dimLabelSize}" fill="${DIM_LABEL_COLOR}">${round1(w)}mm</text>` +
+    `<text x="${round1(-w * 0.03)}" y="${round1(h / 2)}" text-anchor="middle" font-size="${dimLabelSize}" fill="${DIM_LABEL_COLOR}" transform="rotate(-90 ${round1(-w * 0.03)} ${round1(h / 2)})">${round1(h)}mm</text>`;
 
   return [
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${round1(w)} ${round1(h)}"`,

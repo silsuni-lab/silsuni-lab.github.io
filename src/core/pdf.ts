@@ -6,6 +6,18 @@
 // 서브셋에 없는 글자는 그리지 못하니, 문구를 바꿀 때는 서브셋도 다시 만들어야 한다.
 import fontkit from '@pdf-lib/fontkit';
 import { PDFDocument, rgb, type PDFFont, type PDFPage } from 'pdf-lib';
+import {
+  CENTER_COLOR,
+  CUT_COLOR,
+  FOLD_COLOR,
+  FOLD_EDGE_COLOR,
+  hexToRgb01,
+  JOIN_DIAMOND_COLOR,
+  MARK_COLOR,
+  PATTERN_TITLE_COLOR,
+  SCALE_COLOR,
+  SEAM_COLOR,
+} from './colors';
 import { KOREAN_BOLD_FONT_BASE64, KOREAN_FONT_BASE64 } from './korean-font';
 export { KOREAN_FONT_BASE64 };
 import { centerXMm, patternTitlePointMm, type Layout, type Line, type Point } from './layout';
@@ -191,18 +203,27 @@ export function gridLabelPointMm(pagination: Pagination, page: Page): { xMm: num
   };
 }
 
-const CUT_COLOR = rgb(0, 0, 0);
-const FOLD_COLOR = rgb(0.55, 0.55, 0.55);
-const MARK_COLOR = rgb(0.2, 0.2, 0.2);
-const SEAM_COLOR = rgb(0.3, 0.3, 0.3);
-const SCALE_COLOR = rgb(0.85, 0.1, 0.1);
-/** 맞춤 마름모. 도안 선과 섞이지 않도록 빨강을 쓴다. */
-const JOIN_DIAMOND_COLOR = rgb(0.85, 0.1, 0.1);
-/** 골선. 재단선으로 오인하면 안 되는 선이라 빨강으로 굵게 긋는다. */
-const FOLD_EDGE_COLOR = rgb(0.7, 0.1, 0.1);
-/** 출처 문구. 도면을 읽는 데 방해되지 않도록 옅게. */
-/** 세로 중앙선. 제도에서 중심선에 쓰는 일점쇄선으로 긋는다. */
-const CENTER_COLOR = rgb(0.5, 0.48, 0.44);
+/**
+ * pdf-lib이 쓰는 0~1 실수 색으로 바꾼다. 값 자체는 core/colors.ts에 있다.
+ *
+ * 그 파일은 pdf-lib을 부르지 않는다. 첫 화면에 바로 뜨는 preview.ts가 색을
+ * 꺼내 쓰므로, 색 파일이 rgb를 끌어오면 PDF 생성기 1.1MB가 첫 화면 조각으로
+ * 딸려 온다. 감싸는 일은 여기서 한다.
+ */
+function pdfColor(hex: string) {
+  const { r, g, b } = hexToRgb01(hex);
+  return rgb(r, g, b);
+}
+
+const CUT = pdfColor(CUT_COLOR);
+const FOLD = pdfColor(FOLD_COLOR);
+const MARK = pdfColor(MARK_COLOR);
+const SEAM = pdfColor(SEAM_COLOR);
+const SCALE = pdfColor(SCALE_COLOR);
+const JOIN_DIAMOND = pdfColor(JOIN_DIAMOND_COLOR);
+const FOLD_EDGE = pdfColor(FOLD_EDGE_COLOR);
+const CENTER = pdfColor(CENTER_COLOR);
+const TITLE = pdfColor(PATTERN_TITLE_COLOR);
 
 /*
  * 도안에 찍는 세 줄의 바탕 크기(pt)와 줄 간격(mm). 여기에 배율을 곱해 쓴다.
@@ -274,7 +295,7 @@ function drawPolygon(ctx: PageContext, points: readonly Point[], thickness: numb
       start: toPagePoint(ctx.pagination, ctx.page, a.xMm, a.yMm),
       end: toPagePoint(ctx.pagination, ctx.page, b.xMm, b.yMm),
       thickness,
-      color: CUT_COLOR,
+      color: CUT,
     });
   }
 }
@@ -288,7 +309,7 @@ function drawSeamLine(ctx: PageContext, points: readonly Point[]) {
       start: toPagePoint(ctx.pagination, ctx.page, a.xMm, a.yMm),
       end: toPagePoint(ctx.pagination, ctx.page, b.xMm, b.yMm),
       thickness: 0.4,
-      color: SEAM_COLOR,
+      color: SEAM,
       dashArray: [2, 2],
     });
   }
@@ -299,7 +320,7 @@ function drawFoldLine(ctx: PageContext, line: Line) {
     start: toPagePoint(ctx.pagination, ctx.page, line.x1Mm, line.y1Mm),
     end: toPagePoint(ctx.pagination, ctx.page, line.x2Mm, line.y2Mm),
     thickness: 0.5,
-    color: FOLD_COLOR,
+    color: FOLD,
     dashArray: [4, 4],
   });
 }
@@ -339,7 +360,7 @@ function drawFoldEdge(ctx: PageContext, layout: Layout, font: PDFFont) {
     start: toPagePoint(pagination, page, 0, yMm),
     end: toPagePoint(pagination, page, layout.totalWidthMm, yMm),
     thickness: 1.6,
-    color: FOLD_EDGE_COLOR,
+    color: FOLD_EDGE,
   });
 
   const centerXMm = foldEdgeLabelXMm(pagination, page, layout);
@@ -354,7 +375,7 @@ function drawFoldEdge(ctx: PageContext, layout: Layout, font: PDFFont) {
         start: toPagePoint(pagination, page, centerXMm + radiusMm * Math.cos(a), yMm + radiusMm * Math.sin(a)),
         end: toPagePoint(pagination, page, centerXMm + radiusMm * Math.cos(b), yMm + radiusMm * Math.sin(b)),
         thickness: 0.8,
-        color: FOLD_EDGE_COLOR,
+        color: FOLD_EDGE,
       });
     }
   }
@@ -365,7 +386,7 @@ function drawFoldEdge(ctx: PageContext, layout: Layout, font: PDFFont) {
     y: label.y,
     size: 10,
     font,
-    color: FOLD_EDGE_COLOR,
+    color: FOLD_EDGE,
   });
 }
 
@@ -387,7 +408,7 @@ function drawCenterAndTitle(ctx: PageContext, layout: Layout, font: PDFFont) {
     start: toPagePoint(pagination, page, xMm, 0),
     end: toPagePoint(pagination, page, xMm, layout.totalHeightMm),
     thickness: 0.4,
-    color: CENTER_COLOR,
+    color: CENTER,
     dashArray: [8, 3, 1.5, 3],
   });
 
@@ -421,7 +442,7 @@ function drawCenterAndTitle(ctx: PageContext, layout: Layout, font: PDFFont) {
       y: anchor.y,
       size,
       font,
-      color: MARK_COLOR,
+      color: TITLE,
       ...(opacity === undefined ? {} : { opacity }),
     });
   };
@@ -450,13 +471,13 @@ function drawAlignmentMarks(ctx: PageContext, font: PDFFont) {
       start: { x: x - armPt, y },
       end: { x: x + armPt, y },
       thickness: 0.5,
-      color: MARK_COLOR,
+      color: MARK,
     });
     ctx.pdfPage.drawLine({
       start: { x, y: y - armPt },
       end: { x, y: y + armPt },
       thickness: 0.5,
-      color: MARK_COLOR,
+      color: MARK,
     });
   }
 
@@ -467,7 +488,7 @@ function drawAlignmentMarks(ctx: PageContext, font: PDFFont) {
     y: labelPoint.y,
     size: 12,
     font,
-    color: MARK_COLOR,
+    color: MARK,
   });
 }
 
@@ -491,7 +512,7 @@ function drawJoinMarks(ctx: PageContext, font: PDFFont) {
       start: toFramePoint(pagination, mark.x1Mm, mark.y1Mm),
       end: toFramePoint(pagination, mark.x2Mm, mark.y2Mm),
       thickness: 0.5,
-      color: MARK_COLOR,
+      color: MARK,
       dashArray: [6, 3],
     });
 
@@ -510,7 +531,7 @@ function drawJoinMarks(ctx: PageContext, font: PDFFont) {
           start: toFramePoint(pagination, a.xMm, a.yMm),
           end: toFramePoint(pagination, b.xMm, b.yMm),
           thickness: 0.6,
-          color: JOIN_DIAMOND_COLOR,
+          color: JOIN_DIAMOND,
         });
       }
     }
@@ -530,7 +551,7 @@ function drawJoinMarks(ctx: PageContext, font: PDFFont) {
           start: toFramePoint(pagination, apex.xMm, apex.yMm),
           end: toFramePoint(pagination, wing.xMm, wing.yMm),
           thickness: 0.5,
-          color: MARK_COLOR,
+          color: MARK,
         });
       }
     }
@@ -541,7 +562,7 @@ function drawJoinMarks(ctx: PageContext, font: PDFFont) {
       y: labelPoint.y,
       size: 9,
       font,
-      color: MARK_COLOR,
+      color: MARK,
     });
   }
 }
@@ -579,7 +600,7 @@ function drawPatternNote(ctx: PageContext, boldFont: PDFFont) {
     y: anchor.y,
     size,
     font: boldFont,
-    color: SCALE_COLOR,
+    color: SCALE,
   });
 }
 
@@ -592,7 +613,7 @@ function drawScaleSquare(page: PDFPage, pagination: Pagination, font: PDFFont) {
     y: topLeft.y - rect.sizeMm * MM_TO_PT,
     width: rect.sizeMm * MM_TO_PT,
     height: rect.sizeMm * MM_TO_PT,
-    borderColor: SCALE_COLOR,
+    borderColor: SCALE,
     borderWidth: 1,
   });
 
@@ -601,7 +622,7 @@ function drawScaleSquare(page: PDFPage, pagination: Pagination, font: PDFFont) {
     y: topLeft.y + 3,
     size: 9,
     font,
-    color: SCALE_COLOR,
+    color: SCALE,
   });
 }
 
