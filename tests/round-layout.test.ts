@@ -150,4 +150,20 @@ describe('roundTitlePiece — 출처 문구가 앉을 조각', () => {
     // 앞면 아랫단이 넓이가 가장 크다. 문구를 넣을 자리가 여기뿐이다.
     expect(roundTitlePiece(buildRoundLayout(golden))!.id).toBe('frontBottom');
   });
+
+  it('원이 외접 사각형으로는 더 커 보이는 경우에도 사각 조각을 고른다', () => {
+    // 원 넓이를 D*D로 재면 여기서 원이 뽑힌다. 80/60/20은 프리셋 크기다.
+    expect(roundTitlePiece(buildRoundLayout({ diameterMm: 80, sideHeightMm: 60, lidHeightMm: 20 }))!.id).toBe('frontBottom');
+    expect(roundTitlePiece(buildRoundLayout({ diameterMm: 300, sideHeightMm: 120, lidHeightMm: 10 }))!.id).toBe('frontBottom');
+  });
+
+  it('어떤 치수에서도 원을 고르지 않는다', () => {
+    for (const d of [
+      { diameterMm: 80, sideHeightMm: 60, lidHeightMm: 20 },
+      { diameterMm: 300, sideHeightMm: 40, lidHeightMm: 10 },
+      { diameterMm: 130, sideHeightMm: 130, lidHeightMm: 30 },
+    ]) {
+      expect(roundTitlePiece(buildRoundLayout(d))!.shape).toBe('rect');
+    }
+  });
 });

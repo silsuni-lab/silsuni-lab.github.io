@@ -109,13 +109,17 @@ export function buildRoundLayout(
 }
 
 /**
- * 출처 문구를 앉힐 조각. 넓이가 가장 큰 것을 고른다.
+ * 출처 문구를 앉힐 조각. 가로로 긴 덩어리를 담을 수 있는 사각 조각 중 가장 큰 것을 고른다.
  *
- * 사각 파우치는 앞판 한가운데가 늘 가장 넓게 비어 있지만, 원통은 치수에
- * 따라 어느 조각이 가장 큰지 달라질 수 있다.
+ * 원은 후보에서 제외한다. 이유는 둘이다.
+ * 첫째, 설계 문서 4.3이 "가장 큰 조각(앞면 아랫단) 한가운데"라 명시했다.
+ * 둘째, 출처 문구는 가로로 긴 문자열이라 원 위에 얹으면 곡선 때문에 글자가
+ * 원의 경계를 벗어날 수 있다. 특히 지름이 작을 때 위험하다. 사각만 후보로
+ * 두면 이 위험이 완전히 없어진다.
  */
 export function roundTitlePiece(layout: RoundLayout): RoundPiece | undefined {
-  return [...layout.pieces].sort(
+  const rects = layout.pieces.filter((p) => p.shape === 'rect');
+  return [...rects].sort(
     (a, b) => b.finishedWidthMm * b.finishedHeightMm - a.finishedWidthMm * a.finishedHeightMm,
   )[0];
 }
