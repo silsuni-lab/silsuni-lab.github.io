@@ -49,6 +49,12 @@ describe('validateRoundDimensions', () => {
     expect(validateRoundDimensions({ ...ok, diameterMm: '어제' }).ok).toBe(false);
   });
 
+  it('정수가 아닌 값을 잡는다', () => {
+    const result = validateRoundDimensions({ ...ok, diameterMm: 130.5 });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.errors[0]!.field).toBe('diameterMm');
+  });
+
   it('뒷면 비율이 범위를 벗어나면 잡는다', () => {
     // 0.5면 지퍼가 반원보다 짧아져 뚜껑이 물리적으로 안 젖혀진다.
     expect(validateRoundDimensions(ok, 0.5).ok).toBe(false);

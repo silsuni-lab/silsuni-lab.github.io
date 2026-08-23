@@ -2,6 +2,7 @@
 // Copyright (C) 2026 choisuing
 
 import { SEAM_MM, ZIPPER_ALLOWANCE_MM, type Range } from '../constants';
+import { withObjectParticle, withTopicParticle } from '../korean';
 
 export type RoundField = 'diameterMm' | 'sideHeightMm' | 'lidHeightMm';
 
@@ -81,11 +82,15 @@ export function validateRoundDimensions(
     const num = typeof raw === 'number' ? raw : Number(raw);
 
     if (raw === '' || raw === null || raw === undefined || !Number.isFinite(num)) {
-      errors.push({ field, message: `${label}를 숫자로 넣어주세요.` });
+      errors.push({ field, message: `${withObjectParticle(label)} 숫자로 입력해주세요.` });
+      continue;
+    }
+    if (!Number.isInteger(num)) {
+      errors.push({ field, message: `${withTopicParticle(label)} 1mm 단위 정수로 입력해주세요.` });
       continue;
     }
     if (num < min || num > max) {
-      errors.push({ field, message: `${label}는 ${min}에서 ${max} 사이여야 합니다.` });
+      errors.push({ field, message: `${withTopicParticle(label)} ${min}mm 이상 ${max}mm 이하여야 합니다.` });
       continue;
     }
     values[field] = num;
@@ -99,7 +104,7 @@ export function validateRoundDimensions(
     if (lid > cap) {
       errors.push({
         field: 'lidHeightMm',
-        message: `옆면 높이 ${side}에서는 뚜껑 높이가 ${Math.floor(cap)} 이하여야 합니다.`,
+        message: `옆면 높이 ${side}에서는 ${withTopicParticle(ROUND_FIELD_LABELS.lidHeightMm)} ${Math.floor(cap)} 이하여야 합니다.`,
       });
     }
   }
