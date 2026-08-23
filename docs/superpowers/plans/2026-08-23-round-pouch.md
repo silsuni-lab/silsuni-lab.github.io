@@ -547,7 +547,7 @@ describe('종이 장수', () => {
     const cases: readonly [number, number, number, number, number][] = [
       [80, 60, 20, 2, 1],
       [130, 130, 30, 4, 2],
-      [160, 100, 25, 6, 2],
+      [160, 100, 25, 4, 2],
       [200, 160, 40, 6, 4],
     ];
     for (const [d, s, l, a4, a3] of cases) {
