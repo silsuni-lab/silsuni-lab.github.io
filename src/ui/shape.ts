@@ -9,10 +9,10 @@ import { escapeXml } from './preview';
  * 바닥폭은 이 각도로 물러나게 한다. 앞면이 왜곡되지 않아 파우치가
  * 얼마나 납작한지·높은지가 한눈에 들어온다.
  */
-const DEPTH_ANGLE_DEG = 30;
+export const DEPTH_ANGLE_DEG = 30;
 
 /** 깊이 축소율. 1이면 실제 길이(카발리에), 0.5면 절반(캐비닛). */
-const DEPTH_SCALE = 0.6;
+export const DEPTH_SCALE = 0.6;
 
 /**
  * 여백·글자·선 굵기는 모두 그림의 가로 폭에 비례시킨다. mm 고정값으로 두면
@@ -36,10 +36,28 @@ const STROKE_RATIO = 0.006;
 const ZIPPER_DEPTH = 0.5;
 
 /** 지퍼 색. style.css의 --danger와 같은 값이다. */
-const ZIPPER_COLOR = '#b42318';
+export const ZIPPER_COLOR = '#b42318';
+
+/*
+ * 사시도의 면 색. 빛이 앞에서 오는 것처럼 앞·위·옆 순으로 조금씩 어두워진다.
+ * 원통 사시도(src/ui/round/shape.ts)가 같은 값을 가져다 쓴다 — 두 파일에
+ * 따로 적으면 한쪽만 고쳤을 때 두 그림이 다른 색이 되고 아무도 못 잡는다.
+ */
+export const FACE_FRONT_FILL = '#fffdf5';
+export const FACE_TOP_FILL = '#f7f4ea';
+export const FACE_SIDE_FILL = '#efeade';
+
+/** 숨은 모서리 색. 보이지 않는 자리를 점선으로 비출 때 쓴다. */
+export const HIDDEN_EDGE_COLOR = '#858585';
+
+/** 재단 윤곽선 색. 그림에서 가장 진한 선이다. */
+export const OUTLINE_COLOR = '#222';
+
+/** 치수 글자색. */
+export const DIM_LABEL_COLOR = '#555';
 
 /** 가려진 왼쪽 옆면을 비추는 정도. */
-const HIDDEN_SIDE_OPACITY = 0.3;
+export const HIDDEN_SIDE_OPACITY = 0.3;
 
 function round1(value: number): number {
   return Math.round(value * 10) / 10;
@@ -88,12 +106,12 @@ export function renderShapeSvg(dimensions: Dimensions): string {
   const backBottomLeft = { x: x0 + dx, y: y0 + H - dy };
 
   const face = (name: string, points: readonly Point[], fill: string) =>
-    `<polygon class="${name}" points="${toPoints(points)}" fill="${fill}" stroke="#222" stroke-width="${round1(stroke)}" stroke-linejoin="round" />`;
+    `<polygon class="${name}" points="${toPoints(points)}" fill="${fill}" stroke="${OUTLINE_COLOR}" stroke-width="${round1(stroke)}" stroke-linejoin="round" />`;
 
   const faces =
-    face('face-front', [frontTopLeft, frontTopRight, frontBottomRight, frontBottomLeft], '#fffdf5') +
-    face('face-top', [frontTopLeft, backTopLeft, backTopRight, frontTopRight], '#f7f4ea') +
-    face('face-side', [frontTopRight, backTopRight, backBottomRight, frontBottomRight], '#efeade');
+    face('face-front', [frontTopLeft, frontTopRight, frontBottomRight, frontBottomLeft], FACE_FRONT_FILL) +
+    face('face-top', [frontTopLeft, backTopLeft, backTopRight, frontTopRight], FACE_TOP_FILL) +
+    face('face-side', [frontTopRight, backTopRight, backBottomRight, frontBottomRight], FACE_SIDE_FILL);
 
   // 뒤쪽 아래 모서리는 파우치에 가려 보이지 않는다. 참조 도안처럼 점선으로 비친다.
   const hiddenEdges = [
@@ -103,7 +121,7 @@ export function renderShapeSvg(dimensions: Dimensions): string {
   ]
     .map(([a, b]) => {
       const dash = `${round1(stroke * 3)} ${round1(stroke * 2.2)}`;
-      return `<line class="hidden-edge" x1="${round1(a!.x)}" y1="${round1(a!.y)}" x2="${round1(b!.x)}" y2="${round1(b!.y)}" stroke="#858585" stroke-width="${round1(stroke * 0.65)}" stroke-dasharray="${dash}" />`;
+      return `<line class="hidden-edge" x1="${round1(a!.x)}" y1="${round1(a!.y)}" x2="${round1(b!.x)}" y2="${round1(b!.y)}" stroke="${HIDDEN_EDGE_COLOR}" stroke-width="${round1(stroke * 0.65)}" stroke-dasharray="${dash}" />`;
     })
     .join('');
 
@@ -124,7 +142,7 @@ export function renderShapeSvg(dimensions: Dimensions): string {
     return (
       `<line class="side-seam${suffix}" x1="${round1(topFront.x)}" y1="${round1(topFront.y + H / 2)}"` +
       ` x2="${round1(topBack.x)}" y2="${round1(topBack.y + H / 2)}"` +
-      ` stroke="#222" stroke-width="${round1(stroke * 0.6)}"${fade} />` +
+      ` stroke="${OUTLINE_COLOR}" stroke-width="${round1(stroke * 0.6)}"${fade} />` +
       `<line class="zipper-side${suffix}" x1="${round1(zipTop.x)}" y1="${round1(zipTop.y)}"` +
       ` x2="${round1(zipTop.x)}" y2="${round1(zipTop.y + H / 2)}"` +
       ` stroke="${ZIPPER_COLOR}" stroke-width="${zipperStroke}" stroke-linecap="round"${fade} />`
@@ -143,7 +161,7 @@ export function renderShapeSvg(dimensions: Dimensions): string {
     ` stroke="${ZIPPER_COLOR}" stroke-width="${zipperStroke}" stroke-linecap="round" />`;
 
   const dimLabel = (x: number, y: number, text: string, anchor: string, rotate?: string) =>
-    `<text class="dim-label" x="${round1(x)}" y="${round1(y)}" text-anchor="${anchor}" font-size="${round1(font)}" fill="#555"${rotate ?? ''}>${escapeXml(text)}</text>`;
+    `<text class="dim-label" x="${round1(x)}" y="${round1(y)}" text-anchor="${anchor}" font-size="${round1(font)}" fill="${DIM_LABEL_COLOR}"${rotate ?? ''}>${escapeXml(text)}</text>`;
 
   const heightLabelY = y0 + H / 2;
   const heightLabelX = x0 - font * 0.7;

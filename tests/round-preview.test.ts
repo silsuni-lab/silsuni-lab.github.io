@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { buildRoundLayout } from '../src/core/round/layout';
 import { paginate } from '../src/core/tiling';
 import { renderRoundPreviewSvg, roundLegendItems } from '../src/ui/round/preview';
+import { renderRoundShapeSvg } from '../src/ui/round/shape';
 
 const layout = buildRoundLayout({ diameterMm: 130, sideHeightMm: 130, lidHeightMm: 30 });
 const svg = renderRoundPreviewSvg(layout, paginate(layout, 'a4'));
@@ -58,5 +59,30 @@ describe('roundLegendItems — 실제로 그린 선만 담는다', () => {
     for (const item of roundLegendItems(layout)) {
       expect(svg).toContain(item.color);
     }
+  });
+});
+
+describe('renderRoundShapeSvg — 완성 예상', () => {
+  const shape = renderRoundShapeSvg({ diameterMm: 130, sideHeightMm: 130, lidHeightMm: 30 });
+
+  it('위아래 타원과 지퍼선을 그린다', () => {
+    expect(shape).toContain('class="top-ellipse"');
+    expect(shape).toContain('class="zipper"');
+  });
+
+  it('치수를 적는다', () => {
+    expect(shape).toContain('130mm');
+  });
+
+  it('납작한 파우치와 긴 파우치의 비율이 다르다', () => {
+    // 치수를 넣는 즉시 납작한지 길쭉한지 감이 잡혀야 한다.
+    const flat = renderRoundShapeSvg({ diameterMm: 200, sideHeightMm: 50, lidHeightMm: 15 });
+    const tall = renderRoundShapeSvg({ diameterMm: 100, sideHeightMm: 250, lidHeightMm: 40 });
+    expect(flat).not.toBe(tall);
+  });
+
+  it('그림에 접근성 이름이 있다', () => {
+    expect(shape).toContain('role="img"');
+    expect(shape).toContain('aria-label=');
   });
 });
