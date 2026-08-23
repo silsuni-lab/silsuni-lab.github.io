@@ -25,7 +25,7 @@ export const MM_TO_PT = 72 / 25.4;
  * 없는 글자를 쓰면 그 자리가 비어 나오므로, 테스트로 미리 막는다.
  */
 export const KOREAN_FONT_CHARS: ReadonlySet<string> = new Set(
-  " !*@_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcilmnsu각게골들만보사선세시쁘없어예요우음인접지치퍼파하확",
+  " !*@_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcilmnsu각게골들만보사선세시쁘없어예요우음인접지치퍼파하확·글껑닥단동뒷뚜랫면바아앞원윗장통",
 );
 
 /** 브라우저와 Node 양쪽에서 도는 base64 디코더. */
