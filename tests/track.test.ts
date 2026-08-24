@@ -8,6 +8,7 @@ import { trackingEnabled, trackRecord } from '../src/track';
  */
 
 const base = {
+  kind: 'box' as const,
   sessionId: 'abc-123',
   widthMm: 150,
   heightMm: 90,
@@ -42,10 +43,16 @@ describe('trackRecord — 시트에 쌓일 한 줄', () => {
     expect(trackRecord(base).sid).toBe('abc-123');
   });
 
+  it('파우치 종류를 담는다', () => {
+    // 이게 없으면 시트에서 사각과 원통 기록이 섞여 구분이 안 된다.
+    expect(trackRecord(base).kind).toBe('box');
+    expect(trackRecord({ ...base, kind: 'round' }).kind).toBe('round');
+  });
+
   it('정해 둔 여덟 칸 말고는 아무것도 보내지 않는다', () => {
     // 시트 열 순서가 여기 맞춰져 있다. 늘리려면 시트도 함께 고칠 것.
     expect(Object.keys(trackRecord(base)).sort()).toEqual(
-      ['d', 'fold', 'h', 'paper', 'seam', 'sid', 'w'].sort(),
+      ['d', 'fold', 'h', 'kind', 'paper', 'seam', 'sid', 'w'].sort(),
     );
   });
 

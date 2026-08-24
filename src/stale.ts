@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 choisuing
 
+import type { PouchKind } from './core/constants';
 import type { PaperSize } from './core/tiling';
 
 /*
@@ -15,9 +16,6 @@ import type { PaperSize } from './core/tiling';
  * 보면 캐시를 지울 줄도 모르고 그냥 떠난다. 화면이 알아서 다시 뜨는 편이
  * 낫다 — 새로 뜨면 새 이름을 부르므로 저절로 낫는다.
  */
-
-/** 파우치 종류. 화면마다 하나씩이다. */
-export type PouchKind = 'box' | 'round';
 
 /**
  * 새로 부를 때까지 들고 있을 화면 상태. 치수를 잃지 않으려는 것이다.

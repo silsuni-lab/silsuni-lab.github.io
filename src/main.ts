@@ -152,6 +152,7 @@ async function download(): Promise<void> {
     // 파일이 실제로 나간 뒤에만 센다. 만들다 실패한 시도까지 세면
     // "몇 명이 받았나"가 아니라 "몇 번 눌렀나"가 된다.
     trackDownload({
+      kind: 'box',
       ...result.value,
       paper,
       seamMm: layout.seamMm,

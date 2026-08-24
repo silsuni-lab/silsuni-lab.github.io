@@ -158,10 +158,11 @@ async function download(): Promise<void> {
     // 파일이 실제로 나간 뒤에만 센다. 만들다 실패한 시도까지 세면
     // "몇 명이 받았나"가 아니라 "몇 번 눌렀나"가 된다.
     trackDownload({
+      kind: 'round',
       /*
        * 원통도 치수 칸 셋을 그대로 쓴다 — w에 지름, h에 옆면, d에 뚜껑이다.
-       * 종류를 함께 남기는 일은 Task 10이 맡는다. 그때까지 이 기록은
-       * 사각과 섞여 들어간다.
+       * 열을 새로 만들면 두 종류가 서로 빈 칸을 만들어 피벗이 지저분해진다.
+       * 열 이름이 원통에는 안 맞지만 kind를 보면 무슨 값인지 알 수 있다.
        */
       widthMm: result.value.diameterMm,
       heightMm: result.value.sideHeightMm,

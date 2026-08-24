@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 choisuing
 
+import type { PouchKind } from './core/constants';
 import type { PaperSize } from './core/tiling';
 
 /*
@@ -15,6 +16,13 @@ import type { PaperSize } from './core/tiling';
 export interface TrackRecord {
   /** 탭 하나에 하나. 한 사람이 여러 번 받은 걸 한 사람으로 셀 수 있게 한다. */
   readonly sid: string;
+  /** 사각인지 원통인지. 이게 없으면 시트에서 두 기록이 섞여 구분이 안 된다. */
+  readonly kind: PouchKind;
+  /*
+   * 원통도 치수 칸 셋을 그대로 쓴다 — w에 지름, h에 옆면 높이, d에 뚜껑 높이다.
+   * 열을 새로 만들면 두 종류가 서로 빈 칸을 만들어 피벗이 지저분해진다.
+   * 열 이름이 원통에는 안 맞지만 kind를 보면 무슨 값인지 알 수 있다.
+   */
   readonly w: number;
   readonly h: number;
   readonly d: number;
@@ -27,6 +35,7 @@ export interface TrackRecord {
 
 export interface TrackInput {
   readonly sessionId: string;
+  readonly kind: PouchKind;
   readonly widthMm: number;
   readonly heightMm: number;
   readonly depthMm: number;
@@ -44,6 +53,7 @@ export interface TrackInput {
 export function trackRecord(input: TrackInput): TrackRecord {
   return {
     sid: input.sessionId,
+    kind: input.kind,
     w: input.widthMm,
     h: input.heightMm,
     d: input.depthMm,

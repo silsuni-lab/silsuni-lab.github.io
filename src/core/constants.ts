@@ -1,6 +1,15 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 choisuing
 
+/**
+ * 파우치 종류. 화면 하나에 하나씩이다.
+ *
+ * 기록(track.ts)에서 시트의 두 도구를 가르는 값이자, 낡은 화면 되살리기
+ * (stale.ts)에서 남의 화면 것을 집어가지 않게 막는 표식이다. 두 곳에 따로
+ * 적으면 한쪽만 늘렸을 때 조용히 갈라진다.
+ */
+export type PouchKind = 'box' | 'round';
+
 /** 시접 (mm). 도안 치수에 이미 포함되므로 사용자가 따로 더하지 않는다. */
 export const SEAM_MM = 10;
 
