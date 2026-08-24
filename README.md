@@ -5,7 +5,15 @@
 - **사각사각 지퍼 파우치** — 가로·높이·바닥폭 → **https://silsuni-lab.github.io/**
 - **동글동글 원통 파우치** — 지름·옆면 높이·뚜껑 높이 → **https://silsuni-lab.github.io/round-pouch-test/** ([계산](#원통-파우치)) · *시험 중*
 
-> **원통 파우치는 아직 시험 중이다.** 사각 페이지에서 이리로 오는 안내 줄을 빼 두었고 검색엔진에도 올리지 않는다. 주소를 치면 열리므로 잠근 것은 아니다. 공개하려면 `index.html`의 `other-kind` 주석을 풀고 `round-pouch-test/index.html`의 `noindex` 한 줄을 지운다 — **둘은 늘 같이 움직인다.** 지우고 나면 스크린샷도 다시 찍어야 한다(사각 화면에 링크 한 줄이 는다).
+> **원통 파우치는 아직 시험 중이다.** 사각 페이지에서 이리로 오는 안내 줄을 빼 두었고, 검색엔진에도 올리지 않으며, 다운로드 기록도 남기지 않는다. 주소를 치면 열리므로 잠근 것은 아니다.
+>
+> 공개할 때 되돌릴 것 셋 — 셋은 늘 같이 움직인다.
+>
+> 1. `index.html`의 `other-kind` 주석 풀기
+> 2. `round-pouch-test/index.html`의 `noindex` 한 줄 지우기
+> 3. `round-pouch-test/main.ts`의 `trackDownload` 주석 풀고 import 되살리기 — **그 전에 Apps Script에 `종류` 열부터 넣을 것**([다운로드 기록](#다운로드-기록))
+>
+> 되돌린 뒤에는 스크린샷도 다시 찍는다(사각 화면에 링크 한 줄이 는다).
 
 ![화면](docs/img/screenshot.jpg)
 

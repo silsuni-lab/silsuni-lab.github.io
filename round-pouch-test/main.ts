@@ -24,7 +24,6 @@ import {
 import { describePagination } from '../src/ui/preview';
 import { renderRoundPreviewSvg, roundLegendItems } from '../src/ui/round/preview';
 import { renderRoundShapeSvg } from '../src/ui/round/shape';
-import { trackDownload } from '../src/track';
 import { isStaleChunkError, keepState, takeState, type ScreenState } from '../src/stale';
 import '../src/style.css';
 
@@ -155,23 +154,31 @@ async function download(): Promise<void> {
     // 견디지만 표준이 보장하는 동작은 아니다. 다음 차례로 미뤄 둔다.
     setTimeout(() => URL.revokeObjectURL(url), 1000);
 
-    // 파일이 실제로 나간 뒤에만 센다. 만들다 실패한 시도까지 세면
-    // "몇 명이 받았나"가 아니라 "몇 번 눌렀나"가 된다.
-    trackDownload({
-      kind: 'round',
-      /*
-       * 원통도 치수 칸 셋을 그대로 쓴다 — w에 지름, h에 옆면, d에 뚜껑이다.
-       * 열을 새로 만들면 두 종류가 서로 빈 칸을 만들어 피벗이 지저분해진다.
-       * 열 이름이 원통에는 안 맞지만 kind를 보면 무슨 값인지 알 수 있다.
-       */
-      widthMm: result.value.diameterMm,
-      heightMm: result.value.sideHeightMm,
-      depthMm: result.value.lidHeightMm,
-      paper,
-      seamMm: layout.seamMm,
-      // 원통에는 골선접기가 없다.
-      foldHalf: false,
-    });
+    /*
+     * 시험하는 동안은 기록을 남기지 않는다.
+     *
+     * 시트를 받는 Apps Script에 아직 `종류` 열이 없다. 그대로 보내면 원통
+     * 기록이 사각 줄에 섞여 들어가는데, 치수 칸의 뜻이 달라(가로 자리에
+     * 지름, 바닥폭 자리에 뚜껑 높이) 나중에 갈라낼 방법이 없다. 대부분은
+     * 옛 검사(바닥폭 40 이상)에 걸려 버려지고, 통과하는 몇 줄만 사각인 척
+     * 남는다 — 아무도 못 잡는 오염이다.
+     *
+     * 공개할 때 아래 주석을 풀고 trackDownload import를 되살린다.
+     * 그 전에 Apps Script부터 고칠 것 — docs/tracking.md 참고.
+     *
+     * // 파일이 실제로 나간 뒤에만 센다. 만들다 실패한 시도까지 세면
+     * // "몇 명이 받았나"가 아니라 "몇 번 눌렀나"가 된다.
+     * trackDownload({
+     *   kind: 'round',
+     *   // 원통도 치수 칸 셋을 그대로 쓴다 — w에 지름, h에 옆면, d에 뚜껑이다.
+     *   widthMm: result.value.diameterMm,
+     *   heightMm: result.value.sideHeightMm,
+     *   depthMm: result.value.lidHeightMm,
+     *   paper,
+     *   seamMm: layout.seamMm,
+     *   foldHalf: false,   // 원통에는 골선접기가 없다
+     * });
+     */
   } catch (error) {
     /*
      * 배포가 지나가 PDF 조각을 못 찾는 경우다. 화면을 새로 부르면 새 이름을
