@@ -26,10 +26,12 @@ import {
   PATTERN_NOTE,
   patternNotePointMm,
   SCALE_SQUARE_LABEL,
+  INCH_SQUARE_MM,
+  INCH_SQUARE_LABEL,
   titleScale,
   TITLE_SCALE_MAX,
   TITLE_MARGIN_MM,
-  scaleSquareRectMm,
+  scaleSquareRectsMm,
   gridLabelPointMm,
   joinMarksFor,
   toFramePoint,
@@ -136,14 +138,36 @@ describe('buildPdf — 완성선', () => {
   });
 });
 
-describe('축척 확인용 3cm 정사각형', () => {
-  it('한 변이 정확히 30mm다', () => {
+describe('축척 확인용 네모 — mm 자와 인치 자에 하나씩', () => {
+  /*
+   * 네모를 둘 그린다. 30mm는 mm 자로, 25.4mm(1인치)는 인치 자로 잰다.
+   * 하나만 그리면 다른 자를 쓰는 사람은 눈금 사이를 눈대중해야 하고,
+   * 그러면 축척이 틀렸는지 맞았는지를 못 가린다 — 원단이 걸린 자리다.
+   *
+   * 둘 다 인쇄한다. 하나만 있으면 다른 자를 쓰는 사람이 잴 수 없는 네모를
+   * 받는다.
+   */
+  const rectsOf = (p: Pagination) => scaleSquareRectsMm(p);
+
+  it('네모가 둘이고 각각 30mm와 1인치다', () => {
+    // 반환 순서: [인치(왼쪽), mm(오른쪽)] — 인치가 작고 왼쪽, mm이 오른쪽에 플러시.
+    const [inch, cm] = rectsOf(paginate(layout, 'a4'));
+    expect(inch.sizeMm).toBeCloseTo(25.4, 10);
+    expect(cm.sizeMm).toBe(30);
     expect(SCALE_SQUARE_MM).toBe(30);
-    const rect = scaleSquareRectMm(paginate(layout, 'a4'));
-    expect(rect.sizeMm).toBe(30);
+    expect(INCH_SQUARE_MM).toBeCloseTo(25.4, 10);
   });
 
-  it('모든 용지·방향에서 인쇄 영역 안에 들어간다', () => {
+  it('나란히 놓이고 서로 겹치지 않는다', () => {
+    const [inch, cm] = rectsOf(paginate(layout, 'a4'));
+    // 위를 맞춰야 두 네모의 윗변이 한 줄에 놓여 눈으로 견주기 쉽다.
+    expect(inch.yMm).toBe(cm.yMm);
+    // 인치 네모가 왼쪽, mm 네모가 오른쪽. 사이가 벌어져 있어야 두 개로 보인다.
+    expect(inch.xMm + inch.sizeMm).toBeLessThan(cm.xMm);
+    expect(cm.xMm - (inch.xMm + inch.sizeMm)).toBeGreaterThanOrEqual(3);
+  });
+
+  it('모든 용지·방향에서 둘 다 인쇄 영역 안에 들어간다', () => {
     for (const paper of ['a4', 'a3'] as const) {
       for (const dims of [
         { widthMm: 270, depthMm: 100, heightMm: 140 },
@@ -151,25 +175,26 @@ describe('축척 확인용 3cm 정사각형', () => {
         { widthMm: 400, depthMm: 200, heightMm: 300 },
       ]) {
         const pagination = paginate(buildLayout(dims), paper);
-        const rect = scaleSquareRectMm(pagination);
-
-        expect(rect.xMm).toBeGreaterThanOrEqual(PAGE_MARGIN_MM);
-        expect(rect.yMm).toBeGreaterThanOrEqual(PAGE_MARGIN_MM);
-        expect(rect.xMm + rect.sizeMm).toBeLessThanOrEqual(
-          pagination.pageWidthMm - PAGE_MARGIN_MM,
-        );
-        expect(rect.yMm + rect.sizeMm).toBeLessThanOrEqual(
-          pagination.pageHeightMm - PAGE_MARGIN_MM,
-        );
+        for (const rect of rectsOf(pagination)) {
+          expect(rect.xMm).toBeGreaterThanOrEqual(PAGE_MARGIN_MM);
+          expect(rect.yMm).toBeGreaterThanOrEqual(PAGE_MARGIN_MM);
+          expect(rect.xMm + rect.sizeMm).toBeLessThanOrEqual(
+            pagination.pageWidthMm - PAGE_MARGIN_MM,
+          );
+          expect(rect.yMm + rect.sizeMm).toBeLessThanOrEqual(
+            pagination.pageHeightMm - PAGE_MARGIN_MM,
+          );
+        }
       }
     }
   });
 
-  it('도안 이름과 멀도록 오른쪽 위에 놓인다', () => {
+  it('도안 이름과 멀도록 둘 다 오른쪽 위에 놓인다', () => {
     const pagination = paginate(layout, 'a4');
-    const rect = scaleSquareRectMm(pagination);
-    expect(rect.xMm).toBeGreaterThan(pagination.pageWidthMm / 2);
-    expect(rect.yMm).toBeLessThan(pagination.pageHeightMm / 2);
+    for (const rect of rectsOf(pagination)) {
+      expect(rect.xMm).toBeGreaterThan(pagination.pageWidthMm / 2);
+      expect(rect.yMm).toBeLessThan(pagination.pageHeightMm / 2);
+    }
   });
 
   it('첫 도안 장에만 그리고 나머지 장은 건드리지 않는다', async () => {
@@ -178,22 +203,26 @@ describe('축척 확인용 3cm 정사각형', () => {
     const doc = await PDFDocument.load(await buildPdf(layout, pagination));
 
     expect(hasScaleSquare(doc, 0)).toBe(true);
+    expect(hasInchSquare(doc, 0)).toBe(true);
     for (let i = 1; i < doc.getPageCount(); i++) {
       expect(hasScaleSquare(doc, i)).toBe(false);
+      expect(hasInchSquare(doc, i)).toBe(false);
     }
   });
 
-  it('사각형 라벨이 한국어로 3cm를 알려준다', () => {
-    expect(SCALE_SQUARE_LABEL).toContain('3cm');
-    expect(SCALE_SQUARE_LABEL).toContain('확인');
+  it('두 네모가 실제로 콘텐츠에 들어간다', async () => {
+    const pagination = paginate(layout, 'a4');
+    const doc = await PDFDocument.load(await buildPdf(layout, pagination));
+    expect(doc.getPageCount()).toBe(pagination.pages.length);
+    const content = pageContent(doc, 0);
+    // 두 크기의 변이 다 나와야 한다.
+    expect(content).toContain(squareEdge(30));
+    expect(content).toContain(squareEdge(25.4));
   });
 
-  it('사각형을 실제로 그린다', async () => {
-    const pagination = paginate(layout, 'a4');
-    const withSquare = await buildPdf(layout, pagination);
-    // 빨간색이 쓰이면 콘텐츠에 색 지정이 늘어난다. 페이지 수는 그대로여야 한다.
-    const doc = await PDFDocument.load(withSquare);
-    expect(doc.getPageCount()).toBe(pagination.pages.length);
+  it('네모 라벨이 각자의 크기를 한국어로 알려준다', () => {
+    expect(SCALE_SQUARE_LABEL).toBe('3cm 확인하세요!');
+    expect(INCH_SQUARE_LABEL).toBe('1inch 확인하세요!');
   });
 });
 
@@ -209,19 +238,35 @@ function colorOp(hex: string, op: 'RG' | 'rg'): string {
 
 const SCALE_SQUARE_STROKE = colorOp(SCALE_COLOR, 'RG');
 
-/**
- * 3cm 사각형을 콘텐츠 스트림에서 알아보는 표식.
+/*
+ * 축척 네모를 콘텐츠 스트림에서 알아보는 표식.
  *
  * 빨간 테두리색만으로는 못 가린다. 맞춤 마름모도 같은 빨강을 쓰기 때문이다.
- * 대신 한 변 30mm를 pt로 옮긴 값을 찾는다. 이 길이로 선을 긋는 도형은
- * 축척 사각형뿐이라, 색이 아니라 크기로 가려낸다.
+ * 대신 한 변을 pt로 옮긴 값으로 가려낸다.
+ *
+ * 한 수만 찾으면 안 된다. 1인치는 정확히 72pt인데, 그 두 글자는 좌표
+ * (720.0000…)와 색상값(0.10196078431372549) 안에도 흔히 들어 있어 아무
+ * 장에서나 걸린다 — 실제로 2장째에서 123번 걸렸다. 두 수를 나란히 잇는
+ * 경로 레코드로 찾으면 그런 오탐이 없다.
  */
-const SCALE_SQUARE_SIDE_PT = String(SCALE_SQUARE_MM * MM_TO_PT);
+function squareEdge(sideMm: number): string {
+  const pt = String(sideMm * MM_TO_PT);
+  return `${pt} ${pt} l`;
+}
 
-/** 그 페이지에 3cm 사각형이 그려져 있는가. */
+const SCALE_SQUARE_SIDE_PT = squareEdge(SCALE_SQUARE_MM);
+const INCH_SQUARE_SIDE_PT = squareEdge(INCH_SQUARE_MM);
+
+/** 그 페이지에 30mm 네모가 그려져 있는가. */
 function hasScaleSquare(doc: PDFDocument, index: number): boolean {
   const content = pageContent(doc, index);
   return content.includes(SCALE_SQUARE_STROKE) && content.includes(SCALE_SQUARE_SIDE_PT);
+}
+
+/** 그 페이지에 1인치 네모가 그려져 있는가. */
+function hasInchSquare(doc: PDFDocument, index: number): boolean {
+  const content = pageContent(doc, index);
+  return content.includes(SCALE_SQUARE_STROKE) && content.includes(INCH_SQUARE_SIDE_PT);
 }
 
 /** 해당 페이지의 콘텐츠 스트림을 풀어 텍스트로 돌려준다. */
@@ -287,7 +332,7 @@ describe('빨간 문구와 사각형의 분업', () => {
   });
 });
 
-describe('3cm 사각형은 첫 도안 장에 있다', () => {
+describe('축척 네모(30mm·1인치)는 첫 도안 장에 있다', () => {
   it('첫 장에만 그린다', async () => {
     const pagination = paginate(layout, 'a4');
     expect(pagination.pages.length).toBeGreaterThan(1);

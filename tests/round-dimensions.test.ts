@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ROUND_PRESETS } from '../src/core/constants';
 import {
-  BACK_RATIO_CHOICES,
+  roundBackRatioChoices,
   BACK_RATIO_DEFAULT,
   BACK_RATIO_MAX,
   BACK_RATIO_MIN,
@@ -90,22 +90,22 @@ describe('ROUND_PRESETS — 버튼이 주는 값은 모두 통과해야 한다',
   it('프리셋마다 검증을 통과한다', () => {
     for (const preset of ROUND_PRESETS) {
       const result = validateRoundDimensions(preset);
-      expect(result.ok, `${preset.label} ${JSON.stringify(preset)}`).toBe(true);
+      expect(result.ok, `${preset.id} ${JSON.stringify(preset)}`).toBe(true);
     }
   });
 
   it('뒷면 비율을 어느 것으로 골라도 통과한다', () => {
     // 고를 수 있는 값이 검증에 걸리면 화면에서 빠져나갈 길이 없다.
     for (const preset of ROUND_PRESETS) {
-      for (const choice of BACK_RATIO_CHOICES) {
+      for (const choice of roundBackRatioChoices('ko')) {
         const result = validateRoundDimensions(preset, choice.value);
-        expect(result.ok, `${preset.label} @ ${choice.label}`).toBe(true);
+        expect(result.ok, `${preset.id} @ ${choice.label}`).toBe(true);
       }
     }
   });
 
   it('고를 수 있는 비율은 모두 허용 범위 안이다', () => {
-    for (const choice of BACK_RATIO_CHOICES) {
+    for (const choice of roundBackRatioChoices('ko')) {
       expect(choice.value).toBeGreaterThanOrEqual(BACK_RATIO_MIN);
       expect(choice.value).toBeLessThanOrEqual(BACK_RATIO_MAX);
     }
@@ -113,6 +113,6 @@ describe('ROUND_PRESETS — 버튼이 주는 값은 모두 통과해야 한다',
 
   it('기본값이 고를 수 있는 값 안에 있다', () => {
     // 없으면 첫 화면의 고르기 칸이 아무것도 안 고른 채로 뜬다.
-    expect(BACK_RATIO_CHOICES.map((c) => c.value)).toContain(BACK_RATIO_DEFAULT);
+    expect(roundBackRatioChoices('ko').map((c) => c.value)).toContain(BACK_RATIO_DEFAULT);
   });
 });

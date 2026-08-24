@@ -28,7 +28,13 @@ from fontTools.ttLib import TTFont
 from fontTools.varLib import instancer
 
 # Noto Sans KR, SIL Open Font License 1.1
-FONT_URL = "https://github.com/google/fonts/raw/main/ofl/notosanskr/NotoSansKR%5Bwght%5D.ttf"
+# 원본을 커밋으로 고정한다. main을 따라가면 구글이 폰트를 갱신한 날
+# 서브셋 바이트가 소리 없이 달라진다. build-cjk-font.py와 같은 커밋이다.
+GOOGLE_FONTS_COMMIT = "ec626514f79f831f1ab848a82114a0ce7e2d6372"
+FONT_URL = (
+    f"https://raw.githubusercontent.com/google/fonts/{GOOGLE_FONTS_COMMIT}"
+    "/ofl/notosanskr/NotoSansKR%5Bwght%5D.ttf"
+)
 
 # 본문용 400, 도안 하단 강조 문구용 700.
 WEIGHTS = {"KOREAN_FONT_BASE64": 400, "KOREAN_BOLD_FONT_BASE64": 700}
@@ -36,7 +42,7 @@ WEIGHTS = {"KOREAN_FONT_BASE64": 400, "KOREAN_BOLD_FONT_BASE64": 700}
 # PDF에 등장하는 글자. src/core/pdf.ts의 KOREAN_FONT_CHARS와 같아야 한다.
 # 칸 번호가 행마다 A, B, C... 로 올라가므로 알파벳 전체를 담는다.
 CHARS = {
-    "KOREAN_FONT_BASE64": " !*@_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcilmnsu각게골들만보사선세시쁘없어예요우음인접지치퍼파하확·글껑닥단동뒷뚜랫면바아앞원윗장통",
+    "KOREAN_FONT_BASE64": " !*@_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabchilmnsu각게골들만보사선세시쁘없어예요우음인접지치퍼파하확·글껑닥단동뒷뚜랫면바아앞원윗장통",
     # 굵은 글씨는 도안 하단 한 줄에만 쓴다.
     "KOREAN_BOLD_FONT_BASE64": " '!로사세실요이제주즈출력해",
 }
@@ -85,13 +91,13 @@ def build_subset(source: pathlib.Path, weight: int, chars: str, tmp: str) -> byt
     style = "Bold" if weight >= 700 else "Regular"
     for record in font["name"].names:
         if record.nameID == 1:
-            record.string = "Noto Sans KR Subset"
+            record.string = "Korean Subset"
         elif record.nameID == 2:
             record.string = style
         elif record.nameID == 4:
-            record.string = f"Noto Sans KR Subset {style}"
+            record.string = f"Korean Subset {style}"
         elif record.nameID == 6:
-            record.string = f"NotoSansKRSubset-{style}"
+            record.string = f"KoreanSubset-{style}"
 
     target = pathlib.Path(tmp) / f"subset-{weight}.ttf"
     font.save(target)

@@ -11,7 +11,7 @@ import { renderPreviewSvg, escapeXml, describePagination, legendItems } from '..
 
 const layout = buildLayout({ widthMm: 270, depthMm: 100, heightMm: 140 });
 const pagination = paginate(layout, 'a4');
-const svg = renderPreviewSvg(layout, pagination);
+const svg = renderPreviewSvg(layout, pagination, 'ko');
 
 describe('renderPreviewSvg', () => {
   it('전개도 크기에 맞는 viewBox를 쓴다', () => {
@@ -96,7 +96,7 @@ describe('renderPreviewSvg — 페이지 번호', () => {
 
 describe('describePagination', () => {
   it('용지·방향·총 장수·격자를 한 줄로 알려준다', () => {
-    expect(describePagination(pagination)).toBe(
+    expect(describePagination(pagination, 'ko')).toBe(
       `A4 세로 · 총 ${pagination.pages.length}장 (${pagination.cols}열 × ${pagination.rows}행)`,
     );
   });
@@ -105,16 +105,16 @@ describe('describePagination', () => {
     const tall = buildLayout({ widthMm: 100, depthMm: 40, heightMm: 100 });
     const landscape = paginate(tall, 'a4');
     expect(landscape.orientation).toBe('landscape');
-    expect(describePagination(landscape)).toContain('A4 가로');
+    expect(describePagination(landscape, 'ko')).toContain('A4 가로');
   });
 
   it('A3도 용지 이름을 대문자로 적는다', () => {
-    expect(describePagination(paginate(layout, 'a3'))).toContain('A3');
+    expect(describePagination(paginate(layout, 'a3'), 'ko')).toContain('A3');
   });
 
   it('한 장이면 격자를 1열 × 1행으로 적는다', () => {
     const tiny = paginate(buildLayout({ widthMm: 100, depthMm: 40, heightMm: 60 }), 'a3');
-    expect(describePagination(tiny)).toBe('A3 세로 · 총 1장 (1열 × 1행)');
+    expect(describePagination(tiny, 'ko')).toBe('A3 세로 · 총 1장 (1열 × 1행)');
   });
 });
 
@@ -144,9 +144,9 @@ describe('escapeXml', () => {
 
 describe('renderPreviewSvg — 선 두께와 글자 크기', () => {
   it('재단선이 도안 폭에 비례해 가늘어진다', () => {
-    const small = renderPreviewSvg(buildLayout({ widthMm: 100, heightMm: 50, depthMm: 40 }), paginate(buildLayout({ widthMm: 100, heightMm: 50, depthMm: 40 }), 'a4'));
+    const small = renderPreviewSvg(buildLayout({ widthMm: 100, heightMm: 50, depthMm: 40 }), paginate(buildLayout({ widthMm: 100, heightMm: 50, depthMm: 40 }), 'a4'), 'ko');
     const large = buildLayout({ widthMm: 400, heightMm: 300, depthMm: 200 });
-    const largeSvg = renderPreviewSvg(large, paginate(large, 'a4'));
+    const largeSvg = renderPreviewSvg(large, paginate(large, 'a4'), 'ko');
     const cut = (svg: string) => Number(svg.match(/<polygon points="[^"]*"[^>]*stroke-width="([\d.]+)"/)![1]);
     const viewW = (svg: string) => Number(svg.match(/viewBox="0 0 ([\d.]+)/)![1]);
     expect(cut(largeSvg) / viewW(largeSvg)).toBeCloseTo(cut(small) / viewW(small), 3);
@@ -155,8 +155,8 @@ describe('renderPreviewSvg — 선 두께와 글자 크기', () => {
   it('밴드 이름 글자도 도안 폭에 비례한다', () => {
     const a = buildLayout({ widthMm: 100, heightMm: 50, depthMm: 40 });
     const b = buildLayout({ widthMm: 400, heightMm: 300, depthMm: 200 });
-    const svgA = renderPreviewSvg(a, paginate(a, 'a4'));
-    const svgB = renderPreviewSvg(b, paginate(b, 'a4'));
+    const svgA = renderPreviewSvg(a, paginate(a, 'a4'), 'ko');
+    const svgB = renderPreviewSvg(b, paginate(b, 'a4'), 'ko');
     const size = (svg: string) => Number(svg.match(/class="band-label"[^>]*font-size="([\d.]+)"/)![1]);
     const viewW = (svg: string) => Number(svg.match(/viewBox="0 0 ([\d.]+)/)![1]);
     expect(size(svgB) / viewW(svgB)).toBeCloseTo(size(svgA) / viewW(svgA), 3);
@@ -176,7 +176,7 @@ describe('renderPreviewSvg — 페이지 경계선이 도안 위에 보인다', 
     const wide = buildLayout({ widthMm: 200, heightMm: 50, depthMm: 50 });
     const p = paginate(wide, 'a4');
     expect(p.cols).toBe(2);
-    const svgWide = renderPreviewSvg(wide, p);
+    const svgWide = renderPreviewSvg(wide, p, 'ko');
     const xs = [...svgWide.matchAll(/class="page-tile" x="([\d.]+)"[^>]*width="([\d.]+)"/g)]
       .map((m) => Number(m[1]) + Number(m[2]));
     // 첫 페이지의 오른쪽 끝이 도안 한가운데 어딘가에 있어야 한다.
@@ -199,7 +199,7 @@ describe('renderPreviewSvg — WebKit 크기 계산', () => {
 
 describe('renderPreviewSvg — 골선', () => {
   const half = halveOnFold(buildLayout({ widthMm: 270, depthMm: 100, heightMm: 140 }));
-  const halfSvg = renderPreviewSvg(half, paginate(half, 'a4'));
+  const halfSvg = renderPreviewSvg(half, paginate(half, 'a4'), 'ko');
 
   it('절반 전개도에는 골선을 긋는다', () => {
     expect(halfSvg).toContain('class="fold-edge"');
@@ -272,7 +272,7 @@ describe('renderPreviewSvg — 중앙선과 패턴명', () => {
 describe('renderPreviewSvg — 시접 없이 뜬 도안', () => {
   const dims = { widthMm: 270, depthMm: 100, heightMm: 140 };
   const noSeam = buildLayout(dims, 0);
-  const noSeamSvg = renderPreviewSvg(noSeam, paginate(noSeam, 'a4'));
+  const noSeamSvg = renderPreviewSvg(noSeam, paginate(noSeam, 'a4'), 'ko');
 
   it('완성선을 겹쳐 긋지 않는다', () => {
     // 재단선과 같은 자리라 두 번 그으면 인쇄물에서 선만 두꺼워진다.
@@ -299,7 +299,7 @@ describe('renderPreviewSvg — 시접 없이 뜬 도안', () => {
 
 describe('legendItems — 범례는 실제로 그린 선만 알려준다', () => {
   it('시접이 있으면 다섯 줄이다', () => {
-    const items = legendItems(buildLayout({ widthMm: 270, depthMm: 100, heightMm: 140 }));
+    const items = legendItems(buildLayout({ widthMm: 270, depthMm: 100, heightMm: 140 }), 'ko');
     expect(items.map((i) => i.text)).toEqual([
       '재단선 — 이 선대로 자릅니다',
       '완성선 — 여기를 박습니다',
@@ -311,7 +311,7 @@ describe('legendItems — 범례는 실제로 그린 선만 알려준다', () =>
 
   it('시접이 없으면 완성선과 시접 줄이 빠진다', () => {
     // 그리지도 않은 선을 범례에 두면 도면에서 찾다가 헤맨다.
-    const items = legendItems(buildLayout({ widthMm: 270, depthMm: 100, heightMm: 140 }, 0));
+    const items = legendItems(buildLayout({ widthMm: 270, depthMm: 100, heightMm: 140 }, 0), 'ko');
     const texts = items.map((i) => i.text);
     expect(texts).not.toContain('완성선 — 여기를 박습니다');
     expect(texts.some((t) => t.startsWith('시접'))).toBe(false);
@@ -320,17 +320,17 @@ describe('legendItems — 범례는 실제로 그린 선만 알려준다', () =>
 
   it('골선으로 뽑으면 골선 줄이 붙는다', () => {
     const half = halveOnFold(buildLayout({ widthMm: 270, depthMm: 100, heightMm: 140 }));
-    expect(legendItems(half).some((i) => i.text.startsWith('골선'))).toBe(true);
-    expect(legendItems(buildLayout({ widthMm: 270, depthMm: 100, heightMm: 140 })).some((i) => i.text.startsWith('골선'))).toBe(false);
+    expect(legendItems(half, 'ko').some((i) => i.text.startsWith('골선'))).toBe(true);
+    expect(legendItems(buildLayout({ widthMm: 270, depthMm: 100, heightMm: 140 }), 'ko').some((i) => i.text.startsWith('골선'))).toBe(false);
   });
 
   it('시접 줄에 실제로 쓴 값을 적는다', () => {
-    const items = legendItems(buildLayout({ widthMm: 270, depthMm: 100, heightMm: 140 }));
+    const items = legendItems(buildLayout({ widthMm: 270, depthMm: 100, heightMm: 140 }), 'ko');
     expect(items.find((i) => i.text.startsWith('시접'))!.text).toContain('10mm');
   });
 
   it('모든 줄에 색 견본 class가 붙는다', () => {
-    for (const item of legendItems(buildLayout({ widthMm: 270, depthMm: 100, heightMm: 140 }, 0))) {
+    for (const item of legendItems(buildLayout({ widthMm: 270, depthMm: 100, heightMm: 140 }, 0), 'ko')) {
       expect(item.swatch).toMatch(/^swatch-/);
     }
   });
@@ -353,7 +353,7 @@ describe('범례 색이 도면에 실제로 쓰인 색이다', () => {
 
   it('모든 범례 줄이 색을 들고 있다', () => {
     for (const { layout } of cases) {
-      for (const item of legendItems(layout)) {
+      for (const item of legendItems(layout, 'ko')) {
         expect(item.color).toMatch(/^#[0-9a-f]{6}$/i);
       }
     }
@@ -361,23 +361,23 @@ describe('범례 색이 도면에 실제로 쓰인 색이다', () => {
 
   it('그 색이 실제로 그려진 SVG 안에 있다', () => {
     for (const { name, layout } of cases) {
-      const drawn = renderPreviewSvg(layout, paginate(layout, 'a4'));
-      for (const item of legendItems(layout)) {
+      const drawn = renderPreviewSvg(layout, paginate(layout, 'a4'), 'ko');
+      for (const item of legendItems(layout, 'ko')) {
         expect(drawn.toLowerCase(), `${name}: ${item.text}`).toContain(item.color.toLowerCase());
       }
     }
   });
 
   it('면이 있는 견본은 채움색도 들고 있다', () => {
-    const withSeam = legendItems(cases[0]!.layout);
+    const withSeam = legendItems(cases[0]!.layout, 'ko');
     const band = withSeam.find((i) => i.text.startsWith('시접'))!;
     expect(band.fill).toMatch(/^#[0-9a-f]{6}$/i);
-    const drawn = renderPreviewSvg(cases[0]!.layout, paginate(cases[0]!.layout, 'a4'));
+    const drawn = renderPreviewSvg(cases[0]!.layout, paginate(cases[0]!.layout, 'a4'), 'ko');
     expect(drawn.toLowerCase()).toContain(band.fill!.toLowerCase());
   });
 
   it('선만 있는 견본은 채움색이 없다', () => {
-    const cut = legendItems(cases[0]!.layout).find((i) => i.text.startsWith('재단선'))!;
+    const cut = legendItems(cases[0]!.layout, 'ko').find((i) => i.text.startsWith('재단선'))!;
     expect(cut.fill).toBeUndefined();
   });
 });

@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 choisuing
 
-import { DIMENSION_ORDER, FIELD_LABELS, RANGES, SEAM_MM, type DimensionField } from './constants';
-import { withObjectParticle, withTopicParticle } from './korean';
+import { DIMENSION_ORDER, RANGES, SEAM_MM, type DimensionField } from './constants';
+import { t } from './i18n/messages';
+import { DEFAULT_LOCALE, type Locale } from './i18n/locales';
 
 export interface Dimensions {
   readonly widthMm: number;
@@ -10,9 +11,16 @@ export interface Dimensions {
   readonly heightMm: number;
 }
 
+/*
+ * 무엇이 잘못됐는지만 담는다. 문장은 만들지 않는다 — 언어마다 달라서
+ * 여기서 지으면 검사가 로케일을 받아야 하는데, 숫자가 범위 안인지 보는 일은
+ * 언어와 아무 상관이 없다. 문장은 fieldErrorMessage가 맡는다.
+ */
+export type FieldErrorCode = 'notNumber' | 'notInteger' | 'outOfRange';
+
 export interface FieldError {
   readonly field: DimensionField;
-  readonly message: string;
+  readonly code: FieldErrorCode;
 }
 
 export type ValidationResult =
@@ -28,19 +36,18 @@ export function validateDimensions(input: Record<DimensionField, unknown>): Vali
   for (const field of DIMENSION_ORDER) {
     const raw = input[field];
     const { min, max } = RANGES[field];
-    const label = FIELD_LABELS[field];
     const num = typeof raw === 'number' ? raw : Number(raw);
 
     if (raw === '' || raw === null || raw === undefined || !Number.isFinite(num)) {
-      errors.push({ field, message: `${withObjectParticle(label)} 숫자로 입력해주세요.` });
+      errors.push({ field, code: 'notNumber' });
       continue;
     }
     if (!Number.isInteger(num)) {
-      errors.push({ field, message: `${withTopicParticle(label)} 1mm 단위 정수로 입력해주세요.` });
+      errors.push({ field, code: 'notInteger' });
       continue;
     }
     if (num < min || num > max) {
-      errors.push({ field, message: `${withTopicParticle(label)} ${min}mm 이상 ${max}mm 이하여야 합니다.` });
+      errors.push({ field, code: 'outOfRange' });
       continue;
     }
     values[field] = num;
@@ -58,15 +65,36 @@ export function validateDimensions(input: Record<DimensionField, unknown>): Vali
   return { ok: true, value: { widthMm, depthMm, heightMm } };
 }
 
+/**
+ * 검사 결과를 사람이 읽을 문장으로 옮긴다.
+ *
+ * 허용 범위는 오류에 담지 않고 여기서 RANGES를 다시 본다. 같은 값을 두 곳에
+ * 들고 다니면 한쪽만 고쳤을 때 화면이 거짓말을 한다.
+ */
+export function fieldErrorMessage(locale: Locale, error: FieldError): string {
+  const label = t(locale, `field.${error.field}`);
+  const { min, max } = RANGES[error.field];
+
+  switch (error.code) {
+    case 'notNumber':
+      return t(locale, 'error.notNumber', label);
+    case 'notInteger':
+      return t(locale, 'error.notInteger', label);
+    case 'outOfRange':
+      return t(locale, 'error.outOfRange', label, min, max);
+  }
+}
+
 /*
  * 도안에 남기는 출처. 종이만 따로 돌아다녀도 어디서 나왔는지 알 수 있다.
  * 권유와 계정을 나눠 둔 건 계정만 키워 강조하기 위해서다. 한 줄에 섞으면
  * 크기를 따로 줄 수 없다.
  *
- * 이 문구를 바꾸면 서브셋 폰트를 다시 만들어야 한다 — README의
- * "PDF 한글 폰트" 참고.
+ * 권유 문구는 카탈로그 `pdf.watermark`가 정본이다. 한국어가 기본이라
+ * 구성요소가 읽는 값도 여기서 꺼낸다 — 이 문구를 바꾸면 서브셋 폰트를
+ * 다시 만들어야 한다. README의 "PDF 한글 폰트" 참고.
  */
-export const WATERMARK_MESSAGE = '예쁘게 만들어보세요!';
+export const WATERMARK_MESSAGE = t(DEFAULT_LOCALE, 'pdf.watermark');
 export const WATERMARK_HANDLE = '@silsuni_lab';
 
 /*
@@ -78,20 +106,24 @@ export const WATERMARK_HANDLE = '@silsuni_lab';
  */
 export const WATERMARK_OPACITY = 0.5;
 
-/** 도안에 찍는 이름. 화면 제목과 같은 말을 쓴다. */
-export const PATTERN_NAME = '사각사각 지퍼 파우치';
-
 /**
  * 도안에 찍을 한 줄. 이름과 치수를 붙인다.
  * 치수 순서는 화면·라벨과 같은 가로*높이*바닥폭이다.
  *
  * 시접 없이 뽑았으면 그렇다고 못 박는다. 종이만 따로 돌아다니면 화면을
  * 볼 수 없고, 모르고 재단하면 원단을 버린다.
+ *
+ * 도안 이름·시접 문구는 카탈로그에서 온다. 한국어가 기본이라 기존
+ * 두 인자 호출은 그대로 동작한다.
  */
-export function patternTitle(dimensions: Dimensions, seamMm: number = SEAM_MM): string {
+export function patternTitle(
+  dimensions: Dimensions,
+  seamMm: number = SEAM_MM,
+  locale: Locale = DEFAULT_LOCALE,
+): string {
   const { widthMm: W, heightMm: H, depthMm: D } = dimensions;
-  const base = `${PATTERN_NAME} ${W}*${H}*${D}`;
-  return seamMm === 0 ? `${base} 시접없음` : base;
+  const base = `${t(locale, 'pdf.patternName')} ${W}*${H}*${D}`;
+  return seamMm === 0 ? `${base} ${t(locale, 'pdf.noSeam')}` : base;
 }
 
 /**

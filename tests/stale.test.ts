@@ -136,6 +136,26 @@ describe('takeState — 다른 종류의 화면 것은 집어가지 않는다', 
     expect(takeState('box')).toBeUndefined();
     expect(takeState('round')).toBeUndefined();
   });
+
+  /*
+   * 예전 판이 맡긴 상태에는 지금 없는 값(자 선택 같은)이 섞여 있다. 그걸
+   * 이유로 통째로 버리면 배포가 지나간 바로 그 순간 — 이 기능이 쓰이는
+   * 유일한 순간이다 — 치던 치수를 잃는다.
+   */
+  it('모르는 열쇠가 섞여 있어도 아는 값은 살린다', () => {
+    const boxState = {
+      kind: 'box',
+      values: { widthMm: '270', heightMm: '140', depthMm: '100' },
+      paper: 'a3',
+      addSeam: false,
+      foldHalf: true,
+    };
+    const parsed = parseState(JSON.stringify({ ...boxState, unitSystem: 'imperial', 자: '옛값' }));
+    expect(parsed).toBeDefined();
+    expect(parsed?.values.widthMm).toBe('270');
+    expect(parsed?.paper).toBe('a3');
+    expect(parsed?.values.heightMm).toBe('140');
+  });
 });
 
 describe('canRetry — 끝없이 다시 부르지 않는다', () => {

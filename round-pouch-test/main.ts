@@ -3,7 +3,7 @@
 
 import { PAGE_WARN_THRESHOLD, ROUND_PRESETS, SEAM_MM, type RoundPreset } from '../src/core/constants';
 import {
-  BACK_RATIO_CHOICES,
+  roundBackRatioChoices,
   BACK_RATIO_DEFAULT,
   ROUND_FIELDS,
   roundPatternFileName,
@@ -11,6 +11,8 @@ import {
 } from '../src/core/round/dimensions';
 import { buildRoundLayout } from '../src/core/round/layout';
 import { paginate, type PaperSize } from '../src/core/tiling';
+import { currentLocale } from '../src/core/i18n/locales';
+import { t } from '../src/core/i18n/messages';
 import {
   readInputs,
   renderChoice,
@@ -26,6 +28,8 @@ import { renderRoundPreviewSvg, roundLegendItems } from '../src/ui/round/preview
 import { renderRoundShapeSvg } from '../src/ui/round/shape';
 import { isStaleChunkError, keepState, takeState, type ScreenState } from '../src/stale';
 import '../src/style.css';
+
+const locale = currentLocale();
 
 const presetsEl = document.getElementById('presets')!;
 const inputsEl = document.getElementById('inputs')!;
@@ -62,7 +66,7 @@ function showError(messages: readonly string[]): void {
 }
 
 function refresh(): void {
-  const result = validateRoundDimensions(readInputs(ROUND_FIELDS), backRatio);
+  const result = validateRoundDimensions(readInputs(ROUND_FIELDS), backRatio, locale);
 
   if (!result.ok) {
     showError(result.errors.map((e) => e.message));
@@ -71,8 +75,8 @@ function refresh(): void {
     summaryEl.textContent = '';
     legendEl.innerHTML = '';
     downloadBtn.disabled = true;
-    setPaperCount('a4', null);
-    setPaperCount('a3', null);
+    setPaperCount(locale, 'a4', null);
+    setPaperCount(locale, 'a3', null);
     return;
   }
 
@@ -87,7 +91,7 @@ function refresh(): void {
   const pagination = byPaper[paper];
 
   previewEl.innerHTML = renderRoundPreviewSvg(layout, pagination);
-  summaryEl.textContent = describePagination(pagination);
+  summaryEl.textContent = describePagination(pagination, locale);
   downloadBtn.disabled = false;
 
   // 견본 색은 CSS가 아니라 roundLegendItems가 준다. 도면에 그린 색과 같은
@@ -101,8 +105,8 @@ function refresh(): void {
     })
     .join('');
 
-  setPaperCount('a4', byPaper.a4.pages.length);
-  setPaperCount('a3', byPaper.a3.pages.length);
+  setPaperCount(locale, 'a4', byPaper.a4.pages.length);
+  setPaperCount(locale, 'a3', byPaper.a3.pages.length);
 }
 
 /** 새로 부르기 전에 맡길 화면 상태. 사람이 고르고 친 것만 모은다. */
@@ -122,7 +126,7 @@ function currentState(): ScreenState {
 }
 
 async function download(): Promise<void> {
-  const result = validateRoundDimensions(readInputs(ROUND_FIELDS), backRatio);
+  const result = validateRoundDimensions(readInputs(ROUND_FIELDS), backRatio, locale);
   if (!result.ok) return;
 
   const layout = buildRoundLayout(result.value, addSeam ? SEAM_MM : 0, backRatio);
@@ -130,7 +134,7 @@ async function download(): Promise<void> {
 
   if (pagination.pages.length > PAGE_WARN_THRESHOLD) {
     const ok = window.confirm(
-      `${pagination.pages.length}장이 출력됩니다. 계속할까요?`,
+      t(locale, 'confirm.manySheets', pagination.pages.length),
     );
     if (!ok) return;
   }
@@ -140,7 +144,7 @@ async function download(): Promise<void> {
     // PDF 생성기는 한글 폰트와 fontkit을 끌고 와 첫 로딩을 무겁게 만든다.
     // 버튼을 누른 뒤에 받아오면 화면은 가볍게 뜨고 기능은 그대로다.
     const { buildRoundPdf } = await import('../src/core/round/pdf');
-    const bytes = await buildRoundPdf(layout, pagination);
+    const bytes = await buildRoundPdf(layout, pagination, locale);
     // TS 5.7+에서 bare Uint8Array는 Uint8Array<ArrayBufferLike>로 추론되어
     // BlobPart(ArrayBufferView<ArrayBuffer>)에 그대로 대입되지 않는다.
     // @types/node를 추가하지 않고(불필요한 의존성) 여기서만 단언으로 좁힌다.
@@ -188,26 +192,26 @@ async function download(): Promise<void> {
      * 도는 화면이 되므로, 그때는 아래로 내려가 오류를 보여 준다.
      */
     if (isStaleChunkError(error) && keepState(currentState())) {
-      showError(['새 버전이 올라왔습니다. 화면을 다시 불러옵니다…']);
+      showError([t(locale, 'error.stale')]);
       location.reload();
       return;
     }
-    showError([`PDF를 만들지 못했습니다: ${error instanceof Error ? error.message : String(error)}`]);
+    showError([t(locale, 'error.pdfFailed', error instanceof Error ? error.message : String(error))]);
   } finally {
     downloadBtn.disabled = false;
   }
 }
 
-renderPresetButtons(presetsEl, ROUND_FIELDS, ROUND_PRESETS, (preset: RoundPreset) => {
+renderPresetButtons(presetsEl, ROUND_FIELDS, ROUND_PRESETS, locale, (preset: RoundPreset) => {
   writeInputValues(ROUND_FIELDS, preset);
   refresh();
 });
-renderInputs(inputsEl, ROUND_FIELDS, refresh);
-renderSeamOption(seamFieldEl, addSeam, (next) => {
+renderInputs(inputsEl, ROUND_FIELDS, locale, refresh);
+renderSeamOption(seamFieldEl, locale, addSeam, (next) => {
   addSeam = next;
   refresh();
 });
-renderChoice(backFieldEl, 'back-ratio', '뒷면', BACK_RATIO_CHOICES, backRatio, (next) => {
+renderChoice(backFieldEl, 'back-ratio', t(locale, 'round.control.backRatio'), roundBackRatioChoices(locale), backRatio, (next) => {
   backRatio = next;
   refresh();
 });

@@ -145,6 +145,12 @@ export function parseState(raw: string): ScreenState | undefined {
   const addSeam = bool(v['addSeam']);
   const values = parseValues(v['values']);
 
+  /*
+   * 필수 항목(종류·용지·시접·치수 글자)이 하나라도 빠졌으면 남이 손댔거나
+   * 모양이 다른 데이터라, 되살리려다 화면을 더 망가뜨린다. 종류별 선택 항목
+   * (골선접기·뒷면 비율)은 있으면 받고 없으면 넘어간다. values에 모르는 열쇠가
+   * 섞여 있는 것은 그냥 지나친다 — 예전 판이 남긴 값이어도 치던 치수는 살린다.
+   */
   if (kind === undefined || paper === undefined || addSeam === undefined || values === undefined) {
     return undefined;
   }

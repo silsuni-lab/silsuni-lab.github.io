@@ -162,6 +162,24 @@ body {
 }
 .paper-field { display: flex; align-items: center; gap: var(--space-2); }
 .paper-label { font-size: 13px; color: var(--muted); }
+
+/* 언어 전환. 페이지 위 오른쪽에 작은 드롭다운으로 둔다. */
+.lang-nav {
+  display: flex;
+  justify-content: flex-end;
+}
+.lang-select {
+  padding: calc(var(--space-1) * 0.6) var(--space-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--text);
+  font-size: 13px;
+  background: var(--surface);
+  cursor: pointer;
+}
+.lang-select:hover { border-color: var(--field-line); }
+
+/* 단위 컨트롤은 라벨 아래에 안내 문구가 내려가므로 세로로 쌓는다. */
 .download-field { display: flex; flex-direction: column; align-items: center; gap: var(--space-1); }
 
 /* 좁은 화면에서는 한 컬럼으로 쌓고, 넓어지면 입력 | 미리보기 두 칸으로 나눈다. */

@@ -3,6 +3,8 @@
 
 import type { Dimensions } from '../core/dimensions';
 import { escapeXml } from './preview';
+import type { Locale } from '../core/i18n/locales';
+import { t } from '../core/i18n/messages';
 import {
   SHAPE_DIM_COLOR,
   SHAPE_EDGE_COLOR,
@@ -65,7 +67,7 @@ function lerp(a: Point, b: Point, t: number): Point {
   return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
 }
 
-export function renderShapeSvg(dimensions: Dimensions): string {
+export function renderShapeSvg(dimensions: Dimensions, locale: Locale): string {
   const { widthMm: W, heightMm: H, depthMm: D } = dimensions;
 
   const radians = (DEPTH_ANGLE_DEG * Math.PI) / 180;
@@ -167,7 +169,7 @@ export function renderShapeSvg(dimensions: Dimensions): string {
   const viewWidth = spanX + pad + rightPad;
   const viewHeight = H + dy + topPad + pad;
 
-  const label = `가로 ${round1(W)}mm, 높이 ${round1(H)}mm, 바닥폭 ${round1(D)}mm 파우치의 완성 예상 모습`;
+  const label = t(locale, 'shape.ariaLabel', round1(W), round1(H), round1(D));
 
   return [
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${round1(viewWidth)} ${round1(viewHeight)}"`,

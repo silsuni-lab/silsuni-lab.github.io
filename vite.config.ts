@@ -1,7 +1,29 @@
 // vitest 설정을 함께 두므로 'vite'가 아니라 'vitest/config'에서 defineConfig를 가져온다.
 // 'vite'의 defineConfig에는 test 필드 타입이 없어 `tsc --noEmit`이 실패한다.
+import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
+// 확장자를 적는다. vite가 설정 파일을 네이티브(node)로 읽는 판에서는
+// 확장자 없는 지정자를 풀지 못해 빌드가 멈춘다 — 지금은 경고지만
+// 그 로더가 기본이 되면 오류가 된다.
+import { DEFAULT_LOCALE, LOCALES } from './src/core/i18n/locales.ts';
+
+/*
+ * 언어별 정적 페이지. ko는 뿌리(/)에, 나머지는 하위 경로(/en/, /zh-TW/ …)
+ * 아래에 나간다. 정적 문구는 각 HTML에 박아 두고, 모든 페이지가 같은
+ * 구조인지는 tests/pages.test.ts가 지킨다.
+ *
+ * 목록을 손으로 적지 않고 LOCALES에서 유도한다. 손으로 적으면 로케일을
+ * 늘렸을 때 드롭다운에는 새 언어가 뜨는데 빌드 산출물에는 그 페이지가
+ * 없어서 404로 나간다. 여기서 유도하면 HTML을 만들지 않은 채로는 빌드가
+ * 아예 통과하지 못한다.
+ */
+const localeInputs = Object.fromEntries(
+  LOCALES.map((locale) => [
+    locale,
+    resolve(locale === DEFAULT_LOCALE ? 'index.html' : `${locale}/index.html`),
+  ]),
+);
 
 /*
  * package.json이 "type": "module"이라 이 파일에는 __dirname이 없다.
@@ -12,14 +34,14 @@ const entry = (path: string) => fileURLToPath(new URL(path, import.meta.url));
 export default defineConfig({
   base: './',
   /*
-   * 페이지를 둘로 나눈다. 나누면 각 화면이 자기 제목을 가지므로 사이트
-   * 제목을 안 바꿔도 되고, 종류를 고르는 UI도 필요 없다. base가 './'라
-   * 하위 경로에서 자산 경로가 '../assets/'로 알아서 맞는다.
+   * 언어별 정적 박스 페이지(ko는 뿌리, 나머지는 하위 경로)와, main이 분리한
+   * 원통 시험 화면(round-pouch-test)을 함께 뽑는다. 원통 화면은 아직 시험
+   * 중이라 noindex다 — 공개 시 라운드 로케일 페이지를 함께 낸다.
    */
   build: {
     rollupOptions: {
       input: {
-        main: entry('index.html'),
+        ...localeInputs,
         round: entry('round-pouch-test/index.html'),
       },
     },

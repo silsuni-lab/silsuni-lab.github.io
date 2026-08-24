@@ -31,9 +31,21 @@ describe('buildLayout — 골든 케이스 (영상 예시 270/100/140)', () => {
     expect(byId.topBack).toMatchObject({ xMm: 0, yMm: 425, widthMm: 430, heightMm: 65 });
   });
 
-  it('밴드에 한국어 이름이 붙어 있다', () => {
-    const labels = layout.bands.map((b) => b.label);
-    expect(labels).toEqual(['지퍼단', '앞판', '바닥', '뒤판', '지퍼단']);
+  /*
+   * 밴드는 id만 든다. 표시할 이름은 언어마다 다르니 그리는 쪽이 찾는다.
+   * label을 여기 두면 buildLayout이 로케일을 받아야 하는데, 밴드 높이
+   * 계산은 언어와 아무 상관이 없다.
+   */
+  it('밴드에 id가 위에서 아래 순으로 붙어 있다', () => {
+    expect(layout.bands.map((b) => b.id)).toEqual([
+      'topFront', 'front', 'bottom', 'back', 'topBack',
+    ]);
+  });
+
+  it('밴드가 표시용 문자열을 들지 않는다', () => {
+    for (const band of layout.bands) {
+      expect(band).not.toHaveProperty('label');
+    }
   });
 });
 

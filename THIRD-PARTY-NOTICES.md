@@ -16,7 +16,7 @@
 (c) 2014-2021 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source'.
 ```
 
-예약 글꼴 이름 `Source`를 피하려고 서브셋 이름은 `Noto Sans KR Subset`으로
+예약 글꼴 이름 `Noto`·`Source`를 피하려고 서브셋 이름은 `Korean Subset`으로
 바꿔 두었다. 만드는 방법은 `scripts/build-korean-font.py`에 있다.
 
 전문:
@@ -123,9 +123,30 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 
 ---
 
+## Noto Sans TC / SC / JP — SIL Open Font License 1.1
+
+`src/core/cjk-fonts.ts`에 base64로 담긴 세 서브셋(zh-TW / zh-CN / ja) 폰트.
+
+원본은 Google의 Noto Sans TC / SC / JP이며 Adobe의 Source Han Sans에서
+파생했다. 폰트 바이너리 안에 원 저작권과 라이선스 문구가 그대로 보존되어
+있다. 라이선스 전문(위 OFL 1.1 전문)은 Noto Sans KR과 같다.
+
+```
+(c) 2014-2021 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source'.
+```
+
+이 글꼴들이 선언한 예약 이름은 `Source` 하나다(위 저작권 문구). 서브셋 이름은
+각각 `Traditional Chinese Subset`, `Simplified Chinese Subset`, `Japanese Subset`
+으로, 예약 이름도 원래 계열 이름도 쓰지 않는다. 배포물에 실제로 실리는 이름이
+이것이며, `tests/cjk-font.test.ts`가 글꼴 바이너리에서 읽어 이 문서와 대조한다.
+만드는 방법은 `scripts/build-cjk-font.py`에 있다.
+
+---
+
 ## Twemoji — CC-BY 4.0
 
-`index.html`에 인라인으로 넣은 섹션 아이콘 SVG 네 개.
+언어별 정적 페이지(`index.html`, `en/`, `zh-TW/`, `zh-CN/`, `ja/`)에
+인라인으로 넣은 섹션 아이콘 SVG 네 개. 다섯 페이지 모두 같은 것을 쓴다.
 
 Copyright 2020 Twitter, Inc and other contributors.
 그래픽은 [CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/)을 따른다.

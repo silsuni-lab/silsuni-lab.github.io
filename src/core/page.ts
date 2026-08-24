@@ -4,19 +4,24 @@
 /*
  * 종이를 만드는 기계. 파우치 종류와 무관하다.
  *
- * 격자·맞춤표·이어붙임 표시·3cm 정사각형·하단 문구·좌표 변환·출처 문구는
+ * 격자·맞춤표·이어붙임 표시·축척 확인 네모·하단 문구·좌표 변환·출처 문구는
  * 어떤 도안이든 똑같이 필요하다. 여기 두면 사각과 원통이 나눠 쓴다.
  * 무엇을 그리는지(전개도냐 조각이냐)는 종류별 모듈이 정한다.
+ *
+ * 표시 문구는 카탈로그 t()에서 온다. 폰트는 로케일을 따른다 — ko는 Noto Sans
+ * KR 서브셋, en은 표준 Helvetica, zh-TW/zh-CN/ja는 소스 폰트가 Noto Sans
+ * TC/SC/JP인 서브셋이다. 서브셋에 없는 글자는 그리지 못하니, 문구를 바꿀 때는
+ * 서브셋도 다시 만들어야 한다.
  */
-
-// PDF 문구는 한국어로 쓴다. pdf-lib 표준 폰트에는 한글 글리프가 없으므로
-// 필요한 글자만 담은 Noto Sans KR 서브셋(core/korean-font.ts)을 심어서 쓴다.
-// 서브셋에 없는 글자는 그리지 못하니, 문구를 바꿀 때는 서브셋도 다시 만들어야 한다.
 import fontkit from '@pdf-lib/fontkit';
-import { rgb, type PDFDocument, type PDFFont, type PDFPage } from 'pdf-lib';
+import { rgb, StandardFonts, type PDFDocument, type PDFFont, type PDFPage } from 'pdf-lib';
 import { hexToRgb01, JOIN_DIAMOND_COLOR, MARK_COLOR, SCALE_COLOR } from './colors';
 import { KOREAN_BOLD_FONT_BASE64, KOREAN_FONT_BASE64 } from './korean-font';
-import { WATERMARK_HANDLE, WATERMARK_OPACITY, WATERMARK_MESSAGE } from './dimensions';
+import { ZH_TW_FONT_BASE64, ZH_CN_FONT_BASE64, JA_FONT_BASE64 } from './cjk-fonts';
+import { WATERMARK_HANDLE, WATERMARK_OPACITY } from './dimensions';
+import { DEFAULT_LOCALE, type Locale } from './i18n/locales';
+import { t } from './i18n/messages';
+import { MM_PER_INCH } from './units';
 import { PAGE_MARGIN_MM, PAGE_OVERLAP_MM, type Pagination, type Page } from './tiling';
 
 export const MM_TO_PT = 72 / 25.4;
@@ -26,7 +31,7 @@ export const MM_TO_PT = 72 / 25.4;
  * 없는 글자를 쓰면 그 자리가 비어 나오므로, 테스트로 미리 막는다.
  */
 export const KOREAN_FONT_CHARS: ReadonlySet<string> = new Set(
-  " !*@_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcilmnsu각게골들만보사선세시쁘없어예요우음인접지치퍼파하확·글껑닥단동뒷뚜랫면바아앞원윗장통",
+  " !*@_0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabchilmnsu각게골들만보사선세시쁘없어예요우음인접지치퍼파하확·글껑닥단동뒷뚜랫면바아앞원윗장통",
 );
 
 /** 브라우저와 Node 양쪽에서 도는 base64 디코더. */
@@ -40,14 +45,24 @@ function decodeBase64(value: string): Uint8Array {
   return Uint8Array.from(Buffer.from(value, 'base64'));
 }
 
-/** 축척 확인용 정사각형 한 변 (mm). 인쇄 후 자로 재는 기준. */
+/** 축척 확인용 30mm·1인치 네모 중 30mm 쪽 한 변 (mm). 인쇄 후 자로 재는 기준. */
 export const SCALE_SQUARE_MM = 30;
+/** 축척 확인용 1인치 네모 한 변 (mm). */
+export const INCH_SQUARE_MM = MM_PER_INCH;
+/** 두 네모 사이의 틈 (mm). 붙여 두면 한 도형처럼 보여 각각을 재지 못한다. */
+const SQUARE_GAP_MM = 5;
 
-/** 빨간 사각형 옆에 붙는 문구. */
-export const SCALE_SQUARE_LABEL = '3cm 확인하세요!';
+/*
+ * 아래 두 라벨 상수는 DEFAULT_LOCALE(ko) 기준으로, 테스트가 한국어 문구를
+ * 못 박을 때 쓴다. 실제 인쇄는 drawScaleSquares가 로케일별로 t()로 그린다.
+ */
+/** 30mm 네모 옆에 붙는 문구. 한국어(기준) — 테스트 앵커용. */
+export const SCALE_SQUARE_LABEL = t(DEFAULT_LOCALE, 'pdf.testSquareMetric');
+/** 1인치 네모 옆에 붙는 문구. 한국어(기준) — 테스트 앵커용. */
+export const INCH_SQUARE_LABEL = t(DEFAULT_LOCALE, 'pdf.testSquareImperial');
 
-/** 도안 장마다 아래쪽에 넣는 강조 문구. 굵은 서브셋 폰트로 그린다. */
-export const PATTERN_NOTE = "'실제사이즈'로 출력해주세요!";
+/** 도안 장마다 아래쪽에 넣는 강조 문구. 굵은 서브셋 폰트로 그린다. 한국어가 기준. */
+export const PATTERN_NOTE = t(DEFAULT_LOCALE, 'pdf.printNote');
 
 /** 굵은 서브셋 폰트가 담고 있는 글자. PATTERN_NOTE만 그릴 수 있다. */
 export const KOREAN_BOLD_FONT_CHARS: ReadonlySet<string> = new Set(" '!로사세실요이제주즈출력해");
@@ -384,31 +399,52 @@ export function drawJoinMarks(ctx: PageContext, font: PDFFont) {
   }
 }
 
+/** 로케일이 쓰는 PDF 폰트 종류. 표준 폰트로 그릴 수 있으면 표준, 아니면 서브셋. */
+type FontKind = 'korean' | 'latin' | 'tc' | 'sc' | 'jp';
+
+/** 로케일 → 폰트 종류. Locale을 하나 늘리면 여기 빠진 일이 타입 에러로 즉시 드러난다. */
+export const FONT_KIND: Readonly<Record<Locale, FontKind>> = {
+  ko: 'korean',
+  en: 'latin',
+  'zh-TW': 'tc',
+  'zh-CN': 'sc',
+  ja: 'jp',
+};
+
+/** 축척 확인용 네모 하나의 자리·크기, 그리고 옆에 적을 문구의 카탈로그 키. */
+export interface ScaleSquare {
+  readonly xMm: number;
+  readonly yMm: number;
+  readonly sizeMm: number;
+  readonly labelKey: 'pdf.testSquareMetric' | 'pdf.testSquareImperial';
+}
+
 /**
- * 축척 확인용 사각형의 위치와 크기 (mm). 안내 페이지 오른쪽 위에 놓는다.
- * 안내 문구는 왼쪽에 짧게 깔리므로 이 자리가 비어 있다.
+ * 축척 확인용 네모 둘의 자리와 크기 (mm). 첫 도안 장 오른쪽 위에 나란히 둔다.
+ * 1인치(왼쪽)와 30mm(오른쪽 플러시). 자를 고르게 하지 않고 둘 다 인쇄해,
+ * 어느 자를 쓰는 사람이든 축척이 맞는지 잴 수 있게 한다.
  */
-export function scaleSquareRectMm(pagination: Pagination): {
-  xMm: number;
-  yMm: number;
-  sizeMm: number;
-} {
-  return {
-    xMm: pagination.pageWidthMm - PAGE_MARGIN_MM - 2 - SCALE_SQUARE_MM,
-    yMm: PAGE_MARGIN_MM + 10,
-    sizeMm: SCALE_SQUARE_MM,
-  };
+export function scaleSquareRectsMm(pagination: Pagination): readonly [ScaleSquare, ScaleSquare] {
+  const yMm = PAGE_MARGIN_MM + 10;
+  const rightMm = pagination.pageWidthMm - PAGE_MARGIN_MM - 2;
+  const metricXMm = rightMm - SCALE_SQUARE_MM;
+  const inchXMm = metricXMm - SQUARE_GAP_MM - INCH_SQUARE_MM;
+  return [
+    { xMm: inchXMm, yMm, sizeMm: INCH_SQUARE_MM, labelKey: 'pdf.testSquareImperial' },
+    { xMm: metricXMm, yMm, sizeMm: SCALE_SQUARE_MM, labelKey: 'pdf.testSquareMetric' },
+  ];
 }
 
 /** 도안 장 아래쪽 강조 문구. 실치수로 뽑아야 한다는 걸 인쇄물에서도 알 수 있게 한다. */
-export function drawPatternNote(ctx: PageContext, boldFont: PDFFont) {
+export function drawPatternNote(ctx: PageContext, boldFont: PDFFont, locale: Locale) {
   const { pagination } = ctx;
+  const note = t(locale, 'pdf.printNote');
   const point = patternNotePointMm(pagination);
   const size = 9;
-  const widthPt = boldFont.widthOfTextAtSize(PATTERN_NOTE, size);
+  const widthPt = boldFont.widthOfTextAtSize(note, size);
   const anchor = toFramePoint(pagination, point.xMm, point.yMm);
 
-  ctx.pdfPage.drawText(PATTERN_NOTE, {
+  ctx.pdfPage.drawText(note, {
     x: anchor.x - widthPt / 2,
     y: anchor.y,
     size,
@@ -418,41 +454,67 @@ export function drawPatternNote(ctx: PageContext, boldFont: PDFFont) {
 }
 
 /**
- * 배율 100%로 인쇄됐는지 자로 확인하는 사각형. 도면 선과 헷갈리지 않도록
- * 빨간색으로만 그린다.
+ * 배율 100%로 인쇄됐는지 자로 확인하는 네모. 도면 선과 헷갈리지 않도록
+ * 빨간색으로만 그린다. 라벨은 로케일별 문구를 쓴다.
  */
-export function drawScaleSquare(page: PDFPage, pagination: Pagination, font: PDFFont) {
-  const rect = scaleSquareRectMm(pagination);
-  const topLeft = toFramePoint(pagination, rect.xMm, rect.yMm);
+export function drawScaleSquares(page: PDFPage, pagination: Pagination, font: PDFFont, locale: Locale) {
+  for (const rect of scaleSquareRectsMm(pagination)) {
+    const topLeft = toFramePoint(pagination, rect.xMm, rect.yMm);
+    const sidePt = rect.sizeMm * MM_TO_PT;
 
-  page.drawRectangle({
-    x: topLeft.x,
-    y: topLeft.y - rect.sizeMm * MM_TO_PT,
-    width: rect.sizeMm * MM_TO_PT,
-    height: rect.sizeMm * MM_TO_PT,
-    borderColor: SCALE,
-    borderWidth: 1,
-  });
+    page.drawRectangle({
+      x: topLeft.x,
+      y: topLeft.y - sidePt,
+      width: sidePt,
+      height: sidePt,
+      borderColor: SCALE,
+      borderWidth: 1,
+    });
 
-  page.drawText(SCALE_SQUARE_LABEL, {
-    x: rect.xMm * MM_TO_PT,
-    y: topLeft.y + 3,
-    size: 9,
-    font,
-    color: SCALE,
-  });
+    page.drawText(t(locale, rect.labelKey), {
+      x: rect.xMm * MM_TO_PT,
+      y: topLeft.y + 3,
+      size: 9,
+      font,
+      color: SCALE,
+    });
+  }
 }
 
 /**
- * 한글 서브셋 폰트 두 벌을 문서에 심는다. 본문용(400)과 도안 하단
- * 강조용(700)이다. 파일 안에 담겨 있어 따로 받아오지 않는다.
+ * 로케일별 폰트를 문서에 심는다. ko/zh/ja는 서브셋(글리프를 통째로 심음),
+ * en은 표준 폰트(심지 않아도 되어 가볍고 검색·복사도 된다). CJK·ko는
+ * sub셋에 없는 글자를 그리지 못하니 문구를 바꾸면 서브셋도 다시 만든다.
  */
-export async function loadFonts(doc: PDFDocument): Promise<{ font: PDFFont; boldFont: PDFFont }> {
+export async function loadFonts(
+  doc: PDFDocument,
+  locale: Locale,
+): Promise<{ font: PDFFont; boldFont: PDFFont }> {
   doc.registerFontkit(fontkit);
-  return {
-    font: await doc.embedFont(decodeBase64(KOREAN_FONT_BASE64)),
-    boldFont: await doc.embedFont(decodeBase64(KOREAN_BOLD_FONT_BASE64)),
-  };
+  switch (FONT_KIND[locale] ?? FONT_KIND[DEFAULT_LOCALE]) {
+    case 'korean':
+      return {
+        font: await doc.embedFont(decodeBase64(KOREAN_FONT_BASE64)),
+        boldFont: await doc.embedFont(decodeBase64(KOREAN_BOLD_FONT_BASE64)),
+      };
+    case 'latin':
+      return {
+        font: await doc.embedFont(StandardFonts.Helvetica),
+        boldFont: await doc.embedFont(StandardFonts.HelveticaBold),
+      };
+    case 'tc': {
+      const font = await doc.embedFont(decodeBase64(ZH_TW_FONT_BASE64));
+      return { font, boldFont: font };
+    }
+    case 'sc': {
+      const font = await doc.embedFont(decodeBase64(ZH_CN_FONT_BASE64));
+      return { font, boldFont: font };
+    }
+    case 'jp': {
+      const font = await doc.embedFont(decodeBase64(JA_FONT_BASE64));
+      return { font, boldFont: font };
+    }
+  }
 }
 
 /**
@@ -470,6 +532,7 @@ export function drawSourceBlock(
   centerYMm: number,
   availableHeightMm: number,
   title: string,
+  locale: Locale,
 ): void {
   const aboveMm = font.heightAtSize(TITLE_SIZE) / MM_TO_PT / 2;
   const belowMm = HANDLE_OFFSET_MM + font.heightAtSize(HANDLE_SIZE) / MM_TO_PT / 2;
@@ -491,7 +554,7 @@ export function drawSourceBlock(
   draw(title, TITLE_SIZE * scale, titleYMm);
   // 권유 한 줄은 계정보다 작게. 옅어 보이는 일은 색이 아니라
   // 투명도가 맡는다 — 색까지 옅으면 인쇄에서 사라진다.
-  draw(WATERMARK_MESSAGE, MESSAGE_SIZE * scale, titleYMm + MESSAGE_OFFSET_MM * scale, WATERMARK_OPACITY);
+  draw(t(locale, 'pdf.watermark'), MESSAGE_SIZE * scale, titleYMm + MESSAGE_OFFSET_MM * scale, WATERMARK_OPACITY);
   // 계정은 이름보다도 크게. 여기가 강조하고 싶은 자리다.
   draw(WATERMARK_HANDLE, HANDLE_SIZE * scale, titleYMm + HANDLE_OFFSET_MM * scale, WATERMARK_OPACITY);
 }

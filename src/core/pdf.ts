@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 choisuing
 
-// PDF 문구는 한국어로 쓴다. pdf-lib 표준 폰트에는 한글 글리프가 없으므로
-// 필요한 글자만 담은 Noto Sans KR 서브셋(core/korean-font.ts)을 심어서 쓴다.
-// 서브셋에 없는 글자는 그리지 못하니, 문구를 바꿀 때는 서브셋도 다시 만들어야 한다.
+// PDF 문구는 로케일을 따른다. 표준 폰트(Helvetica)로 그릴 수 있는 로케일은
+// 표준 폰트를, 아니면 서브셋 폰트를 심는다 — 폰트 선택은 page.ts의 loadFonts가
+// 맡는다. 서브셋에 없는 글자는 그리지 못하니, 문구를 바꿀 때는 서브셋도 다시
+// 만들어야 한다.
 import { PDFDocument, type PDFFont } from 'pdf-lib';
 import {
   CENTER_COLOR as CENTER_HEX,
@@ -14,25 +15,49 @@ import {
 } from './colors';
 import { KOREAN_FONT_BASE64 } from './korean-font';
 export { KOREAN_FONT_BASE64 };
+import {
+  drawAlignmentMarks,
+  drawJoinMarks,
+  drawPatternNote,
+  drawScaleSquares,
+  drawSourceBlock,
+  loadFonts,
+  MM_TO_PT,
+  pdfColor,
+  toPagePoint,
+  type PageContext,
+} from './page';
+import { DEFAULT_LOCALE, type Locale } from './i18n/locales';
+import { t } from './i18n/messages';
 import { centerXMm, patternTitlePointMm, type Layout, type Line, type Point } from './layout';
 import { patternTitle } from './dimensions';
 import type { Pagination, Page } from './tiling';
-import {
-  drawAlignmentMarks, drawJoinMarks, drawPatternNote, drawScaleSquare,
-  drawSourceBlock, loadFonts, MM_TO_PT, pdfColor,
-  toPagePoint, type PageContext,
-} from './page';
 
 // 예전 경로로 가져다 쓰던 곳이 깨지지 않게 다시 내보낸다.
 export {
-  MM_TO_PT, SCALE_SQUARE_MM, JOIN_DIAMOND_MM, SCALE_SQUARE_LABEL, PATTERN_NOTE,
-  KOREAN_FONT_CHARS, KOREAN_BOLD_FONT_CHARS,
-  joinMarksFor, gridLabelPointMm, patternNotePointMm, scaleSquareRectMm,
-  toFramePoint, toPagePoint, titleScale, TITLE_SCALE_MAX, TITLE_MARGIN_MM,
+  MM_TO_PT,
+  SCALE_SQUARE_MM,
+  INCH_SQUARE_MM,
+  JOIN_DIAMOND_MM,
+  SCALE_SQUARE_LABEL,
+  INCH_SQUARE_LABEL,
+  PATTERN_NOTE,
+  KOREAN_FONT_CHARS,
+  KOREAN_BOLD_FONT_CHARS,
+  FONT_KIND,
+  joinMarksFor,
+  gridLabelPointMm,
+  patternNotePointMm,
+  scaleSquareRectsMm,
+  toFramePoint,
+  toPagePoint,
+  titleScale,
+  TITLE_SCALE_MAX,
+  TITLE_MARGIN_MM,
 } from './page';
 
-/** 골선 변에 붙이는 문구. 서브셋 폰트에 골·선이 들어 있어야 한다. */
-export const FOLD_EDGE_LABEL = '골선';
+/** 골선 변에 붙이는 문구. 서브셋 폰트에 골·선이 들어 있어야 한다. 한국어가 기준. */
+export const FOLD_EDGE_LABEL = t(DEFAULT_LOCALE, 'pdf.foldEdge');
 
 /*
  * 색 값은 core/colors.ts에 있고, pdf-lib 색으로 감싸는 일은 page.ts의
@@ -110,7 +135,7 @@ export function foldEdgeLabelXMm(
  *
  * 반원 두 개를 덧그려 재봉 도안에서 쓰는 골선 기호를 흉내 낸다.
  */
-function drawFoldEdge(ctx: PageContext, layout: Layout, font: PDFFont) {
+function drawFoldEdge(ctx: PageContext, layout: Layout, font: PDFFont, locale: Locale) {
   const yMm = layout.foldEdgeYMm;
   if (yMm === undefined) return;
 
@@ -140,7 +165,7 @@ function drawFoldEdge(ctx: PageContext, layout: Layout, font: PDFFont) {
   }
 
   const label = toPagePoint(pagination, page, centerXMm + 9, yMm - 2);
-  ctx.pdfPage.drawText(FOLD_EDGE_LABEL, {
+  ctx.pdfPage.drawText(t(locale, 'pdf.foldEdge'), {
     x: label.x,
     y: label.y,
     size: 10,
@@ -159,7 +184,7 @@ function drawFoldEdge(ctx: PageContext, layout: Layout, font: PDFFont) {
  * 이름은 앞판 한가운데에 한 번만 찍는다. 전개도에서 가장 넓게 비어 있고,
  * 골선으로 절반만 남겨도 살아 있는 자리다.
  */
-function drawCenterAndTitle(ctx: PageContext, layout: Layout, font: PDFFont) {
+function drawCenterAndTitle(ctx: PageContext, layout: Layout, font: PDFFont, locale: Locale) {
   const { pagination, page } = ctx;
   const xMm = centerXMm(layout);
 
@@ -176,12 +201,16 @@ function drawCenterAndTitle(ctx: PageContext, layout: Layout, font: PDFFont) {
   if (point === undefined || front === undefined) return;
 
   drawSourceBlock(ctx, font, point.xMm, point.yMm, front.heightMm,
-    patternTitle(layout.dimensions, layout.seamMm));
+    patternTitle(layout.dimensions, layout.seamMm, locale), locale);
 }
 
-export async function buildPdf(layout: Layout, pagination: Pagination): Promise<Uint8Array> {
+export async function buildPdf(
+  layout: Layout,
+  pagination: Pagination,
+  locale: Locale = DEFAULT_LOCALE,
+): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
-  const { font, boldFont } = await loadFonts(doc);
+  const { font, boldFont } = await loadFonts(doc, locale);
 
   for (const page of pagination.pages) {
     const pdfPage = doc.addPage([
@@ -190,10 +219,10 @@ export async function buildPdf(layout: Layout, pagination: Pagination): Promise<
     ]);
     const ctx: PageContext = { pdfPage, pagination, page };
 
-    // 배율 확인용 사각형은 첫 장에만, 도안보다 먼저 그린다. 나중에 그리면
-    // 흰 바탕이 재단선을 끊는데, 자를 대는 건 사각형의 빨간 변이라
+    // 배율 확인용 네모는 첫 장에만, 도안보다 먼저 그린다. 나중에 그리면
+    // 흰 바탕이 재단선을 끊는데, 자를 대는 건 네모의 빨간 변이라
     // 도안 선이 위로 지나가도 재는 데 지장이 없다.
-    if (page === pagination.pages[0]) drawScaleSquare(pdfPage, pagination, font);
+    if (page === pagination.pages[0]) drawScaleSquares(pdfPage, pagination, font, locale);
 
     drawPolygon(ctx, layout.outlineMm, 1);
     // 시접이 0이면 완성선이 재단선과 같은 자리다. 겹쳐 그으면 선만 두꺼워진다.
@@ -202,12 +231,11 @@ export async function buildPdf(layout: Layout, pagination: Pagination): Promise<
     // 그리면 시접만큼 밀린 자리에 선이 생긴다.
     for (const line of layout.foldLinesMm) drawFoldLine(ctx, line);
 
-    drawCenterAndTitle(ctx, layout, font);
-    drawFoldEdge(ctx, layout, font);
+    drawCenterAndTitle(ctx, layout, font, locale);
+    drawFoldEdge(ctx, layout, font, locale);
     drawAlignmentMarks(ctx, font);
     drawJoinMarks(ctx, font);
-    drawPatternNote(ctx, boldFont);
-
+    drawPatternNote(ctx, boldFont, locale);
   }
 
   return doc.save();

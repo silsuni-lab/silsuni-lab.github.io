@@ -2,7 +2,8 @@
 // Copyright (C) 2026 choisuing
 
 import { SEAM_MM, ZIPPER_ALLOWANCE_MM, type FieldSpec, type Range } from '../constants';
-import { withObjectParticle, withTopicParticle } from '../korean';
+import { t } from '../i18n/messages';
+import { DEFAULT_LOCALE, type Locale } from '../i18n/locales';
 
 export type RoundField = 'diameterMm' | 'sideHeightMm' | 'lidHeightMm';
 
@@ -14,12 +15,6 @@ export interface RoundDimensions {
 
 /** 입력칸 배치와 오류 문구가 모두 이 순서를 따른다. */
 export const ROUND_FIELD_ORDER: readonly RoundField[] = ['diameterMm', 'sideHeightMm', 'lidHeightMm'];
-
-export const ROUND_FIELD_LABELS: Record<RoundField, string> = {
-  diameterMm: '지름',
-  sideHeightMm: '옆면 높이',
-  lidHeightMm: '뚜껑 높이',
-};
 
 /** 몸통이 이보다 낮으면 물건이 안 들어간다. */
 export const MIN_BODY_MM = 20;
@@ -48,11 +43,12 @@ export const BACK_RATIO_DEFAULT = 0.2;
 export const BACK_RATIO_MIN = 0.1;
 export const BACK_RATIO_MAX = 0.3;
 
-/** 입력칸을 그리고 읽는 쪽에 넘길 한 벌. 사각의 BOX_FIELDS와 짝이다. */
+/** 입력칸을 그리고 읽는 쪽에 넘길 한 벌. 사각의 BOX_FIELDS와 짝이다. 라벨은 카탈로그가 든다. */
 export const ROUND_FIELDS: FieldSpec<RoundField> = {
   order: ROUND_FIELD_ORDER,
-  labels: ROUND_FIELD_LABELS,
   ranges: ROUND_RANGES,
+  labelPrefix: 'round.field',
+  presetPrefix: 'round.preset',
 };
 
 /**
@@ -62,15 +58,14 @@ export const ROUND_FIELDS: FieldSpec<RoundField> = {
  * 뚜껑이 안 젖혀지고 0.1 아래면 경첩이 흐물거린다. 고를 수 있는 것만
  * 보여 주면 틀린 값을 칠 자리가 아예 없다.
  *
- * 퍼센트만 적으면 재봉하는 사람에게 와닿지 않아 무슨 뜻인지 함께 적는다.
+ * 라벨은 카탈로그(`round.backRatio.<퍼센트>`)에서 로케일별로 가져온다.
  */
-export const BACK_RATIO_CHOICES: readonly { readonly value: number; readonly label: string }[] = [
-  { value: 0.1, label: '10% · 경첩 좁게' },
-  { value: 0.15, label: '15%' },
-  { value: 0.2, label: '20% · 기본' },
-  { value: 0.25, label: '25%' },
-  { value: 0.3, label: '30% · 경첩 넓게' },
-];
+export function roundBackRatioChoices(locale: Locale): readonly { readonly value: number; readonly label: string }[] {
+  return [10, 15, 20, 25, 30].map((pct) => ({
+    value: pct / 100,
+    label: t(locale, `round.backRatio.${pct}` as never),
+  }));
+}
 
 /**
  * 옆면 높이가 정하는 뚜껑 높이의 상한.
@@ -95,6 +90,7 @@ export type RoundValidationResult =
 export function validateRoundDimensions(
   input: Record<RoundField, unknown>,
   backRatio: number = BACK_RATIO_DEFAULT,
+  locale: Locale = DEFAULT_LOCALE,
 ): RoundValidationResult {
   const errors: RoundFieldError[] = [];
   const values: Partial<Record<RoundField, number>> = {};
@@ -102,19 +98,19 @@ export function validateRoundDimensions(
   for (const field of ROUND_FIELD_ORDER) {
     const raw = input[field];
     const { min, max } = ROUND_RANGES[field];
-    const label = ROUND_FIELD_LABELS[field];
+    const label = t(locale, `${ROUND_FIELDS.labelPrefix}.${field}` as never);
     const num = typeof raw === 'number' ? raw : Number(raw);
 
     if (raw === '' || raw === null || raw === undefined || !Number.isFinite(num)) {
-      errors.push({ field, message: `${withObjectParticle(label)} 숫자로 입력해주세요.` });
+      errors.push({ field, message: t(locale, 'round.error.notNumber', label) });
       continue;
     }
     if (!Number.isInteger(num)) {
-      errors.push({ field, message: `${withTopicParticle(label)} 1mm 단위 정수로 입력해주세요.` });
+      errors.push({ field, message: t(locale, 'round.error.notInteger', label) });
       continue;
     }
     if (num < min || num > max) {
-      errors.push({ field, message: `${withTopicParticle(label)} ${min}mm 이상 ${max}mm 이하여야 합니다.` });
+      errors.push({ field, message: t(locale, 'round.error.outOfRange', label, min, max) });
       continue;
     }
     values[field] = num;
@@ -126,17 +122,14 @@ export function validateRoundDimensions(
   if (side !== undefined && lid !== undefined) {
     const cap = lidHeightMaxMm(side);
     if (lid > cap) {
-      errors.push({
-        field: 'lidHeightMm',
-        message: `옆면 높이 ${side}에서는 ${withTopicParticle(ROUND_FIELD_LABELS.lidHeightMm)} ${Math.floor(cap)} 이하여야 합니다.`,
-      });
+      errors.push({ field: 'lidHeightMm', message: t(locale, 'round.error.lidHeight', side, cap) });
     }
   }
 
   if (backRatio < BACK_RATIO_MIN || backRatio > BACK_RATIO_MAX) {
     errors.push({
       field: 'backRatio',
-      message: `뒷면 비율은 ${BACK_RATIO_MIN * 100}%에서 ${BACK_RATIO_MAX * 100}% 사이여야 합니다.`,
+      message: t(locale, 'round.error.backRatio', BACK_RATIO_MIN * 100, BACK_RATIO_MAX * 100),
     });
   }
 
@@ -149,18 +142,19 @@ export function validateRoundDimensions(
   return { ok: true, value: { diameterMm, sideHeightMm, lidHeightMm } };
 }
 
-/** 도안에 찍는 이름. 화면 제목과 같은 말을 쓴다. */
-export const ROUND_PATTERN_NAME = '동글동글 원통 파우치';
-
 /**
  * 도안에 찍을 한 줄. 치수 순서는 화면·라벨과 같은 지름*옆면*뚜껑이다.
  *
  * 시접 없이 뽑았으면 그렇다고 못 박는다. 종이만 따로 돌아다니면 화면을
- * 볼 수 없고, 모르고 재단하면 원단을 버린다.
+ * 볼 수 없고, 모르고 재단하면 원단을 버린다. 이름은 카탈로그가 로케일별로 든다.
  */
-export function roundPatternTitle(d: RoundDimensions, seamMm: number = SEAM_MM): string {
-  const base = `${ROUND_PATTERN_NAME} ${d.diameterMm}*${d.sideHeightMm}*${d.lidHeightMm}`;
-  return seamMm === 0 ? `${base} 시접없음` : base;
+export function roundPatternTitle(
+  d: RoundDimensions,
+  seamMm: number = SEAM_MM,
+  locale: Locale = DEFAULT_LOCALE,
+): string {
+  const base = `${t(locale, 'round.pattern.name')} ${d.diameterMm}*${d.sideHeightMm}*${d.lidHeightMm}`;
+  return seamMm === 0 ? `${base} ${t(locale, 'round.pattern.noSeam')}` : base;
 }
 
 /** 내려받는 PDF의 파일 이름. 사각 파우치(box-pouch-)와 겹치지 않게 한다. */

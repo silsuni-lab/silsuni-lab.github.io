@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  이 사이트의 언어별 URL. 도메인은 package.json의 homepage와 같다.
+  각 index.html의 hreflang과 함께 고친다.
+
+  xhtml:link로 각 URL에 언어 교차 링크를 남긴다 — Google은 sitemap에서
+  hreflang을 아는 게 페이지보다 안전하다고 본다.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <url>
+    <loc>https://silsuni-lab.github.io/</loc>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://silsuni-lab.github.io/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://silsuni-lab.github.io/en/" />
+    <xhtml:link rel="alternate" hreflang="zh-TW" href="https://silsuni-lab.github.io/zh-TW/" />
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://silsuni-lab.github.io/zh-CN/" />
+    <xhtml:link rel="alternate" hreflang="ja" href="https://silsuni-lab.github.io/ja/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://silsuni-lab.github.io/" />
+  </url>
+  <url>
+    <loc>https://silsuni-lab.github.io/en/</loc>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://silsuni-lab.github.io/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://silsuni-lab.github.io/en/" />
+    <xhtml:link rel="alternate" hreflang="zh-TW" href="https://silsuni-lab.github.io/zh-TW/" />
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://silsuni-lab.github.io/zh-CN/" />
+    <xhtml:link rel="alternate" hreflang="ja" href="https://silsuni-lab.github.io/ja/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://silsuni-lab.github.io/" />
+  </url>
+  <url>
+    <loc>https://silsuni-lab.github.io/zh-TW/</loc>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://silsuni-lab.github.io/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://silsuni-lab.github.io/en/" />
+    <xhtml:link rel="alternate" hreflang="zh-TW" href="https://silsuni-lab.github.io/zh-TW/" />
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://silsuni-lab.github.io/zh-CN/" />
+    <xhtml:link rel="alternate" hreflang="ja" href="https://silsuni-lab.github.io/ja/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://silsuni-lab.github.io/" />
+  </url>
+  <url>
+    <loc>https://silsuni-lab.github.io/zh-CN/</loc>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://silsuni-lab.github.io/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://silsuni-lab.github.io/en/" />
+    <xhtml:link rel="alternate" hreflang="zh-TW" href="https://silsuni-lab.github.io/zh-TW/" />
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://silsuni-lab.github.io/zh-CN/" />
+    <xhtml:link rel="alternate" hreflang="ja" href="https://silsuni-lab.github.io/ja/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://silsuni-lab.github.io/" />
+  </url>
+  <url>
+    <loc>https://silsuni-lab.github.io/ja/</loc>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://silsuni-lab.github.io/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://silsuni-lab.github.io/en/" />
+    <xhtml:link rel="alternate" hreflang="zh-TW" href="https://silsuni-lab.github.io/zh-TW/" />
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://silsuni-lab.github.io/zh-CN/" />
+    <xhtml:link rel="alternate" hreflang="ja" href="https://silsuni-lab.github.io/ja/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://silsuni-lab.github.io/" />
+  </url>
+</urlset>

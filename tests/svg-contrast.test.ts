@@ -45,8 +45,8 @@ function colorOf(svg: string, className: string, attribute: 'stroke' | 'fill'): 
 }
 
 const layout = buildLayout({ widthMm: 150, heightMm: 90, depthMm: 50 });
-const previewSvg = renderPreviewSvg(layout, paginate(layout, 'a4'));
-const shapeSvg = renderShapeSvg({ widthMm: 150, heightMm: 90, depthMm: 50 });
+const previewSvg = renderPreviewSvg(layout, paginate(layout, 'a4'), 'ko');
+const shapeSvg = renderShapeSvg({ widthMm: 150, heightMm: 90, depthMm: 50 }, 'ko');
 
 describe('전개도 미리보기 — 대비', () => {
   it('페이지 번호 글자가 4.5:1 이상이다', () => {

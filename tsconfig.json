@@ -7,6 +7,8 @@
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "noEmit": true,
+    // vite.config.ts가 소스를 .ts 확장자로 가져온다 (네이티브 설정 로더 대비).
+    "allowImportingTsExtensions": true,
     "isolatedModules": true,
     "skipLibCheck": true
   },

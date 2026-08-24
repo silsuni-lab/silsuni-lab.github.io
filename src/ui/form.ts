@@ -2,27 +2,35 @@
 // Copyright (C) 2026 choisuing
 
 import type { FieldSpec, PresetOf } from '../core/constants';
+import { t } from '../core/i18n/messages';
+import type { Locale } from '../core/i18n/locales';
 import type { PaperSize } from '../core/tiling';
 
 /*
  * 입력칸을 그리고 읽는 부분은 사각·원통이 함께 쓴다. 치수 칸 이름만 다르고
  * 하는 일은 같아서, 칸 한 벌(FieldSpec)을 받아 돌게 해 두었다. 종류마다
  * 같은 코드를 두 벌 두면 한쪽만 고쳤을 때 두 화면이 다르게 군다.
+ *
+ * 표시 문구는 전부 카탈로그에서 온다 — 칸 이름은 `spec.labelPrefix`가,
+ * 프리셋 이름은 `spec.presetPrefix`가 만드는 키로 t()가 찾는다. 구간 안내는
+ * 사각·원통이 같은 `field.range`를 쓴다.
  */
 
 /** 프리셋 버튼에 적을 문구. 치수는 spec.order 순으로 늘어놓는다. */
 export function formatPresetLabel<F extends string>(
   spec: FieldSpec<F>,
   preset: PresetOf<F>,
+  locale: Locale,
 ): string {
   const sizes = spec.order.map((field) => preset[field]).join('*');
-  return `${preset.label} ${sizes}`;
+  return `${t(locale, `${spec.presetPrefix}.${preset.id}` as never)} ${sizes}`;
 }
 
 export function renderPresetButtons<F extends string>(
   container: HTMLElement,
   spec: FieldSpec<F>,
   presets: readonly PresetOf<F>[],
+  locale: Locale,
   onPick: (preset: PresetOf<F>) => void,
 ): void {
   container.innerHTML = '';
@@ -30,7 +38,7 @@ export function renderPresetButtons<F extends string>(
     const button = document.createElement('button');
     button.type = 'button';
     button.className = `preset preset-${index + 1}`;
-    button.textContent = formatPresetLabel(spec, preset);
+    button.textContent = formatPresetLabel(spec, preset, locale);
     button.addEventListener('click', () => onPick(preset));
     container.append(button);
   });
@@ -39,6 +47,7 @@ export function renderPresetButtons<F extends string>(
 export function renderInputs<F extends string>(
   container: HTMLElement,
   spec: FieldSpec<F>,
+  locale: Locale,
   onChange: () => void,
 ): void {
   container.innerHTML = '';
@@ -49,7 +58,7 @@ export function renderInputs<F extends string>(
 
     const name = document.createElement('span');
     name.className = 'input-name';
-    name.textContent = spec.labels[field];
+    name.textContent = t(locale, `${spec.labelPrefix}.${field}` as never);
 
     const input = document.createElement('input');
     input.type = 'number';
@@ -62,7 +71,7 @@ export function renderInputs<F extends string>(
 
     const hint = document.createElement('span');
     hint.className = 'input-hint';
-    hint.textContent = `최소 ${min} ~ 최대 ${max}`;
+    hint.textContent = t(locale, 'field.range' as never, min, max);
 
     wrapper.append(name, input, hint);
     container.append(wrapper);
@@ -108,7 +117,7 @@ export function readInputs<F extends string>(spec: FieldSpec<F>): Record<F, unkn
 }
 
 /**
- * 세 칸에 값을 그대로 써 넣는다. 프리셋은 숫자를 주지만 되살린 화면은
+ * 치수 칸에 값을 그대로 써 넣는다. 프리셋은 숫자를 주지만 되살린 화면은
  * 사람이 치던 글자를 그대로 준다 — 숫자로 바꿔 버리면 지우다 만 빈칸이
  * 0이 되어 화면에 없던 값이 생긴다.
  */
@@ -122,9 +131,9 @@ export function writeInputValues<F extends string>(
   }
 }
 
-export function setPaperCount(paper: PaperSize, sheets: number | null): void {
+export function setPaperCount(locale: Locale, paper: PaperSize, sheets: number | null): void {
   const el = document.getElementById(`paper-count-${paper}`);
-  if (el) el.textContent = sheets === null ? '' : ` · ${sheets}장`;
+  if (el) el.textContent = sheets === null ? '' : ` · ${t(locale, 'paper.sheets', sheets)}`;
 }
 
 /**
@@ -158,14 +167,15 @@ function renderCheckbox(
 
 /**
  * 골선접기. 켜면 전개도의 위쪽 절반만 내보내 인쇄 장수가 대략 반으로 준다.
- * 원단을 접어 그 변에 대고 재단하면 펼쳤을 때 온전한 한 장이 된다.
+ * 원단을 접어 그 변에 대고 재단하면 펼쳤을 때 온전한 한 장이 된다. 원통에는 없다.
  */
 export function renderFoldOption(
   container: HTMLElement,
+  locale: Locale,
   checked: boolean,
   onChange: (next: boolean) => void,
 ): void {
-  renderCheckbox(container, 'fold-half', '골선접기', checked, onChange);
+  renderCheckbox(container, 'fold-half', t(locale, 'control.foldHalf'), checked, onChange);
 }
 
 /**
@@ -175,17 +185,18 @@ export function renderFoldOption(
  */
 export function renderSeamOption(
   container: HTMLElement,
+  locale: Locale,
   checked: boolean,
   onChange: (next: boolean) => void,
 ): void {
-  renderCheckbox(container, 'seam-add', '시접 추가', checked, onChange);
+  renderCheckbox(container, 'seam-add', t(locale, 'control.addSeam'), checked, onChange);
 }
 
 /**
  * 고르기 하나. 원통의 뒷면 비율이 쓴다.
  *
- * 체크박스(.fold-option)와 같은 자리에 서므로 겉모양을 맞춘다. 고를 값은
- * 부르는 쪽이 준다 — 이 함수는 무슨 값인지 모르는 편이 낫다.
+ * 체크박스(.fold-option)와 같은 자리에 서므로 겉모양을 맞춘다. 고를 값·라벨은
+ * 부르는 쪽이 로케일별로 준다 — 이 함수는 무슨 값인지 모르는 편이 낫다.
  */
 export function renderChoice<T>(
   container: HTMLElement,

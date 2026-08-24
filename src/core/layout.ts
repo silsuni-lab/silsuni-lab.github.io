@@ -8,7 +8,6 @@ export type BandId = 'topFront' | 'front' | 'bottom' | 'back' | 'topBack';
 
 export interface Band {
   readonly id: BandId;
-  readonly label: string;
   readonly xMm: number;
   readonly yMm: number;
   readonly widthMm: number;
@@ -96,16 +95,15 @@ export function buildLayout(dimensions: Dimensions, seamMm: number = SEAM_MM): L
   // 접힘선은 완성 높이로 잡아야 하므로 둘을 함께 들고 다닌다.
   const specs: readonly {
     id: BandId;
-    label: string;
     widthMm: number;
     heightMm: number;
     finishedHeightMm: number;
   }[] = [
-    { id: 'topFront', label: '지퍼단', widthMm: totalWidthMm, heightMm: topBandHeightMm, finishedHeightMm: D / 2 - Z / 2 },
-    { id: 'front', label: '앞판', widthMm: panelWidthMm, heightMm: panelHeightMm, finishedHeightMm: H },
-    { id: 'bottom', label: '바닥', widthMm: totalWidthMm, heightMm: bottomBandHeightMm, finishedHeightMm: D },
-    { id: 'back', label: '뒤판', widthMm: panelWidthMm, heightMm: panelHeightMm, finishedHeightMm: H },
-    { id: 'topBack', label: '지퍼단', widthMm: totalWidthMm, heightMm: topBandHeightMm, finishedHeightMm: D / 2 - Z / 2 },
+    { id: 'topFront', widthMm: totalWidthMm, heightMm: topBandHeightMm, finishedHeightMm: D / 2 - Z / 2 },
+    { id: 'front', widthMm: panelWidthMm, heightMm: panelHeightMm, finishedHeightMm: H },
+    { id: 'bottom', widthMm: totalWidthMm, heightMm: bottomBandHeightMm, finishedHeightMm: D },
+    { id: 'back', widthMm: panelWidthMm, heightMm: panelHeightMm, finishedHeightMm: H },
+    { id: 'topBack', widthMm: totalWidthMm, heightMm: topBandHeightMm, finishedHeightMm: D / 2 - Z / 2 },
   ];
 
   const bands: Band[] = [];
@@ -113,7 +111,6 @@ export function buildLayout(dimensions: Dimensions, seamMm: number = SEAM_MM): L
   for (const spec of specs) {
     bands.push({
       id: spec.id,
-      label: spec.label,
       xMm: (totalWidthMm - spec.widthMm) / 2,
       yMm: y,
       widthMm: spec.widthMm,

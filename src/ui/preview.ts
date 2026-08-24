@@ -3,11 +3,12 @@
 
 import { centerXMm, patternTitlePointMm, type Layout, type Point } from '../core/layout';
 import type { Pagination } from '../core/tiling';
+import type { Locale } from '../core/i18n/locales';
+import { t } from '../core/i18n/messages';
 import {
   patternTitle,
   WATERMARK_HANDLE,
   WATERMARK_OPACITY,
-  WATERMARK_MESSAGE,
 } from '../core/dimensions';
 import {
   BAND_LABEL_COLOR,
@@ -45,16 +46,17 @@ function round1(value: number): number {
   return Math.round(value * 10) / 10;
 }
 
-const ORIENTATION_LABELS: Record<Pagination['orientation'], string> = {
-  portrait: '세로',
-  landscape: '가로',
-};
-
 /** 용지·방향·총 장수를 한 줄로 요약한다. 미리보기 위에 그대로 표시한다. */
-export function describePagination(pagination: Pagination): string {
-  const paper = pagination.paper.toUpperCase();
-  const orientation = ORIENTATION_LABELS[pagination.orientation];
-  return `${paper} ${orientation} · 총 ${pagination.pages.length}장 (${pagination.cols}열 × ${pagination.rows}행)`;
+export function describePagination(pagination: Pagination, locale: Locale): string {
+  return t(
+    locale,
+    'preview.summary',
+    pagination.paper.toUpperCase(),
+    t(locale, `orientation.${pagination.orientation}`),
+    pagination.pages.length,
+    pagination.cols,
+    pagination.rows,
+  );
 }
 
 function toPolygonPoints(points: readonly Point[]): string {
@@ -69,7 +71,7 @@ function toClosedPath(points: readonly Point[]): string {
   return `${head} ${tail} Z`;
 }
 
-export function renderPreviewSvg(layout: Layout, pagination: Pagination): string {
+export function renderPreviewSvg(layout: Layout, pagination: Pagination, locale: Locale): string {
   const w = layout.totalWidthMm;
   const h = layout.totalHeightMm;
 
@@ -176,13 +178,13 @@ export function renderPreviewSvg(layout: Layout, pagination: Pagination): string
       ? ''
       : `<text class="pattern-title" x="${round1(titlePoint.xMm)}" y="${round1(titlePoint.yMm + bandLabelSize * 1.6)}"` +
         ` text-anchor="middle" dominant-baseline="middle" font-size="${bandLabelSize}" fill="${PATTERN_TITLE_COLOR}">` +
-        `${escapeXml(patternTitle(layout.dimensions, layout.seamMm))}</text>` +
+        `${escapeXml(patternTitle(layout.dimensions, layout.seamMm, locale))}</text>` +
         // 권유 한 줄은 계정보다 작게. 옅어 보이는 일은 색이 아니라
         // 투명도가 맡는다 — 색까지 옅으면 인쇄에서 사라진다.
         `<text class="watermark" x="${round1(titlePoint.xMm)}" y="${round1(titlePoint.yMm + bandLabelSize * 2.9)}"` +
         ` text-anchor="middle" dominant-baseline="middle" font-size="${round1(bandLabelSize * 0.8)}" fill="${PATTERN_TITLE_COLOR}"` +
         ` fill-opacity="${WATERMARK_OPACITY}">` +
-        `${escapeXml(WATERMARK_MESSAGE)}</text>` +
+        `${escapeXml(t(locale, 'pdf.watermark'))}</text>` +
         // 계정은 이름보다도 크게. 여기가 강조하고 싶은 자리다.
         `<text class="watermark-handle" x="${round1(titlePoint.xMm)}" y="${round1(titlePoint.yMm + bandLabelSize * 4.6)}"` +
         ` text-anchor="middle" dominant-baseline="middle" font-size="${round1(bandLabelSize * 1.35)}" fill="${PATTERN_TITLE_COLOR}"` +
@@ -192,7 +194,7 @@ export function renderPreviewSvg(layout: Layout, pagination: Pagination): string
   const labels = layout.bands
     .map(
       (band) =>
-        `<text x="${round1(band.xMm + band.widthMm / 2)}" y="${round1(band.yMm + band.heightMm / 2)}" class="band-label" text-anchor="middle" dominant-baseline="middle" font-size="${bandLabelSize}" fill="${BAND_LABEL_COLOR}">${escapeXml(band.label)}</text>`,
+        `<text x="${round1(band.xMm + band.widthMm / 2)}" y="${round1(band.yMm + band.heightMm / 2)}" class="band-label" text-anchor="middle" dominant-baseline="middle" font-size="${bandLabelSize}" fill="${BAND_LABEL_COLOR}">${escapeXml(t(locale, `band.${band.id}`))}</text>`,
     )
     .join('');
 
@@ -205,7 +207,7 @@ export function renderPreviewSvg(layout: Layout, pagination: Pagination): string
     // overflow: visible은 viewBox 밖 치수 라벨을 보이게 하려는 것이고, 그 덕에
     // WebKit의 0폭 계산도 우연히 비켜 가 있었다. 폭을 직접 못 박아 우연에 기대지 않는다.
     ` style="overflow: visible; width: 100%; max-width: 100%; height: auto;" role="img"`,
-    ` aria-label="${escapeXml(`가로 ${round1(w)}mm, 세로 ${round1(h)}mm 전개도 미리보기`)}">`,
+    ` aria-label="${escapeXml(t(locale, 'preview.ariaLabel', round1(w), round1(h)))}">`,
     `<polygon points="${points}" fill="${PATTERN_FILL}" stroke="${CUT_COLOR}" stroke-width="${cutStroke}" />`,
     seamBand,
     seamLine,
@@ -242,35 +244,35 @@ export interface LegendItem {
  * 이제 그리는 쪽과 같은 상수에서 색을 꺼내 준다. style.css는 굵기와
  * 실선·점선만 맡고 색은 여기서 온다. 어긋날 자리가 없다.
  */
-export function legendItems(layout: Layout): readonly LegendItem[] {
+export function legendItems(layout: Layout, locale: Locale): readonly LegendItem[] {
   const items: LegendItem[] = [
-    { swatch: 'swatch-cut', color: CUT_COLOR, text: '재단선 — 이 선대로 자릅니다' },
+    { swatch: 'swatch-cut', color: CUT_COLOR, text: t(locale, 'legend.cutLine') },
   ];
 
   if (layout.seamMm > 0) {
-    items.push({ swatch: 'swatch-seam', color: SEAM_COLOR, text: '완성선 — 여기를 박습니다' });
+    items.push({ swatch: 'swatch-seam', color: SEAM_COLOR, text: t(locale, 'legend.stitchLine') });
     items.push({
       swatch: 'swatch-seam-band',
       color: SEAM_COLOR,
       fill: SEAM_BAND_FILL,
-      text: `시접 ${round1(layout.seamMm)}mm — 이미 포함되어 있습니다`,
+      text: t(locale, 'legend.seamAllowance', round1(layout.seamMm)),
     });
   }
 
-  items.push({ swatch: 'swatch-center', color: CENTER_COLOR, text: '중앙선 — 도안 폭의 한가운데' });
+  items.push({ swatch: 'swatch-center', color: CENTER_COLOR, text: t(locale, 'legend.centerLine') });
 
   if (layout.foldEdgeYMm !== undefined) {
     items.push({
       swatch: 'swatch-fold-edge',
       color: FOLD_EDGE_COLOR,
-      text: '골선 — 원단 접은 자리에 놓습니다',
+      text: t(locale, 'legend.foldEdge'),
     });
   }
 
   items.push({
     swatch: 'swatch-tile',
     color: TILE_COLOR,
-    text: '인쇄 페이지 경계 — 칸 번호는 PDF와 같습니다',
+    text: t(locale, 'legend.tile'),
   });
   return items;
 }

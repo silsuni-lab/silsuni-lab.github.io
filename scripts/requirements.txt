@@ -1,0 +1,8 @@
+# scripts/build-*-font.py를 실행하는 데 필요한 Python 패키지.
+#   python3 -m pip install -r scripts/requirements.txt
+#
+# 버전을 못 박는다. subsetter가 무엇을 남기고 무엇을 버리는지가 판마다
+# 달라지는데, tests/cjk-font.test.ts와 tests/pdf.test.ts가 서브셋에 담긴
+# 글자를 정확히 대조하므로 다른 판으로 다시 만들면 통과하던 검사가
+# 오실패할 수 있다. 올릴 때는 폰트를 재생성하고 두 테스트를 함께 본다.
+fonttools==4.60.2

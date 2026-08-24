@@ -5,7 +5,7 @@
  * 원통 파우치 조각 넷(앞면 윗단·앞면 아랫단·원·뒷면)을 1:1 실치수로 그린다.
  * 전개도 한 장을 잘라 잇는 사각 파우치와 달리 조각이 이미 종이 위에 따로
  * 놓여 있으므로, buildPdf처럼 다각형 하나를 그리는 대신 조각마다 재단선·
- * 완성선·라벨을 반복해서 찍는다. 페이지를 도는 뼈대와 3cm 사각형·맞춤표·
+ * 완성선·라벨을 반복해서 찍는다. 페이지를 도는 뼈대와 30mm·1인치 네모·맞춤표·
  * 이어붙임 표시·하단 문구를 부르는 자리는 core/pdf.ts의 buildPdf와 같다.
  */
 import { PDFDocument, type PDFFont } from 'pdf-lib';
@@ -16,10 +16,12 @@ import {
 } from '../colors';
 import type { Pagination } from '../tiling';
 import {
-  drawAlignmentMarks, drawJoinMarks, drawPatternNote, drawScaleSquare,
+  drawAlignmentMarks, drawJoinMarks, drawPatternNote, drawScaleSquares,
   drawSourceBlock, loadFonts, MM_TO_PT, pdfColor, toPagePoint,
   type PageContext,
 } from '../page';
+import { t } from '../i18n/messages';
+import { DEFAULT_LOCALE, type Locale } from '../i18n/locales';
 import { roundPatternTitle } from './dimensions';
 import { roundTitlePiece, type RoundLayout, type RoundPiece } from './layout';
 
@@ -111,8 +113,11 @@ function drawPieceOutline(
  * 원 조각은 위쪽으로 갈수록 폭이 좁아져 라벨이 밖으로 삐져나가므로 그대로
  * 가운데에 둔다 — 원은 애초에 출처 문구 후보에서 빠져 있어 겹칠 일도 없다.
  */
-function drawPieceLabel(ctx: PageContext, piece: RoundPiece, font: PDFFont, seamMm: number) {
-  const text = piece.count > 1 ? `${piece.label} ${piece.count}장` : piece.label;
+function drawPieceLabel(ctx: PageContext, piece: RoundPiece, font: PDFFont, seamMm: number, locale: Locale) {
+  const label = t(locale, `round.piece.${piece.id}` as never);
+  const text = piece.count > 1
+    ? `${label} ${t(locale, 'paper.sheets', piece.count)}`
+    : label;
   const yMm = piece.shape === 'circle'
     ? piece.yMm + piece.heightMm / 2
     : piece.yMm + seamMm + LABEL_TOP_OFFSET_MM;
@@ -126,9 +131,13 @@ function drawPieceLabel(ctx: PageContext, piece: RoundPiece, font: PDFFont, seam
   });
 }
 
-export async function buildRoundPdf(layout: RoundLayout, pagination: Pagination): Promise<Uint8Array> {
+export async function buildRoundPdf(
+  layout: RoundLayout,
+  pagination: Pagination,
+  locale: Locale = DEFAULT_LOCALE,
+): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
-  const { font, boldFont } = await loadFonts(doc);
+  const { font, boldFont } = await loadFonts(doc, locale);
   const titlePiece = roundTitlePiece(layout);
 
   for (const page of pagination.pages) {
@@ -139,14 +148,14 @@ export async function buildRoundPdf(layout: RoundLayout, pagination: Pagination)
      * 배율 확인용 사각형은 첫 장에만, 도안보다 먼저 그린다. 나중에 그리면
      * 흰 바탕이 재단선을 끊는다. 사각 파우치의 buildPdf와 같은 순서다.
      */
-    if (page === pagination.pages[0]) drawScaleSquare(pdfPage, pagination, font);
+    if (page === pagination.pages[0]) drawScaleSquares(pdfPage, pagination, font, locale);
 
     for (const piece of layout.pieces) {
       // 재단선이 가장 굵고 진하다. 가위가 지나갈 선이다.
       drawPieceOutline(ctx, piece, 0, CUT_COLOR, 1.2);
       // 완성선은 시접만큼 안으로 들어간 자리. 시접이 0이면 그리지 않는다.
       if (layout.seamMm > 0) drawPieceOutline(ctx, piece, layout.seamMm, SEAM_COLOR, 0.5);
-      drawPieceLabel(ctx, piece, font, layout.seamMm);
+      drawPieceLabel(ctx, piece, font, layout.seamMm, locale);
     }
 
     if (titlePiece !== undefined) {
@@ -163,13 +172,14 @@ export async function buildRoundPdf(layout: RoundLayout, pagination: Pagination)
         titlePiece.xMm + titlePiece.widthMm / 2,
         centerYMm,
         availableHeightMm,
-        roundPatternTitle(layout.dimensions, layout.seamMm),
+        roundPatternTitle(layout.dimensions, layout.seamMm, locale),
+        locale,
       );
     }
 
     drawAlignmentMarks(ctx, font);
     drawJoinMarks(ctx, font);
-    drawPatternNote(ctx, boldFont);
+    drawPatternNote(ctx, boldFont, locale);
   }
 
   return doc.save();

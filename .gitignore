@@ -5,5 +5,9 @@ dist/
 .env*.local
 
 # 설계·계획 문서는 저장소에 남기지 않는다. 작업하는 동안만 쓰고 버린다.
-# 지난 것들은 이력에 있다 — git log -- docs/superpowers/
+# 지난 것들은 이력에 있다 — git log -- docs/superpowers/ PROGRESS.md
 docs/superpowers/
+/PROGRESS.md
+
+# 오픈코드 로컬 상태 — 저장소 아님
+.opencode/

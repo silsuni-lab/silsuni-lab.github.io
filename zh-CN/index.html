@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>方形拉链笔袋版型，出来吧！</title>
+    <link rel="canonical" href="https://silsuni-lab.github.io/zh-CN/" />
+    <link rel="alternate" hreflang="ko" href="https://silsuni-lab.github.io/" />
+    <link rel="alternate" hreflang="en" href="https://silsuni-lab.github.io/en/" />
+    <link rel="alternate" hreflang="zh-TW" href="https://silsuni-lab.github.io/zh-TW/" />
+    <link rel="alternate" hreflang="zh-CN" href="https://silsuni-lab.github.io/zh-CN/" />
+    <link rel="alternate" hreflang="ja" href="https://silsuni-lab.github.io/ja/" />
+    <link rel="alternate" hreflang="x-default" href="https://silsuni-lab.github.io/" />
+    <link rel="sitemap" type="application/xml" href="https://silsuni-lab.github.io/sitemap.xml" />
+  </head>
+  <body>
+    <main class="page">
+      <nav class="lang-nav">
+        <select id="lang-select" class="lang-select"></select>
+      </nav>
+      <header class="head">
+        <div class="head-text">
+          <h1><strong>方形拉链笔袋</strong> <span class="head-tail">版型出来吧！</span></h1>
+          <p class="sub">
+            输入想要的尺寸，马上就能下载 PDF 版型。<br />
+            省下打版画线的时间，把心思花在“缝制的乐趣”上吧！
+          </p>
+          <p class="made-by">made by. @silsuni_lab</p>
+        </div>
+        <img
+          class="head-photo"
+          src="/src/assets/pouches.jpg"
+          width="800"
+          height="432"
+          alt="做好的三个方形笔袋 — 粉色灯芯绒笔袋、蓝色灯芯绒笔袋、浅蓝格纹笔袋"
+        />
+      </header>
+
+      <div class="workspace">
+        <section class="panel" aria-labelledby="size-heading">
+          <h2 class="section" id="size-heading"><svg class="icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><path fill="#FFCC4D" d="M30.021 34.264c-1.563 1.563-4.095 1.562-5.656 0L1.736 11.636c-1.562-1.562-1.563-4.094 0-5.657l4.243-4.242c1.562-1.562 4.095-1.562 5.657 0l22.626 22.628c1.562 1.562 1.562 4.096.001 5.656l-4.242 4.243z"/><path fill="#292F33" d="M9.515 6.687c-.391.39-1.023.39-1.414 0-.39-.391-.39-1.024 0-1.415l3.536-3.536 1.414 1.415-3.536 3.536zm5.656 1.414c-.39.391-1.024.391-1.414 0-.391-.391-.391-1.024 0-1.414l1.415-1.415 1.414 1.415-1.415 1.414zm1.415 5.656c-.391.391-1.024.391-1.414 0-.39-.391-.39-1.024 0-1.414l3.536-3.536c.486.486.929.928 1.414 1.415l-3.536 3.535zm5.656 1.414c-.39.391-1.023.391-1.413 0-.392-.391-.391-1.024 0-1.414l1.414-1.415c.485.487.928.928 1.414 1.415l-1.415 1.414zm1.415 5.657c-.391.391-1.023.391-1.414 0-.391-.391-.391-1.023-.001-1.414l3.536-3.535 1.414 1.414-3.535 3.535zm7.071 7.071c-.39.391-1.023.391-1.413 0-.392-.391-.392-1.023-.001-1.414l3.536-3.535 1.414 1.414-3.536 3.535zm-1.415-5.657c-.391.391-1.022.391-1.414.001-.391-.391-.39-1.024 0-1.414l1.415-1.414 1.413 1.413-1.414 1.414z"/></svg>完成尺寸 (mm)</h2>
+          <div class="inputs" id="inputs"></div>
+          <p class="error" id="error" hidden></p>
+
+          <div class="presets-box">
+            <h3 class="presets-title"><svg class="icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><path fill="#FFAC33" d="M32.938 15.651C32.792 15.26 32.418 15 32 15H19.925L26.89 1.458c.219-.426.106-.947-.271-1.243C26.437.071 26.218 0 26 0c-.233 0-.466.082-.653.243L18 6.588 3.347 19.243c-.316.273-.43.714-.284 1.105S3.582 21 4 21h12.075L9.11 34.542c-.219.426-.106.947.271 1.243.182.144.401.215.619.215.233 0 .466-.082.653-.243L18 29.412l14.653-12.655c.317-.273.43-.714.285-1.106z"/></svg>还没有特别想做的尺寸吗？</h3>
+            <div class="presets" id="presets"></div>
+          </div>
+
+        </section>
+
+        <section class="panel" aria-labelledby="preview-heading">
+          <h2 class="section" id="preview-heading"><svg class="icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><path fill="#9AAAB4" d="M27.388 24.642L24.56 27.47l-4.95-4.95 2.828-2.828z"/><path fill="#66757F" d="M34.683 29.11l-5.879-5.879c-.781-.781-2.047-.781-2.828 0l-2.828 2.828c-.781.781-.781 2.047 0 2.828l5.879 5.879c1.562 1.563 4.096 1.563 5.658 0 1.56-1.561 1.559-4.094-.002-5.656z"/><circle fill="#8899A6" cx="13.586" cy="13.669" r="13.5"/><circle fill="#BBDDF5" cx="13.586" cy="13.669" r="9.5"/></svg>预览</h2>
+          <div class="shape" id="shape"></div>
+
+        </section>
+      </div>
+
+      <section class="panel panel-wide" aria-labelledby="pattern-heading">
+        <div class="section-row">
+          <div class="section-lead">
+            <h2 class="section" id="pattern-heading"><svg class="icon" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><path fill="#F4900C" d="M29.879 33.879C31.045 35.045 32.9 35.1 34 34s1.045-2.955-.121-4.121L12.121 8.121C10.955 6.955 9.1 6.9 8 8s-1.045 2.955.121 4.121l21.758 21.758z"/><path fill="#66757F" d="M22 3s-6-3-11 2l-7 7s-1-1-2 0l-1 1s-1 1 0 2l4 4s1 1 2 0l1-1s1-1 0-2l-.078-.078c.77-.743 1.923-1.5 3.078-.922l4-4s-1-3 1-5 3-2 5-2 1-1 1-1z"/></svg>版型</h2>
+            <p class="preview-summary" id="preview-summary" aria-live="polite"></p>
+          </div>
+
+          <div class="pattern-controls">
+            <div class="paper-field">
+              <span class="paper-label">纸张</span>
+              <div class="papers" id="papers"></div>
+            </div>
+            <div class="fold-field" id="seam-field"></div>
+            <div class="fold-field" id="fold-field"></div>
+            <div class="download-field">
+              <button type="button" id="download" class="download">下载 PDF</button>
+              <p class="print-check" id="print-check">打印后请用尺确认方格！</p>
+            </div>
+          </div>
+        </div>
+        <div class="preview" id="preview"></div>
+        <ul class="legend" id="legend"></ul>
+      </section>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

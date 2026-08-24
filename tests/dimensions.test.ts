@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { validateDimensions } from '../src/core/dimensions';
+import { fieldErrorMessage, validateDimensions } from '../src/core/dimensions';
 import { PRESETS, RANGES } from '../src/core/constants';
 
 const valid = { widthMm: 270, depthMm: 100, heightMm: 140 };
@@ -37,20 +37,47 @@ describe('validateDimensions', () => {
     expect(result.errors.map((e) => e.field).sort()).toEqual(['depthMm', 'heightMm', 'widthMm']);
   });
 
-  it('오류 메시지에 허용 범위를 담는다', () => {
+  /*
+   * 검사는 무엇이 잘못됐는지만 알려주고 문장은 만들지 않는다. 문장은
+   * 언어마다 다르니 카탈로그가 맡는다.
+   */
+  it('무엇이 잘못됐는지 코드로 알려준다', () => {
+    const tooBig = validateDimensions({ ...valid, heightMm: 999 });
+    if (tooBig.ok) throw new Error('거부되어야 한다');
+    expect(tooBig.errors[0]).toMatchObject({ field: 'heightMm', code: 'outOfRange' });
+
+    const notNumber = validateDimensions({ ...valid, heightMm: 'abc' });
+    if (notNumber.ok) throw new Error('거부되어야 한다');
+    expect(notNumber.errors[0]?.code).toBe('notNumber');
+
+    const notInteger = validateDimensions({ ...valid, heightMm: 90.5 });
+    if (notInteger.ok) throw new Error('거부되어야 한다');
+    expect(notInteger.errors[0]?.code).toBe('notInteger');
+  });
+
+  it('검사 결과가 표시용 문장을 들지 않는다', () => {
     const result = validateDimensions({ ...valid, heightMm: 999 });
     if (result.ok) throw new Error('거부되어야 한다');
-    expect(result.errors[0]?.message).toContain(String(RANGES.heightMm.min));
-    expect(result.errors[0]?.message).toContain(String(RANGES.heightMm.max));
+    expect(result.errors[0]).not.toHaveProperty('message');
+  });
+
+  it('문장으로 옮기면 허용 범위가 담긴다', () => {
+    const result = validateDimensions({ ...valid, heightMm: 999 });
+    if (result.ok) throw new Error('거부되어야 한다');
+    for (const locale of ['ko', 'en'] as const) {
+      const message = fieldErrorMessage(locale, result.errors[0]!);
+      expect(message).toContain(String(RANGES.heightMm.min));
+      expect(message).toContain(String(RANGES.heightMm.max));
+    }
   });
 });
 
 describe('PRESETS', () => {
   it('요청받은 세 가지 프리셋을 제공한다', () => {
-    expect(PRESETS.map((p) => [p.label, p.widthMm, p.heightMm, p.depthMm])).toEqual([
-      ['필통', 200, 50, 50],
-      ['생리대 파우치', 120, 70, 40],
-      ['화장품 파우치', 150, 90, 50],
+    expect(PRESETS.map((p) => [p.id, p.widthMm, p.heightMm, p.depthMm])).toEqual([
+      ['pencil', 200, 50, 50],
+      ['sanitary', 120, 70, 40],
+      ['cosmetic', 150, 90, 50],
     ]);
   });
 
@@ -62,7 +89,7 @@ describe('PRESETS', () => {
         heightMm: preset.heightMm,
       });
       if (!result.ok) {
-        throw new Error(`${preset.label}: ${result.errors.map((e) => e.message).join(' ')}`);
+        throw new Error(`${preset.id}: ${result.errors.map((e) => e.code).join(' ')}`);
       }
       expect(result.ok).toBe(true);
     }
@@ -79,7 +106,7 @@ describe('오류 메시지 — 한국어 조사', () => {
     const base = { widthMm: 150, heightMm: 90, depthMm: 50 };
     const result = validateDimensions({ ...base, [field]: value });
     if (result.ok) throw new Error('거부되어야 한다');
-    return result.errors[0]!.message;
+    return fieldErrorMessage('ko', result.errors[0]!);
   };
 
   it('받침 있는 이름에 은/을을 쓴다', () => {

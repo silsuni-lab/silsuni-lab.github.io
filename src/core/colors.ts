@@ -99,7 +99,7 @@ export const FOLD_COLOR = '#8c8c8c';
  */
 export const MARK_COLOR = '#333333';
 
-/** 축척 확인용 3cm 사각형과 도안 장 아래쪽 강조 문구. */
+/** 축척 확인용 네모(30mm·1인치)와 도안 장 아래쪽 강조 문구. */
 export const SCALE_COLOR = '#d91a1a';
 
 /** 이어 붙일 때 포개는 맞춤 마름모. 도안 선과 섞이지 않도록 빨강을 쓴다. */

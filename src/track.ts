@@ -1,12 +1,15 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 choisuing
 
+import type { Locale } from './core/i18n/locales';
 import type { PouchKind } from './core/constants';
 import type { PaperSize } from './core/tiling';
 
 /*
  * 다운로드 한 건을 기록으로 남긴다. 어떤 사이즈를 몇 명이 뽑아 가는지
- * 알아야 프리셋과 기본값을 손볼 근거가 생긴다.
+ * 알아야 프리셋과 기본값을 손볼 근거가 생긴다. 언어도 함께 남긴다 —
+ * 영어 페이지의 방문이 다른지, 어떤 쪽 프리셋을 손봐야 하는지 보려면
+ * 언어별로 비율을 봐야 하기 때문이다.
  *
  * 받는 쪽은 구글 스프레드시트에 붙인 Apps Script 웹앱이다. 만드는 순서와
  * 붙여 넣을 코드는 docs/tracking.md에 있다.
@@ -31,6 +34,8 @@ export interface TrackRecord {
   readonly seam: boolean;
   /** 골선에서 반으로 접어 뽑았는지. */
   readonly fold: boolean;
+  /** 어느 언어 페이지에서 받았는지. */
+  readonly lang: Locale;
 }
 
 export interface TrackInput {
@@ -42,6 +47,7 @@ export interface TrackInput {
   readonly paper: PaperSize;
   readonly seamMm: number;
   readonly foldHalf: boolean;
+  readonly lang: Locale;
 }
 
 /**
@@ -60,6 +66,7 @@ export function trackRecord(input: TrackInput): TrackRecord {
     paper: input.paper,
     seam: input.seamMm > 0,
     fold: input.foldHalf,
+    lang: input.lang,
   };
 }
 
