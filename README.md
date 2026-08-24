@@ -1,37 +1,40 @@
-# 사각 파우치 도안 생성기
+# 파우치 도안 생성기
 
-완성 치수(가로·높이·바닥폭)를 입력하면 지퍼 사각 파우치의 전개도를 1:1 실치수 PDF로 만들어주는 정적 웹 도구.
+완성 치수를 입력하면 파우치 전개도를 1:1 실치수 PDF로 만들어주는 정적 웹 도구. 두 가지를 만든다.
 
-**바로 쓰기 → https://silsuni-lab.github.io/**
+- **사각사각 지퍼 파우치** — 가로·높이·바닥폭 → **https://silsuni-lab.github.io/**
+- **동글동글 원통 파우치** — 지름·옆면 높이·뚜껑 높이 → **https://silsuni-lab.github.io/round/** ([계산](#원통-파우치))
 
 ![화면](docs/img/screenshot.jpg)
 
 설치할 것도, 가입할 것도 없다. 브라우저에서 치수를 넣고 PDF를 받아 100%로 인쇄하면 그대로 재단하면 된다. 시접 10mm가 이미 포함되어 있다.
 
-**뚜껑이 열리는 원통 파우치도 만든다 → https://silsuni-lab.github.io/round/** — 같은 도구, 같은 인쇄 방식이고 치수만 지름·옆면 높이·뚜껑 높이로 받는다. 아래 [원통 파우치](#원통-파우치) 절을 볼 것.
+두 종류가 인쇄 방식·시접·여러 장 이어 붙이기를 그대로 함께 쓴다. 아래 설명은 종류를 따로 적지 않은 한 둘 다에 해당한다.
 
 <details>
 <summary><b>In English</b></summary>
 
-## Box Pouch Sewing Pattern Generator
+## Pouch Sewing Pattern Generator
 
-A static web tool that turns finished dimensions into a print-ready, true-to-scale PDF sewing pattern for a boxy zipper pouch.
+A static web tool that turns finished dimensions into a print-ready, true-to-scale PDF sewing pattern. Two kinds:
 
-**Try it → https://silsuni-lab.github.io/**
+- **Boxy zipper pouch** — width, height, depth. → **https://silsuni-lab.github.io/**
+- **Round pouch with a hinged lid** — diameter, side height, lid height. → **https://silsuni-lab.github.io/round/**
 
-Enter width, height and depth in millimetres. The tool drafts the flat pattern, tiles it across A4 or A3 sheets and hands you a PDF to print at 100&nbsp;% scale. A 10&nbsp;mm seam allowance is included by default.
+Enter the dimensions in millimetres. The tool drafts the flat pattern, tiles it across A4 or A3 sheets and hands you a PDF to print at 100&nbsp;% scale. A 10&nbsp;mm seam allowance is included by default. Both kinds share the same printing, seam allowance and multi-sheet assembly.
 
 **What it does for you**
 
 - **True scale, verified.** A red 3&nbsp;cm square is printed on the first sheet. Measure it with a ruler; if it is 3&nbsp;cm, every other measurement is right.
 - **Multi-sheet assembly.** Neighbouring sheets overlap by 10&nbsp;mm. Cut along the dashed line on the left and top edges, then slide each sheet until the red diamonds line up and tape.
 - **Seam allowance is optional.** On by default. Turn it off and the pattern comes out at finished size, for when you prefer to add the allowance by hand as you cut. The sheet is then labelled `시접없음` (*no seam allowance*) and the file gets a `-noseam` suffix, so a stray printout can never be mistaken for the other kind.
-- **Half-size printing.** The pattern is symmetric about the middle of the base, so you can print only the top half and place the marked fold edge on folded fabric. Roughly halves the number of sheets.
+- **Half-size printing** *(boxy pouch only)*. The pattern is symmetric about the middle of the base, so you can print only the top half and place the marked fold edge on folded fabric. Roughly halves the number of sheets.
+- **The round pouch hinge is a ratio, not a length.** The back panel carries no zipper, so it becomes the hinge between lid and body. 80&nbsp;mm of back panel is 19.6&nbsp;% of the circumference at Ø130 but 50.9&nbsp;% at Ø50 — where the lid no longer opens at all. Taking it as a share of the circumference (10–30&nbsp;%) keeps the meaning intact at every diameter.
 - **Legend lists only what was drawn.** Cut line, stitch line, fold line, centre line, fold edge and assembly marks each get their own colour *and* dash pattern. Turn a feature off and its legend entry disappears with it — you never hunt the drawing for a line that isn't there.
 
 **Runs entirely in your browser.** No account, no upload, no server. Your measurements never leave the page. Fonts and icons are bundled, so nothing is fetched from a third party.
 
-Interface is Korean only for now. The generated pattern is mostly lines and numbers, so it is usable without reading Korean — the labels mean 지퍼단 *zipper band*, 앞판 *front*, 바닥 *base*, 뒤판 *back*, 골선 *place on fold*.
+Interface is Korean only for now. The generated pattern is mostly lines and numbers, so it is usable without reading Korean. Boxy pouch labels: 지퍼단 *zipper band*, 앞판 *front*, 바닥 *base*, 뒤판 *back*, 골선 *place on fold*. Round pouch labels: 앞면 윗단 *front upper band*, 앞면 아랫단 *front lower band*, 뒷면 *back*, 뚜껑·바닥 *lid and base circles*.
 
 Code is MIT licensed. **Patterns you generate are yours** — there are no restrictions on the output.
 
@@ -48,13 +51,13 @@ npm run build    # dist/ 생성
 
 `dist/`를 정적 호스팅에 그대로 올리면 된다. 하위 경로(`example.com/pouch/`)에 올려도 동작한다.
 
-## 도안 계산
+## 사각 파우치 계산
 
-시접 `S`=10mm, 지퍼 차감 `Z`=10mm. 도안 치수에 시접이 포함되어 있어 그대로 재단한다.
+시접 `S`=10mm, 지퍼 차감 `Z`=10mm. 도안 치수에 시접이 포함되어 있어 그대로 재단한다. 두 상수는 [원통 파우치](#원통-파우치)도 같은 값을 쓴다.
 
 **시접은 끌 수 있다.** 용지 선택 옆의 **시접 추가** 체크박스를 끄면 `S`=0으로 계산해 완성 치수 그대로 뜬다. 재단하면서 손으로 시접을 더하거나, 완성선을 따라 그릴 도안이 필요할 때 쓴다. 이때 완성선은 재단선과 같은 자리가 되므로 겹쳐 긋지 않고, 범례에서도 그 두 줄이 빠진다.
 
-기본은 켜짐이다. 무심코 시접 없는 도안을 뽑아 원단을 버리는 일을 막는다. 그래도 종이만 따로 돌아다닐 수 있으니 도안 이름에 `시접없음`을 붙이고 파일명에도 `-noseam`을 단다.
+기본은 켜짐이다. 무심코 시접 없는 도안을 뽑아 원단을 버리는 일을 막는다. 그래도 종이만 따로 돌아다닐 수 있으니 도안 이름에 `시접없음`을 붙이고 파일명에도 `-noseam`을 단다. 여기까지는 두 종류가 똑같이 군다. 아래 밴드 표부터가 사각 파우치 것이다.
 
 | 밴드 | 폭 | 높이 |
 |---|---|---|
@@ -133,7 +136,9 @@ PDF 첫 장에는 완성 치수·도안 크기·용지 정보만 적는다. 인�
 
 도안 장마다 아래쪽 여백에 **`'실제사이즈'로 출력해주세요!`** 가 빨간 굵은 글씨로 들어간다. 도안 장만 따로 돌아다녀도 실치수로 뽑아야 한다는 걸 알 수 있다. 도안은 여백 안쪽에만 그려지므로 이 문구가 도면을 가리는 일은 없다.
 
-## 골선으로 절반만 출력
+## 골선으로 절반만 출력 (사각 파우치)
+
+원통 파우치에는 없다. 조각이 넷으로 떨어져 있어 접어 반만 뽑을 대칭축이 없다.
 
 전개도는 `바닥` 한가운데를 기준으로 위아래가 거울상이다. 밴드 높이가 위에서 아래로 `a·b·c·b·a`라 가운데를 접으면 정확히 포개진다. 용지 선택 옆의 **골선접기** 체크박스를 켜면 위쪽 절반만 내보낸다. 원단을 접어 골선에 대고 재단한 뒤 펼치면 온전한 한 장이 나온다.
 
@@ -180,6 +185,8 @@ A4 3열을 예로 들면 겹침 구간은 도안 `184~194`이고 그 한가운�
 **빨강은 원래 3cm 축척 사각형 전용이었다.** 마름모가 같은 빨강을 쓰게 되면서 색만으로는 둘을 못 가른다. `tests/pdf.test.ts`는 한 변 30mm라는 크기로 사각형을 식별한다.
 
 ## 도면의 선과 표시
+
+아래는 사각 파우치 도면이다. **원통 파우치는 선이 셋뿐이다** — 재단선, 완성선, 이어붙임. 접을 자리도 중심선도 골선도 없어서 그 세 줄은 도면에도 범례에도 나오지 않는다. 그리지도 않은 선을 범례에 적어 두면 도면에서 찾다가 헤맨다.
 
 | 선 | 뜻 |
 |---|---|
