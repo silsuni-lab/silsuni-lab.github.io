@@ -3,3 +3,7 @@ dist/
 
 # 로컬에서 트래킹을 시험할 때 쓰는 파일. 주소가 저장소에 올라가면 안 된다.
 .env*.local
+
+# 설계·계획 문서는 저장소에 남기지 않는다. 작업하는 동안만 쓰고 버린다.
+# 지난 것들은 이력에 있다 — git log -- docs/superpowers/
+docs/superpowers/

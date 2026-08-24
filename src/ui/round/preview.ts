@@ -3,14 +3,18 @@
 
 import type { Pagination } from '../../core/tiling';
 import type { RoundLayout, RoundPiece } from '../../core/round/layout';
+import { escapeXml, type LegendItem } from '../preview';
+/*
+ * 색은 core/colors.ts에서만 꺼낸다. 사각 미리보기와 같은 선은 같은 색이어야
+ * 한다 — 값을 여기에 따로 적으면 한쪽만 고쳤을 때 두 화면이 조용히 갈라진다.
+ */
 import {
-  escapeXml,
+  BAND_LABEL_COLOR,
   CUT_COLOR,
+  PATTERN_FILL,
   SEAM_COLOR,
   TILE_COLOR,
-  PATTERN_FILL,
-  type LegendItem,
-} from '../preview';
+} from '../../core/colors';
 
 const round1 = (v: number) => Math.round(v * 10) / 10;
 
@@ -81,7 +85,7 @@ export function renderRoundPreviewSvg(layout: RoundLayout, pagination: Paginatio
       const text = p.count > 1 ? `${p.label} ${p.count}장` : p.label;
       return `<text class="piece-label" x="${round1(p.xMm + p.widthMm / 2)}"` +
         ` y="${round1(p.yMm + p.heightMm / 2)}" text-anchor="middle"` +
-        ` dominant-baseline="middle" font-size="${labelSize}" fill="#333">${escapeXml(text)}</text>`;
+        ` dominant-baseline="middle" font-size="${labelSize}" fill="${BAND_LABEL_COLOR}">${escapeXml(text)}</text>`;
     })
     .join('');
 

@@ -38,6 +38,11 @@ describe('renderPreviewSvg', () => {
     expect(count).toBe(pagination.pages.length);
   });
 
+  /*
+   * 빠뜨린 게 아니라 일부러 뺐다 (cf23074). 까닭과 그 대가는 preview.ts의
+   * "접힘선은 화면에 그리지 않는다" 문단에 적어 두었다. 넣기로 마음이
+   * 바뀌면 그 문단부터 고칠 것.
+   */
   it('접힘선을 그리지 않는다', () => {
     expect(svg).not.toContain('class="fold-line"');
   });

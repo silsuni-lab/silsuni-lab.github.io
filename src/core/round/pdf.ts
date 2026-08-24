@@ -8,19 +8,31 @@
  * 완성선·라벨을 반복해서 찍는다. 페이지를 도는 뼈대와 3cm 사각형·맞춤표·
  * 이어붙임 표시·하단 문구를 부르는 자리는 core/pdf.ts의 buildPdf와 같다.
  */
-import { PDFDocument, rgb, type PDFFont } from 'pdf-lib';
+import { PDFDocument, type PDFFont } from 'pdf-lib';
+import {
+  BAND_LABEL_COLOR as LABEL_HEX,
+  CUT_COLOR as CUT_HEX,
+  SEAM_COLOR as SEAM_HEX,
+} from '../colors';
 import type { Pagination } from '../tiling';
 import {
   drawAlignmentMarks, drawJoinMarks, drawPatternNote, drawScaleSquare,
-  drawSourceBlock, loadFonts, MM_TO_PT, toPagePoint,
+  drawSourceBlock, loadFonts, MM_TO_PT, pdfColor, toPagePoint,
   type PageContext,
 } from '../page';
 import { roundPatternTitle } from './dimensions';
 import { roundTitlePiece, type RoundLayout, type RoundPiece } from './layout';
 
-const CUT_COLOR = rgb(0, 0, 0);
-const SEAM_COLOR = rgb(0.3, 0.3, 0.3);
-const LABEL_COLOR = rgb(0.2, 0.2, 0.2);
+/*
+ * 색 값은 core/colors.ts에 있고, pdf-lib 색으로 감싸는 일은 page.ts의
+ * pdfColor가 한다. 사각 도안과 같은 선은 같은 색이어야 한다.
+ *
+ * 조각 이름은 화면에서 밴드 이름에 쓰는 색을 그대로 쓴다. 매체가 달라도
+ * "조각에 붙는 이름"이라는 뜻이 같다.
+ */
+const CUT_COLOR = pdfColor(CUT_HEX);
+const SEAM_COLOR = pdfColor(SEAM_HEX);
+const LABEL_COLOR = pdfColor(LABEL_HEX);
 
 /** 조각 라벨 글자 크기. 출처 문구가 라벨 자리를 얼마나 비켜야 하는지 계산할 때도 같은 값을 쓴다. */
 const LABEL_SIZE = 9;
@@ -67,7 +79,7 @@ function drawPieceOutline(
   ctx: PageContext,
   piece: RoundPiece,
   insetMm: number,
-  color: ReturnType<typeof rgb>,
+  color: ReturnType<typeof pdfColor>,
   thickness: number,
 ) {
   const { pagination, page } = ctx;

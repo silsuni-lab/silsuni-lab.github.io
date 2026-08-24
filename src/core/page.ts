@@ -14,6 +14,7 @@
 // 서브셋에 없는 글자는 그리지 못하니, 문구를 바꿀 때는 서브셋도 다시 만들어야 한다.
 import fontkit from '@pdf-lib/fontkit';
 import { rgb, type PDFDocument, type PDFFont, type PDFPage } from 'pdf-lib';
+import { hexToRgb01, JOIN_DIAMOND_COLOR, MARK_COLOR, SCALE_COLOR } from './colors';
 import { KOREAN_BOLD_FONT_BASE64, KOREAN_FONT_BASE64 } from './korean-font';
 import { WATERMARK_HANDLE, WATERMARK_OPACITY, WATERMARK_MESSAGE } from './dimensions';
 import { PAGE_MARGIN_MM, PAGE_OVERLAP_MM, type Pagination, type Page } from './tiling';
@@ -189,10 +190,25 @@ export function gridLabelPointMm(pagination: Pagination, page: Page): { xMm: num
   };
 }
 
-export const MARK_COLOR = rgb(0.2, 0.2, 0.2);
-export const SCALE_COLOR = rgb(0.85, 0.1, 0.1);
+/**
+ * pdf-lib이 쓰는 0~1 실수 색으로 바꾼다. 값 자체는 core/colors.ts에 있다.
+ *
+ * 그 파일은 pdf-lib을 부르지 않는다. 첫 화면에 바로 뜨는 preview.ts가 색을
+ * 꺼내 쓰므로, 색 파일이 rgb를 끌어오면 PDF 생성기 1.1MB가 첫 화면 조각으로
+ * 딸려 온다. 감싸는 일은 여기서 한다.
+ *
+ * 이 저장소에서 rgb()를 부르는 자리는 여기 하나뿐이다. pdf.ts와 round/pdf.ts가
+ * 이 함수를 가져다 쓴다 — tests/color-source.test.ts가 지킨다.
+ */
+export function pdfColor(hex: string) {
+  const { r, g, b } = hexToRgb01(hex);
+  return rgb(r, g, b);
+}
+
+export const MARK = pdfColor(MARK_COLOR);
+export const SCALE = pdfColor(SCALE_COLOR);
 /** 맞춤 마름모. 도안 선과 섞이지 않도록 빨강을 쓴다. */
-export const JOIN_DIAMOND_COLOR = rgb(0.85, 0.1, 0.1);
+export const JOIN_DIAMOND = pdfColor(JOIN_DIAMOND_COLOR);
 
 /*
  * 도안에 찍는 세 줄의 바탕 크기(pt)와 줄 간격(mm). 여기에 배율을 곱해 쓴다.
@@ -272,13 +288,13 @@ export function drawAlignmentMarks(ctx: PageContext, font: PDFFont) {
       start: { x: x - armPt, y },
       end: { x: x + armPt, y },
       thickness: 0.5,
-      color: MARK_COLOR,
+      color: MARK,
     });
     ctx.pdfPage.drawLine({
       start: { x, y: y - armPt },
       end: { x, y: y + armPt },
       thickness: 0.5,
-      color: MARK_COLOR,
+      color: MARK,
     });
   }
 
@@ -289,7 +305,7 @@ export function drawAlignmentMarks(ctx: PageContext, font: PDFFont) {
     y: labelPoint.y,
     size: 12,
     font,
-    color: MARK_COLOR,
+    color: MARK,
   });
 }
 
@@ -313,7 +329,7 @@ export function drawJoinMarks(ctx: PageContext, font: PDFFont) {
       start: toFramePoint(pagination, mark.x1Mm, mark.y1Mm),
       end: toFramePoint(pagination, mark.x2Mm, mark.y2Mm),
       thickness: 0.5,
-      color: MARK_COLOR,
+      color: MARK,
       dashArray: [6, 3],
     });
 
@@ -332,7 +348,7 @@ export function drawJoinMarks(ctx: PageContext, font: PDFFont) {
           start: toFramePoint(pagination, a.xMm, a.yMm),
           end: toFramePoint(pagination, b.xMm, b.yMm),
           thickness: 0.6,
-          color: JOIN_DIAMOND_COLOR,
+          color: JOIN_DIAMOND,
         });
       }
     }
@@ -352,7 +368,7 @@ export function drawJoinMarks(ctx: PageContext, font: PDFFont) {
           start: toFramePoint(pagination, apex.xMm, apex.yMm),
           end: toFramePoint(pagination, wing.xMm, wing.yMm),
           thickness: 0.5,
-          color: MARK_COLOR,
+          color: MARK,
         });
       }
     }
@@ -363,7 +379,7 @@ export function drawJoinMarks(ctx: PageContext, font: PDFFont) {
       y: labelPoint.y,
       size: 9,
       font,
-      color: MARK_COLOR,
+      color: MARK,
     });
   }
 }
@@ -397,7 +413,7 @@ export function drawPatternNote(ctx: PageContext, boldFont: PDFFont) {
     y: anchor.y,
     size,
     font: boldFont,
-    color: SCALE_COLOR,
+    color: SCALE,
   });
 }
 
@@ -414,7 +430,7 @@ export function drawScaleSquare(page: PDFPage, pagination: Pagination, font: PDF
     y: topLeft.y - rect.sizeMm * MM_TO_PT,
     width: rect.sizeMm * MM_TO_PT,
     height: rect.sizeMm * MM_TO_PT,
-    borderColor: SCALE_COLOR,
+    borderColor: SCALE,
     borderWidth: 1,
   });
 
@@ -423,7 +439,7 @@ export function drawScaleSquare(page: PDFPage, pagination: Pagination, font: PDF
     y: topLeft.y + 3,
     size: 9,
     font,
-    color: SCALE_COLOR,
+    color: SCALE,
   });
 }
 
@@ -467,7 +483,7 @@ export function drawSourceBlock(
       y: anchor.y,
       size,
       font,
-      color: MARK_COLOR,
+      color: MARK,
       ...(opacity === undefined ? {} : { opacity }),
     });
   };

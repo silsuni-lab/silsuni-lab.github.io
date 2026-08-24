@@ -4,7 +4,14 @@
 // PDF 문구는 한국어로 쓴다. pdf-lib 표준 폰트에는 한글 글리프가 없으므로
 // 필요한 글자만 담은 Noto Sans KR 서브셋(core/korean-font.ts)을 심어서 쓴다.
 // 서브셋에 없는 글자는 그리지 못하니, 문구를 바꿀 때는 서브셋도 다시 만들어야 한다.
-import { PDFDocument, rgb, type PDFFont } from 'pdf-lib';
+import { PDFDocument, type PDFFont } from 'pdf-lib';
+import {
+  CENTER_COLOR as CENTER_HEX,
+  CUT_COLOR as CUT_HEX,
+  FOLD_COLOR as FOLD_HEX,
+  FOLD_EDGE_COLOR as FOLD_EDGE_HEX,
+  SEAM_COLOR as SEAM_HEX,
+} from './colors';
 import { KOREAN_FONT_BASE64 } from './korean-font';
 export { KOREAN_FONT_BASE64 };
 import { centerXMm, patternTitlePointMm, type Layout, type Line, type Point } from './layout';
@@ -12,7 +19,7 @@ import { patternTitle } from './dimensions';
 import type { Pagination, Page } from './tiling';
 import {
   drawAlignmentMarks, drawJoinMarks, drawPatternNote, drawScaleSquare,
-  drawSourceBlock, loadFonts, MM_TO_PT,
+  drawSourceBlock, loadFonts, MM_TO_PT, pdfColor,
   toPagePoint, type PageContext,
 } from './page';
 
@@ -27,13 +34,17 @@ export {
 /** 골선 변에 붙이는 문구. 서브셋 폰트에 골·선이 들어 있어야 한다. */
 export const FOLD_EDGE_LABEL = '골선';
 
-const CUT_COLOR = rgb(0, 0, 0);
-const FOLD_COLOR = rgb(0.55, 0.55, 0.55);
-const SEAM_COLOR = rgb(0.3, 0.3, 0.3);
+/*
+ * 색 값은 core/colors.ts에 있고, pdf-lib 색으로 감싸는 일은 page.ts의
+ * pdfColor가 한다. 여기서 값을 짓지 않는다 — 화면과 인쇄가 갈라지는 자리다.
+ */
+const CUT_COLOR = pdfColor(CUT_HEX);
+const FOLD_COLOR = pdfColor(FOLD_HEX);
+const SEAM_COLOR = pdfColor(SEAM_HEX);
 /** 골선. 재단선으로 오인하면 안 되는 선이라 빨강으로 굵게 긋는다. */
-const FOLD_EDGE_COLOR = rgb(0.7, 0.1, 0.1);
+const FOLD_EDGE_COLOR = pdfColor(FOLD_EDGE_HEX);
 /** 세로 중앙선. 제도에서 중심선에 쓰는 일점쇄선으로 긋는다. */
-const CENTER_COLOR = rgb(0.5, 0.48, 0.44);
+const CENTER_COLOR = pdfColor(CENTER_HEX);
 
 function drawPolygon(ctx: PageContext, points: readonly Point[], thickness: number) {
   for (let i = 0; i < points.length; i++) {

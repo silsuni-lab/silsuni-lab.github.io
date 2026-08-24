@@ -3,17 +3,20 @@
 
 import type { RoundDimensions } from '../../core/round/dimensions';
 import { escapeXml } from '../preview';
+// 눈높이와 투명도는 색이 아니라 그리는 규칙이라 shape.ts에 남아 있다.
+import { DEPTH_ANGLE_DEG, DEPTH_SCALE, HIDDEN_SIDE_OPACITY } from '../shape';
+/*
+ * 색은 core/colors.ts에서만 꺼낸다. 사각 사시도와 같은 면·같은 선은 같은
+ * 색이어야 한다 — 값을 여기에 따로 적으면 두 그림이 조용히 갈라진다.
+ */
 import {
-  DEPTH_ANGLE_DEG,
-  DEPTH_SCALE,
+  SHAPE_DIM_COLOR,
+  SHAPE_EDGE_COLOR,
+  SHAPE_FACE_FRONT_FILL,
+  SHAPE_FACE_TOP_FILL,
+  SHAPE_HIDDEN_COLOR,
   ZIPPER_COLOR,
-  FACE_FRONT_FILL,
-  FACE_TOP_FILL,
-  HIDDEN_EDGE_COLOR,
-  HIDDEN_SIDE_OPACITY,
-  OUTLINE_COLOR,
-  DIM_LABEL_COLOR,
-} from '../shape';
+} from '../../core/colors';
 
 /**
  * 타원이 납작해지는 정도(ry / rx).
@@ -99,20 +102,20 @@ export function renderRoundShapeSvg(dimensions: RoundDimensions): string {
    */
   const body =
     `<ellipse class="bottom-ellipse" cx="${round1(cx)}" cy="${round1(cyBottom)}"` +
-    ` rx="${round1(rx)}" ry="${round1(ry)}" fill="${FACE_FRONT_FILL}" stroke="none" />` +
+    ` rx="${round1(rx)}" ry="${round1(ry)}" fill="${SHAPE_FACE_FRONT_FILL}" stroke="none" />` +
     `<rect class="body" x="${round1(cx - rx)}" y="${round1(cyTop)}"` +
-    ` width="${round1(rx * 2)}" height="${round1(Hs)}" fill="${FACE_FRONT_FILL}" stroke="none" />`;
+    ` width="${round1(rx * 2)}" height="${round1(Hs)}" fill="${SHAPE_FACE_FRONT_FILL}" stroke="none" />`;
 
   // 바닥 뒤쪽은 몸통에 가려 보이지 않는다. 사각 사시도처럼 점선으로 비친다.
   const hiddenBottom = ring(
-    cx, cyBottom, rx, ry, false, 'hidden-edge', HIDDEN_EDGE_COLOR, stroke * 0.65,
+    cx, cyBottom, rx, ry, false, 'hidden-edge', SHAPE_HIDDEN_COLOR, stroke * 0.65,
     ` stroke-dasharray="${round1(stroke * 3)} ${round1(stroke * 2.2)}"`,
   );
-  const frontBottom = ring(cx, cyBottom, rx, ry, true, 'bottom-arc', OUTLINE_COLOR, stroke);
+  const frontBottom = ring(cx, cyBottom, rx, ry, true, 'bottom-arc', SHAPE_EDGE_COLOR, stroke);
 
   const sideEdge = (x: number) =>
     `<line class="side-edge" x1="${round1(x)}" y1="${round1(cyTop)}"` +
-    ` x2="${round1(x)}" y2="${round1(cyBottom)}" stroke="${OUTLINE_COLOR}"` +
+    ` x2="${round1(x)}" y2="${round1(cyBottom)}" stroke="${SHAPE_EDGE_COLOR}"` +
     ` stroke-width="${round1(stroke)}" />`;
   const sides = sideEdge(cx - rx) + sideEdge(cx + rx);
 
@@ -130,12 +133,12 @@ export function renderRoundShapeSvg(dimensions: RoundDimensions): string {
   // 뚜껑 상판. 몸통 채움 위에 얹어야 아랫 절반이 덮이지 않는다.
   const topEllipse =
     `<ellipse class="top-ellipse" cx="${round1(cx)}" cy="${round1(cyTop)}"` +
-    ` rx="${round1(rx)}" ry="${round1(ry)}" fill="${FACE_TOP_FILL}"` +
-    ` stroke="${OUTLINE_COLOR}" stroke-width="${round1(stroke)}" />`;
+    ` rx="${round1(rx)}" ry="${round1(ry)}" fill="${SHAPE_FACE_TOP_FILL}"` +
+    ` stroke="${SHAPE_EDGE_COLOR}" stroke-width="${round1(stroke)}" />`;
 
   const dimLabel = (x: number, y: number, text: string, anchor: string, rotate?: string) =>
     `<text class="dim-label" x="${round1(x)}" y="${round1(y)}" text-anchor="${anchor}"` +
-    ` font-size="${round1(font)}" fill="${DIM_LABEL_COLOR}"${rotate ?? ''}>${escapeXml(text)}</text>`;
+    ` font-size="${round1(font)}" fill="${SHAPE_DIM_COLOR}"${rotate ?? ''}>${escapeXml(text)}</text>`;
 
   const heightLabelX = cx - rx - font * 0.7;
   const heightLabelY = cyTop + Hs / 2;
