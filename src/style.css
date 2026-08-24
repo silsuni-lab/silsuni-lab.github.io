@@ -385,3 +385,50 @@ body {
   accent-color: var(--accent);
   cursor: pointer;
 }
+
+/*
+ * 다른 종류로 건너가는 줄. 만든 이(.made-by) 바로 아래에 같은 급으로 서되,
+ * 링크라는 것이 보이도록 색만 --info로 갈라 놓는다. 두 화면이 서로를
+ * 가리키므로 사각·원통 어느 쪽에서 들어와도 나머지 하나를 찾을 수 있다.
+ */
+.other-kind {
+  margin: var(--space-2) 0 0;
+  font-size: 15px;
+}
+.other-kind a {
+  color: var(--info);
+  text-decoration: none;
+  font-weight: 600;
+}
+.other-kind a:hover { text-decoration: underline; }
+
+/*
+ * 만드는 순서. 도안에 그리지 않고 화면에만 두기로 한 안내다 — 종이에
+ * 찍으면 조각 자리를 잡아먹고, 순서는 재봉틀 앞이 아니라 시작 전에 읽는다.
+ */
+.steps {
+  margin: 0;
+  padding-left: 1.4em;
+  display: grid;
+  gap: var(--space-2);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.steps-note {
+  margin: var(--space-3) 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* 뒷면 비율 고르기. 체크박스(.fold-option) 자리에 나란히 선다. */
+.choice-select {
+  font: inherit;
+  font-size: 14px;
+  padding: 4px 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--text);
+  cursor: pointer;
+}
+.choice-select:hover { border-color: var(--accent); }

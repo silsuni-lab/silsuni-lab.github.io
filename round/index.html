@@ -3,27 +3,20 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>사각사각 지퍼 파우치 패턴 나와라 얍!</title>
+    <title>동글동글 원통 파우치 패턴 나와라 얍!</title>
   </head>
   <body>
     <main class="page">
       <header class="head">
         <div class="head-text">
-          <h1><strong>사각사각 지퍼 파우치</strong> <span class="head-tail">패턴 나와라 얍!</span></h1>
+          <h1><strong>동글동글 원통 파우치</strong> <span class="head-tail">패턴 나와라 얍!</span></h1>
           <p class="sub">
-            원하는 파우치 사이즈를 입력하면 바로 PDF 패턴이 나옵니다.<br />
-            패턴 찾고 그리는 시간 아껴서 &lsquo;만드는 즐거움&rsquo;에 더 몰입해보세요!
+            지름과 높이만 입력하면 바로 PDF 패턴이 나옵니다.<br />
+            뚜껑이 열리는 원통 파우치, 도안 그리는 시간 아껴서 &lsquo;만드는 즐거움&rsquo;에 더 몰입해보세요!
           </p>
           <p class="made-by">made by. @silsuni_lab</p>
-          <p class="other-kind"><a href="./round/">동글동글 원통 파우치 도안 만들러 가기 →</a></p>
+          <p class="other-kind"><a href="../">사각 파우치 도안 만들러 가기 →</a></p>
         </div>
-        <img
-          class="head-photo"
-          src="/src/assets/pouches.jpg"
-          width="800"
-          height="432"
-          alt="완성된 사각 파우치 세 개 — 분홍 골덴 필통, 파랑 골덴 필통, 하늘색 체크 파우치"
-        />
       </header>
 
       <div class="workspace">
@@ -59,7 +52,7 @@
               <div class="papers" id="papers"></div>
             </div>
             <div class="fold-field" id="seam-field"></div>
-            <div class="fold-field" id="fold-field"></div>
+            <div class="fold-field" id="back-field"></div>
             <div class="download-field">
               <button type="button" id="download" class="download">PDF 다운로드</button>
               <p class="print-check">출력 후 3cm를 꼭 확인하세요!</p>
@@ -69,7 +62,18 @@
         <div class="preview" id="preview"></div>
         <ul class="legend" id="legend"></ul>
       </section>
+
+      <section class="panel panel-wide" aria-labelledby="steps-heading">
+        <h2 class="section" id="steps-heading">만드는 순서</h2>
+        <ol class="steps">
+          <li>앞면 윗단과 아랫단 사이에 지퍼를 답니다. 지퍼는 앞면 길이보다 길어야 합니다.</li>
+          <li>지퍼로 이어진 앞면의 좌우를 뒷면 좌우와 이어 원통을 만듭니다.</li>
+          <li>위 둘레에 뚜껑 원을, 아래 둘레에 바닥 원을 붙입니다.</li>
+          <li><strong>곡선 시접에는 가위집을 넣어주세요.</strong> 넣지 않으면 뒤집었을 때 시접이 울어 모양이 안 나옵니다.</li>
+        </ol>
+        <p class="steps-note">뒷면은 지퍼가 지나가지 않아 뚜껑과 몸통을 잇는 경첩이 됩니다.</p>
+      </section>
     </main>
-    <script type="module" src="/src/main.ts"></script>
+    <script type="module" src="./main.ts"></script>
   </body>
 </html>

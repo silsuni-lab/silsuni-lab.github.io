@@ -1,44 +1,55 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 choisuing
 
-import {
-  DIMENSION_ORDER,
-  FIELD_LABELS,
-  PRESETS,
-  RANGES,
-  type DimensionField,
-  type Preset,
-} from '../core/constants';
-
-/** 프리셋 버튼에 적을 문구. 치수는 DIMENSION_ORDER 순으로 늘어놓는다. */
-export function formatPresetLabel(preset: Preset): string {
-  const sizes = DIMENSION_ORDER.map((field) => preset[field]).join('*');
-  return `${preset.label} ${sizes}`;
-}
+import type { FieldSpec, PresetOf } from '../core/constants';
 import type { PaperSize } from '../core/tiling';
 
-export function renderPresetButtons(container: HTMLElement, onPick: (preset: Preset) => void): void {
+/*
+ * 입력칸을 그리고 읽는 부분은 사각·원통이 함께 쓴다. 치수 칸 이름만 다르고
+ * 하는 일은 같아서, 칸 한 벌(FieldSpec)을 받아 돌게 해 두었다. 종류마다
+ * 같은 코드를 두 벌 두면 한쪽만 고쳤을 때 두 화면이 다르게 군다.
+ */
+
+/** 프리셋 버튼에 적을 문구. 치수는 spec.order 순으로 늘어놓는다. */
+export function formatPresetLabel<F extends string>(
+  spec: FieldSpec<F>,
+  preset: PresetOf<F>,
+): string {
+  const sizes = spec.order.map((field) => preset[field]).join('*');
+  return `${preset.label} ${sizes}`;
+}
+
+export function renderPresetButtons<F extends string>(
+  container: HTMLElement,
+  spec: FieldSpec<F>,
+  presets: readonly PresetOf<F>[],
+  onPick: (preset: PresetOf<F>) => void,
+): void {
   container.innerHTML = '';
-  PRESETS.forEach((preset, index) => {
+  presets.forEach((preset, index) => {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = `preset preset-${index + 1}`;
-    button.textContent = formatPresetLabel(preset);
+    button.textContent = formatPresetLabel(spec, preset);
     button.addEventListener('click', () => onPick(preset));
     container.append(button);
   });
 }
 
-export function renderInputs(container: HTMLElement, onChange: () => void): void {
+export function renderInputs<F extends string>(
+  container: HTMLElement,
+  spec: FieldSpec<F>,
+  onChange: () => void,
+): void {
   container.innerHTML = '';
-  for (const field of DIMENSION_ORDER) {
-    const { min, max } = RANGES[field];
+  for (const field of spec.order) {
+    const { min, max } = spec.ranges[field];
     const wrapper = document.createElement('label');
     wrapper.className = 'input-row';
 
     const name = document.createElement('span');
     name.className = 'input-name';
-    name.textContent = FIELD_LABELS[field];
+    name.textContent = spec.labels[field];
 
     const input = document.createElement('input');
     input.type = 'number';
@@ -87,17 +98,13 @@ export function renderPaperOptions(
   }
 }
 
-export function readInputs(): Record<DimensionField, unknown> {
-  const values = {} as Record<DimensionField, unknown>;
-  for (const field of DIMENSION_ORDER) {
+export function readInputs<F extends string>(spec: FieldSpec<F>): Record<F, unknown> {
+  const values = {} as Record<F, unknown>;
+  for (const field of spec.order) {
     const input = document.getElementById(`field-${field}`) as HTMLInputElement | null;
     values[field] = input?.value ?? '';
   }
   return values;
-}
-
-export function writeInputs(preset: Preset): void {
-  writeInputValues(preset);
 }
 
 /**
@@ -105,8 +112,11 @@ export function writeInputs(preset: Preset): void {
  * 사람이 치던 글자를 그대로 준다 — 숫자로 바꿔 버리면 지우다 만 빈칸이
  * 0이 되어 화면에 없던 값이 생긴다.
  */
-export function writeInputValues(values: Record<DimensionField, string | number>): void {
-  for (const field of DIMENSION_ORDER) {
+export function writeInputValues<F extends string>(
+  spec: FieldSpec<F>,
+  values: Readonly<Record<F, string | number>>,
+): void {
+  for (const field of spec.order) {
     const input = document.getElementById(`field-${field}`) as HTMLInputElement | null;
     if (input) input.value = String(values[field]);
   }
@@ -169,4 +179,46 @@ export function renderSeamOption(
   onChange: (next: boolean) => void,
 ): void {
   renderCheckbox(container, 'seam-add', '시접 추가', checked, onChange);
+}
+
+/**
+ * 고르기 하나. 원통의 뒷면 비율이 쓴다.
+ *
+ * 체크박스(.fold-option)와 같은 자리에 서므로 겉모양을 맞춘다. 고를 값은
+ * 부르는 쪽이 준다 — 이 함수는 무슨 값인지 모르는 편이 낫다.
+ */
+export function renderChoice<T>(
+  container: HTMLElement,
+  id: string,
+  labelText: string,
+  choices: readonly { readonly value: T; readonly label: string }[],
+  selected: T,
+  onChange: (next: T) => void,
+): void {
+  container.innerHTML = '';
+
+  const label = document.createElement('label');
+  label.className = 'fold-option';
+
+  const text = document.createElement('span');
+  text.textContent = labelText;
+
+  const select = document.createElement('select');
+  select.id = id;
+  select.className = 'choice-select';
+  choices.forEach((choice, index) => {
+    const option = document.createElement('option');
+    // 값은 글자로만 오간다. 자리 번호를 담아 두면 어떤 타입이든 되돌릴 수 있다.
+    option.value = String(index);
+    option.textContent = choice.label;
+    option.selected = choice.value === selected;
+    select.append(option);
+  });
+  select.addEventListener('change', () => {
+    const picked = choices[Number(select.value)];
+    if (picked !== undefined) onChange(picked.value);
+  });
+
+  label.append(text, select);
+  container.append(label);
 }

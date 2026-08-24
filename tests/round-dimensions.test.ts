@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { ROUND_PRESETS } from '../src/core/constants';
 import {
+  BACK_RATIO_CHOICES,
   BACK_RATIO_DEFAULT,
   BACK_RATIO_MAX,
   BACK_RATIO_MIN,
@@ -77,5 +79,40 @@ describe('이름과 파일명', () => {
   it('파일명이 사각 파우치와 겹치지 않는다', () => {
     expect(roundPatternFileName(ok, 'a4', 10)).toBe('round-pouch-130x130x30-a4.pdf');
     expect(roundPatternFileName(ok, 'a3', 0)).toBe('round-pouch-130x130x30-a3-noseam.pdf');
+  });
+});
+
+describe('ROUND_PRESETS — 버튼이 주는 값은 모두 통과해야 한다', () => {
+  /*
+   * 프리셋 버튼을 눌렀는데 오류가 뜨면 미리보기가 통째로 비고 다운로드가
+   * 잠긴다. 누르는 사람은 자기가 뭘 잘못했는지 알 길이 없다.
+   */
+  it('프리셋마다 검증을 통과한다', () => {
+    for (const preset of ROUND_PRESETS) {
+      const result = validateRoundDimensions(preset);
+      expect(result.ok, `${preset.label} ${JSON.stringify(preset)}`).toBe(true);
+    }
+  });
+
+  it('뒷면 비율을 어느 것으로 골라도 통과한다', () => {
+    // 고를 수 있는 값이 검증에 걸리면 화면에서 빠져나갈 길이 없다.
+    for (const preset of ROUND_PRESETS) {
+      for (const choice of BACK_RATIO_CHOICES) {
+        const result = validateRoundDimensions(preset, choice.value);
+        expect(result.ok, `${preset.label} @ ${choice.label}`).toBe(true);
+      }
+    }
+  });
+
+  it('고를 수 있는 비율은 모두 허용 범위 안이다', () => {
+    for (const choice of BACK_RATIO_CHOICES) {
+      expect(choice.value).toBeGreaterThanOrEqual(BACK_RATIO_MIN);
+      expect(choice.value).toBeLessThanOrEqual(BACK_RATIO_MAX);
+    }
+  });
+
+  it('기본값이 고를 수 있는 값 안에 있다', () => {
+    // 없으면 첫 화면의 고르기 칸이 아무것도 안 고른 채로 뜬다.
+    expect(BACK_RATIO_CHOICES.map((c) => c.value)).toContain(BACK_RATIO_DEFAULT);
   });
 });

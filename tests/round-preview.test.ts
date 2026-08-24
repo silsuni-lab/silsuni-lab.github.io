@@ -34,6 +34,29 @@ describe('renderRoundPreviewSvg', () => {
     expect(svg).toContain('class="page-tile"');
   });
 
+  it('페이지 경계가 도안 밖으로 뻗지 않는다', () => {
+    /*
+     * SVG에 overflow: visible이 걸려 있어(치수 글자를 보이게 하려는 것)
+     * viewBox보다 큰 사각을 그리면 그 선이 미리보기 상자 밖으로 나가
+     * 범례와 아래 문단을 가로지른다. 화면에서 눈으로 확인한 버그다.
+     *
+     * 80/60/20은 도안 폭 221mm가 A4 내용 폭을 겨우 넘겨 둘째 칸이 도안
+     * 밖으로 한참 나가는 치수다.
+     */
+    const wide = buildRoundLayout({ diameterMm: 80, sideHeightMm: 60, lidHeightMm: 20 });
+    const pagination = paginate(wide, 'a4');
+    expect(pagination.pages.length).toBeGreaterThan(1);
+
+    const drawn = renderRoundPreviewSvg(wide, pagination);
+    for (const tile of drawn.matchAll(
+      /<rect class="page-tile" x="([\d.]+)" y="([\d.]+)" width="([\d.]+)" height="([\d.]+)"/g,
+    )) {
+      const [x, y, tw, th] = tile.slice(1).map(Number) as [number, number, number, number];
+      expect(x + tw).toBeLessThanOrEqual(Math.round(wide.totalWidthMm * 10) / 10 + 0.05);
+      expect(y + th).toBeLessThanOrEqual(Math.round(wide.totalHeightMm * 10) / 10 + 0.05);
+    }
+  });
+
   it('시접이 0이면 완성선을 그리지 않는다', () => {
     // 그리지도 않은 선이 도면에 남으면 재단할 때 헷갈린다.
     const bare = buildRoundLayout({ diameterMm: 130, sideHeightMm: 130, lidHeightMm: 30 }, 0);

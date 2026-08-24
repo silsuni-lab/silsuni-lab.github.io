@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DIMENSION_ORDER, FIELD_LABELS, PRESETS } from '../src/core/constants';
+import { BOX_FIELDS, DIMENSION_ORDER, FIELD_LABELS, PRESETS } from '../src/core/constants';
 import { validateDimensions } from '../src/core/dimensions';
 import { formatPresetLabel } from '../src/ui/form';
 
@@ -35,15 +35,15 @@ describe('DIMENSION_ORDER', () => {
 
 describe('formatPresetLabel', () => {
   it('확정한 순서대로 치수를 적는다', () => {
-    expect(formatPresetLabel(PRESETS[0]!)).toBe('필통 200*50*50');
-    expect(formatPresetLabel(PRESETS[1]!)).toBe('생리대 파우치 120*70*40');
-    expect(formatPresetLabel(PRESETS[2]!)).toBe('화장품 파우치 150*90*50');
+    expect(formatPresetLabel(BOX_FIELDS, PRESETS[0]!)).toBe('필통 200*50*50');
+    expect(formatPresetLabel(BOX_FIELDS, PRESETS[1]!)).toBe('생리대 파우치 120*70*40');
+    expect(formatPresetLabel(BOX_FIELDS, PRESETS[2]!)).toBe('화장품 파우치 150*90*50');
   });
 
   it('DIMENSION_ORDER를 따른다', () => {
     const preset = { id: 'x', label: '테스트', widthMm: 111, heightMm: 222, depthMm: 333 };
     const expected = DIMENSION_ORDER.map((field) => preset[field]).join('*');
-    expect(formatPresetLabel(preset)).toBe(`테스트 ${expected}`);
+    expect(formatPresetLabel(BOX_FIELDS, preset)).toBe(`테스트 ${expected}`);
   });
 });
 

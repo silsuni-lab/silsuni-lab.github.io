@@ -82,13 +82,23 @@ export function renderRoundPreviewSvg(layout: RoundLayout, pagination: Paginatio
     })
     .join('');
 
-  // 페이지 경계는 도안 위에 얹어야 보인다. 먼저 그리면 조각 채움이 덮는다.
+  /*
+   * 페이지 경계는 도안 위에 얹어야 보인다. 먼저 그리면 조각 채움이 덮는다.
+   *
+   * 마지막 칸은 도안 끝에서 잘라낸다. 종이 한 장을 통째로 그리면 도안보다
+   * 큰 사각이 나오는데, SVG에 overflow: visible이 걸려 있어(치수 글자를
+   * 보이게 하려는 것) 그 선이 미리보기 상자 밖으로 뻗어 나가 범례와 아래
+   * 문단을 가로지른다. 사각 미리보기가 같은 자리에서 같은 일을 한다.
+   */
   const tiles = pagination.pages
-    .map((page) =>
-      `<rect class="page-tile" x="${round1(page.originXMm)}" y="${round1(page.originYMm)}"` +
-      ` width="${round1(pagination.contentWidthMm)}" height="${round1(pagination.contentHeightMm)}"` +
-      ` fill="none" stroke="${TILE_COLOR}" stroke-width="${round1(thinStroke)}"` +
-      ` stroke-dasharray="${round1(thinStroke * 4)} ${round1(thinStroke * 3)}" />`)
+    .map((page) => {
+      const tileW = Math.min(pagination.contentWidthMm, w - page.originXMm);
+      const tileH = Math.min(pagination.contentHeightMm, h - page.originYMm);
+      return `<rect class="page-tile" x="${round1(page.originXMm)}" y="${round1(page.originYMm)}"` +
+        ` width="${round1(tileW)}" height="${round1(tileH)}"` +
+        ` fill="none" stroke="${TILE_COLOR}" stroke-width="${round1(thinStroke)}"` +
+        ` stroke-dasharray="${round1(thinStroke * 4)} ${round1(thinStroke * 3)}" />`;
+    })
     .join('');
 
   return [

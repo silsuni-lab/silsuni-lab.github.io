@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { canRetry, isStaleChunkError, parseState, RETRY_WINDOW_MS } from '../src/stale';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { canRetry, isStaleChunkError, keepState, parseState, RETRY_WINDOW_MS, takeState } from '../src/stale';
 
 /*
  * 배포가 지나간 화면을 스스로 되살리는 부분. sessionStorage를 만지는 쪽은
@@ -36,8 +36,11 @@ describe('isStaleChunkError — 배포가 지나간 오류를 알아본다', () 
 
 describe('parseState — 맡겨 둔 값을 되돌린다', () => {
   const good = {
-    widthMm: '270', heightMm: '140', depthMm: '100',
-    paper: 'a3', addSeam: false, foldHalf: true,
+    kind: 'box',
+    values: { widthMm: '270', heightMm: '140', depthMm: '100' },
+    paper: 'a3',
+    addSeam: false,
+    foldHalf: true,
   };
 
   it('맡긴 그대로 돌려준다', () => {
@@ -46,7 +49,19 @@ describe('parseState — 맡겨 둔 값을 되돌린다', () => {
 
   it('치던 글자를 숫자로 바꾸지 않는다', () => {
     // 지우다 만 빈칸이 0이 되면 화면에 없던 값이 생긴다.
-    expect(parseState(JSON.stringify({ ...good, widthMm: '' }))?.widthMm).toBe('');
+    const blank = { ...good, values: { ...good.values, widthMm: '' } };
+    expect(parseState(JSON.stringify(blank))?.values['widthMm']).toBe('');
+  });
+
+  it('원통 상태도 그대로 돌려준다', () => {
+    const round = {
+      kind: 'round',
+      values: { diameterMm: '130', sideHeightMm: '130', lidHeightMm: '30' },
+      paper: 'a4',
+      addSeam: true,
+      backRatio: 0.25,
+    };
+    expect(parseState(JSON.stringify(round))).toEqual(round);
   });
 
   it('모양이 안 맞으면 버린다', () => {
@@ -56,9 +71,70 @@ describe('parseState — 맡겨 둔 값을 되돌린다', () => {
     expect(parseState('"a4"')).toBeUndefined();
     expect(parseState(JSON.stringify({ ...good, paper: 'a5' }))).toBeUndefined();
     expect(parseState(JSON.stringify({ ...good, addSeam: 'true' }))).toBeUndefined();
-    expect(parseState(JSON.stringify({ ...good, widthMm: 270 }))).toBeUndefined();
-    const { foldHalf: _, ...missing } = good;
-    expect(parseState(JSON.stringify(missing))).toBeUndefined();
+    expect(parseState(JSON.stringify({ ...good, kind: 'triangle' }))).toBeUndefined();
+    // 치수는 글자여야 한다. 숫자로 들어오면 빈칸이 0이 되는 그 문제로 돌아간다.
+    const numeric = { ...good, values: { ...good.values, widthMm: 270 } };
+    expect(parseState(JSON.stringify(numeric))).toBeUndefined();
+    const { values: _values, ...noValues } = good;
+    expect(parseState(JSON.stringify(noValues))).toBeUndefined();
+    const { kind: _kind, ...noKind } = good;
+    expect(parseState(JSON.stringify(noKind))).toBeUndefined();
+  });
+});
+
+describe('takeState — 다른 종류의 화면 것은 집어가지 않는다', () => {
+  /*
+   * 사각과 원통이 같은 탭에서 같은 sessionStorage를 쓴다. 표식 없이 두면
+   * 원통이 맡긴 값을 사각 화면이 자기 것인 줄 알고 집어간다. 브라우저 것을
+   * 여기서 못 보므로 같은 모양의 가짜를 세워 두고 본다.
+   */
+  const fakeStorage = () => {
+    const map = new Map<string, string>();
+    return {
+      getItem: (k: string) => map.get(k) ?? null,
+      setItem: (k: string, v: string) => void map.set(k, v),
+      removeItem: (k: string) => void map.delete(k),
+    };
+  };
+
+  beforeEach(() => {
+    (globalThis as Record<string, unknown>)['sessionStorage'] = fakeStorage();
+  });
+
+  afterEach(() => {
+    delete (globalThis as Record<string, unknown>)['sessionStorage'];
+  });
+
+  const roundState = {
+    kind: 'round',
+    values: { diameterMm: '130', sideHeightMm: '130', lidHeightMm: '30' },
+    paper: 'a4',
+    addSeam: true,
+    backRatio: 0.2,
+  } as const;
+
+  it('맡긴 화면이 도로 찾아간다', () => {
+    expect(keepState(roundState)).toBe(true);
+    expect(takeState('round')).toEqual(roundState);
+  });
+
+  it('사각 화면은 원통이 맡긴 것을 받지 않는다', () => {
+    expect(keepState(roundState)).toBe(true);
+    expect(takeState('box')).toBeUndefined();
+  });
+
+  it('한 번 꺼내면 지운다', () => {
+    // 남겨 두면 다음에 이 사이트를 열었을 때 옛 치수가 들어차 있다.
+    expect(keepState(roundState)).toBe(true);
+    expect(takeState('round')).toEqual(roundState);
+    expect(takeState('round')).toBeUndefined();
+  });
+
+  it('종류가 안 맞아 버릴 때도 지운다', () => {
+    // 남겨 두면 다른 화면이 볼 때까지 계속 굴러다닌다.
+    expect(keepState(roundState)).toBe(true);
+    expect(takeState('box')).toBeUndefined();
+    expect(takeState('round')).toBeUndefined();
   });
 });
 

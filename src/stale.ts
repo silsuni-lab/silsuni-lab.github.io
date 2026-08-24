@@ -16,14 +16,28 @@ import type { PaperSize } from './core/tiling';
  * 낫다 — 새로 뜨면 새 이름을 부르므로 저절로 낫는다.
  */
 
-/** 새로 부를 때까지 들고 있을 화면 상태. 치수를 잃지 않으려는 것이다. */
+/** 파우치 종류. 화면마다 하나씩이다. */
+export type PouchKind = 'box' | 'round';
+
+/**
+ * 새로 부를 때까지 들고 있을 화면 상태. 치수를 잃지 않으려는 것이다.
+ *
+ * 치수 칸 이름이 종류마다 달라(가로/높이/바닥폭 vs 지름/옆면/뚜껑) 이름째로
+ * 맡긴다. 치던 글자를 그대로 담는다 — 숫자로 바꾸면 지우다 만 빈칸이 0이
+ * 되어 화면에 없던 값이 생긴다.
+ *
+ * kind를 함께 맡기는 이유가 있다. 두 화면이 같은 탭에서 같은 sessionStorage를
+ * 쓰므로, 표식이 없으면 원통이 맡긴 값을 사각 화면이 집어갈 수 있다.
+ */
 export interface ScreenState {
-  readonly widthMm: string;
-  readonly heightMm: string;
-  readonly depthMm: string;
+  readonly kind: PouchKind;
+  readonly values: Readonly<Record<string, string>>;
   readonly paper: PaperSize;
   readonly addSeam: boolean;
-  readonly foldHalf: boolean;
+  /** 사각의 골선접기. 원통에는 없다. */
+  readonly foldHalf?: boolean;
+  /** 원통의 뒷면 비율. 사각에는 없다. */
+  readonly backRatio?: number;
 }
 
 const STATE_KEY = 'pouch-stale-state';
@@ -92,17 +106,21 @@ export function canRetry(triedAt: string | null, now: number): boolean {
 
 /**
  * 맡긴 상태를 되찾는다. 한 번 꺼내면 지운다 — 남겨 두면 다음에 이 사이트를
- * 열었을 때 엉뚱하게 옛 치수가 들어차 있다.
+ * 열었을 때 엉뚱하게 옛 치수가 들어차 있다. 종류가 다르면 버린다.
+ *
+ * 못 쓸 값이어도 지우는 건 그대로 한다. 남겨 두면 다른 화면이 볼 때까지
+ * 계속 굴러다닌다.
  *
  * 다시 불렀다는 표식(TRIED_KEY)은 건드리지 않는다. 그건 시간이 지나야
  * 풀린다 — canRetry 참고.
  */
-export function takeState(): ScreenState | undefined {
+export function takeState(kind: PouchKind): ScreenState | undefined {
   try {
     const raw = sessionStorage.getItem(STATE_KEY);
     if (raw === null) return undefined;
     sessionStorage.removeItem(STATE_KEY);
-    return parseState(raw);
+    const state = parseState(raw);
+    return state?.kind === kind ? state : undefined;
   } catch {
     return undefined;
   }
@@ -122,21 +140,40 @@ export function parseState(raw: string): ScreenState | undefined {
   if (typeof value !== 'object' || value === null) return undefined;
 
   const v = value as Record<string, unknown>;
-  const str = (x: unknown) => (typeof x === 'string' ? x : undefined);
   const bool = (x: unknown) => (typeof x === 'boolean' ? x : undefined);
 
-  const widthMm = str(v['widthMm']);
-  const heightMm = str(v['heightMm']);
-  const depthMm = str(v['depthMm']);
+  const kind = v['kind'] === 'box' || v['kind'] === 'round' ? v['kind'] : undefined;
   const paper = v['paper'] === 'a4' || v['paper'] === 'a3' ? v['paper'] : undefined;
   const addSeam = bool(v['addSeam']);
-  const foldHalf = bool(v['foldHalf']);
+  const values = parseValues(v['values']);
 
-  if (
-    widthMm === undefined || heightMm === undefined || depthMm === undefined ||
-    paper === undefined || addSeam === undefined || foldHalf === undefined
-  ) {
+  if (kind === undefined || paper === undefined || addSeam === undefined || values === undefined) {
     return undefined;
   }
-  return { widthMm, heightMm, depthMm, paper, addSeam, foldHalf };
+
+  /*
+   * 종류별 항목은 있으면 받고 없으면 넘어간다. 모양이 틀린 값은 버린다 —
+   * 사각 상태에 붙은 뒷면 비율처럼 엉뚱한 것이 섞여 들어와도 나머지는 산다.
+   */
+  const foldHalf = bool(v['foldHalf']);
+  const rawRatio = v['backRatio'];
+  const backRatio = typeof rawRatio === 'number' && Number.isFinite(rawRatio) ? rawRatio : undefined;
+
+  const state: ScreenState = { kind, values, paper, addSeam };
+  return {
+    ...state,
+    ...(foldHalf === undefined ? {} : { foldHalf }),
+    ...(backRatio === undefined ? {} : { backRatio }),
+  };
+}
+
+/** 치수 칸 값. 이름도 값도 글자여야 한다. */
+function parseValues(raw: unknown): Readonly<Record<string, string>> | undefined {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return undefined;
+  const out: Record<string, string> = {};
+  for (const [key, value] of Object.entries(raw)) {
+    if (typeof value !== 'string') return undefined;
+    out[key] = value;
+  }
+  return out;
 }

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 choisuing
 
-import { SEAM_MM, ZIPPER_ALLOWANCE_MM, type Range } from '../constants';
+import { SEAM_MM, ZIPPER_ALLOWANCE_MM, type FieldSpec, type Range } from '../constants';
 import { withObjectParticle, withTopicParticle } from '../korean';
 
 export type RoundField = 'diameterMm' | 'sideHeightMm' | 'lidHeightMm';
@@ -47,6 +47,30 @@ export const ROUND_RANGES: Record<RoundField, Range> = {
 export const BACK_RATIO_DEFAULT = 0.2;
 export const BACK_RATIO_MIN = 0.1;
 export const BACK_RATIO_MAX = 0.3;
+
+/** 입력칸을 그리고 읽는 쪽에 넘길 한 벌. 사각의 BOX_FIELDS와 짝이다. */
+export const ROUND_FIELDS: FieldSpec<RoundField> = {
+  order: ROUND_FIELD_ORDER,
+  labels: ROUND_FIELD_LABELS,
+  ranges: ROUND_RANGES,
+};
+
+/**
+ * 화면에서 고를 수 있는 뒷면 비율. 하한과 상한 사이를 5%씩 끊었다.
+ *
+ * 자유 입력으로 두지 않는 이유가 있다. 이 값은 뜻이 좁다 — 0.3을 넘으면
+ * 뚜껑이 안 젖혀지고 0.1 아래면 경첩이 흐물거린다. 고를 수 있는 것만
+ * 보여 주면 틀린 값을 칠 자리가 아예 없다.
+ *
+ * 퍼센트만 적으면 재봉하는 사람에게 와닿지 않아 무슨 뜻인지 함께 적는다.
+ */
+export const BACK_RATIO_CHOICES: readonly { readonly value: number; readonly label: string }[] = [
+  { value: 0.1, label: '10% · 경첩 좁게' },
+  { value: 0.15, label: '15%' },
+  { value: 0.2, label: '20% · 기본' },
+  { value: 0.25, label: '25%' },
+  { value: 0.3, label: '30% · 경첩 넓게' },
+];
 
 /**
  * 옆면 높이가 정하는 뚜껑 높이의 상한.
