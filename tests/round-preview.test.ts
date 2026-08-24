@@ -57,6 +57,22 @@ describe('renderRoundPreviewSvg', () => {
     }
   });
 
+  it('칸 번호를 찍는다', () => {
+    /*
+     * PDF에는 칸 번호가 찍힌다(page.ts). 미리보기에 없으면 잘라 붙일 때
+     * 화면에서 본 자리를 종이에서 찾을 길이 없다. 사각 미리보기와 같다.
+     */
+    const wide = buildRoundLayout({ diameterMm: 80, sideHeightMm: 60, lidHeightMm: 20 });
+    const pagination = paginate(wide, 'a4');
+    expect(pagination.pages.length).toBeGreaterThan(1);
+
+    const drawn = renderRoundPreviewSvg(wide, pagination);
+    for (const page of pagination.pages) {
+      expect(drawn).toContain(`>${page.gridLabel}</text>`);
+    }
+    expect(drawn).toContain('class="tile-label"');
+  });
+
   it('시접이 0이면 완성선을 그리지 않는다', () => {
     // 그리지도 않은 선이 도면에 남으면 재단할 때 헷갈린다.
     const bare = buildRoundLayout({ diameterMm: 130, sideHeightMm: 130, lidHeightMm: 30 }, 0);

@@ -21,6 +21,8 @@ const round1 = (v: number) => Math.round(v * 10) / 10;
 const CUT_STROKE_RATIO = 0.004;
 const THIN_STROKE_RATIO = 0.002;
 const LABEL_RATIO = 0.026;
+/** 칸 번호 글자. 사각 미리보기와 같은 값이라 두 화면에서 같은 크기로 보인다. */
+const TILE_LABEL_RATIO = 0.024;
 
 /**
  * 조각 하나의 테두리. 원과 사각형을 같은 함수로 받는다.
@@ -60,6 +62,7 @@ export function renderRoundPreviewSvg(layout: RoundLayout, pagination: Paginatio
   const cutStroke = w * CUT_STROKE_RATIO;
   const thinStroke = w * THIN_STROKE_RATIO;
   const labelSize = round1(w * LABEL_RATIO);
+  const tileLabelSize = round1(w * TILE_LABEL_RATIO);
 
   const shapes = layout.pieces
     .map((p) => {
@@ -101,11 +104,23 @@ export function renderRoundPreviewSvg(layout: RoundLayout, pagination: Paginatio
     })
     .join('');
 
+  /*
+   * 칸 번호. PDF에 찍히는 것과 같은 값이라(page.ts가 그린다) 화면에서 본
+   * 자리를 종이에서 그대로 찾을 수 있다. 잘라 붙일 때 어느 장이 어디였는지
+   * 아는 유일한 단서다.
+   */
+  const tileLabels = pagination.pages
+    .map((page) =>
+      `<text class="tile-label" x="${round1(page.originXMm + 4)}"` +
+      ` y="${round1(page.originYMm + 14)}" font-size="${tileLabelSize}"` +
+      ` fill="${TILE_COLOR}">${escapeXml(page.gridLabel)}</text>`)
+    .join('');
+
   return [
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${round1(w)} ${round1(h)}"`,
     ` style="overflow: visible; width: 100%; max-width: 100%; height: auto;" role="img"`,
     ` aria-label="${escapeXml(`원통 파우치 조각 ${layout.pieces.length}종 미리보기`)}">`,
-    shapes, tiles, labels,
+    shapes, tiles, tileLabels, labels,
     `</svg>`,
   ].join('');
 }
@@ -117,7 +132,7 @@ export function renderRoundPreviewSvg(layout: RoundLayout, pagination: Paginatio
 export function roundLegendItems(layout: RoundLayout): readonly LegendItem[] {
   const items: LegendItem[] = [
     { swatch: 'swatch-cut', color: CUT_COLOR, text: '재단선 — 이 선을 따라 자릅니다' },
-    { swatch: 'swatch-tile', color: TILE_COLOR, text: '페이지 경계 — 잘라 붙이는 자리' },
+    { swatch: 'swatch-tile', color: TILE_COLOR, text: '인쇄 페이지 경계 — 칸 번호는 PDF와 같습니다' },
   ];
   if (layout.seamMm > 0) {
     items.splice(1, 0, {
