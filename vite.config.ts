@@ -20,7 +20,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: entry('index.html'),
-        round: entry('round/index.html'),
+        round: entry('round-pouch-test/index.html'),
       },
     },
   },

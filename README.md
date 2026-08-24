@@ -3,9 +3,9 @@
 완성 치수를 입력하면 파우치 전개도를 1:1 실치수 PDF로 만들어주는 정적 웹 도구. 두 가지를 만든다.
 
 - **사각사각 지퍼 파우치** — 가로·높이·바닥폭 → **https://silsuni-lab.github.io/**
-- **동글동글 원통 파우치** — 지름·옆면 높이·뚜껑 높이 → **https://silsuni-lab.github.io/round/** ([계산](#원통-파우치)) · *시험 중*
+- **동글동글 원통 파우치** — 지름·옆면 높이·뚜껑 높이 → **https://silsuni-lab.github.io/round-pouch-test/** ([계산](#원통-파우치)) · *시험 중*
 
-> **원통 파우치는 아직 시험 중이다.** 사각 페이지에서 이리로 오는 안내 줄을 빼 두었고 검색엔진에도 올리지 않는다. 주소를 치면 열리므로 잠근 것은 아니다. 공개하려면 `index.html`의 `other-kind` 주석을 풀고 `round/index.html`의 `noindex` 한 줄을 지운다 — **둘은 늘 같이 움직인다.** 지우고 나면 스크린샷도 다시 찍어야 한다(사각 화면에 링크 한 줄이 는다).
+> **원통 파우치는 아직 시험 중이다.** 사각 페이지에서 이리로 오는 안내 줄을 빼 두었고 검색엔진에도 올리지 않는다. 주소를 치면 열리므로 잠근 것은 아니다. 공개하려면 `index.html`의 `other-kind` 주석을 풀고 `round-pouch-test/index.html`의 `noindex` 한 줄을 지운다 — **둘은 늘 같이 움직인다.** 지우고 나면 스크린샷도 다시 찍어야 한다(사각 화면에 링크 한 줄이 는다).
 
 ![화면](docs/img/screenshot.jpg)
 
@@ -21,7 +21,7 @@
 A static web tool that turns finished dimensions into a print-ready, true-to-scale PDF sewing pattern. Two kinds:
 
 - **Boxy zipper pouch** — width, height, depth. → **https://silsuni-lab.github.io/**
-- **Round pouch with a hinged lid** — diameter, side height, lid height. → **https://silsuni-lab.github.io/round/**
+- **Round pouch with a hinged lid** — diameter, side height, lid height. → **https://silsuni-lab.github.io/round-pouch-test/**
 
 Enter the dimensions in millimetres. The tool drafts the flat pattern, tiles it across A4 or A3 sheets and hands you a PDF to print at 100&nbsp;% scale. A 10&nbsp;mm seam allowance is included by default. Both kinds share the same printing, seam allowance and multi-sheet assembly.
 
@@ -83,7 +83,7 @@ npm run build    # dist/ 생성
 
 ![원통 파우치 화면](docs/img/screenshot-round.jpg)
 
-`/round/`는 뚜껑이 열리는 원통 파우치를 만든다. 완성 치수는 셋이다 — 지름 `D`, 옆면 높이 `Hs`, 뚜껑 높이 `Hl`. 시접 `S`(10mm)와 지퍼 여유 `Z`(10mm)는 사각 파우치와 같은 상수를 쓴다.
+`/round-pouch-test/`는 뚜껑이 열리는 원통 파우치를 만든다. 완성 치수는 셋이다 — 지름 `D`, 옆면 높이 `Hs`, 뚜껑 높이 `Hl`. 시접 `S`(10mm)와 지퍼 여유 `Z`(10mm)는 사각 파우치와 같은 상수를 쓴다.
 
 ```
 둘레      C  = D × π
@@ -241,11 +241,11 @@ A4 3열을 예로 들면 겹침 구간은 도안 `184~194`이고 그 한가운�
 - `scripts/build-korean-font.py` — PDF용 한글 서브셋 폰트 생성기.
 - `src/ui/` — 입력 폼, 전개도 미리보기(`preview.ts`), 완성 예상 선화(`shape.ts`).
 - `src/ui/round/` — 원통의 미리보기와 완성 예상 그림.
-- `index.html` + `src/main.ts` — 사각 화면. `round/index.html` + `round/main.ts` — 원통 화면.
+- `index.html` + `src/main.ts` — 사각 화면. `round-pouch-test/index.html` + `round-pouch-test/main.ts` — 원통 화면.
 - `src/track.ts` — 다운로드 한 건을 기록으로 남긴다. 계산도 그리기도 아니라 어느 쪽에도 두지 않았다.
 - `src/stale.ts` — 배포가 지나간 낡은 화면을 스스로 되살린다.
 
-**페이지가 둘이다.** 나누면 각 화면이 자기 제목을 갖고, 종류를 고르는 UI도 필요 없다. `vite.config.ts`가 진입점 둘을 잡고, `base: './'`라 `/round/`에서 자산 경로가 `../assets/`로 알아서 맞는다.
+**페이지가 둘이다.** 나누면 각 화면이 자기 제목을 갖고, 종류를 고르는 UI도 필요 없다. `vite.config.ts`가 진입점 둘을 잡고, `base: './'`라 `/round-pouch-test/`에서 자산 경로가 `../assets/`로 알아서 맞는다.
 
 입력칸을 그리고 읽는 부분(`src/ui/form.ts`)과 낡은 화면 되살리기(`src/stale.ts`)는 두 화면이 함께 쓴다. 치수 칸 이름만 다르고 하는 일은 같아서, 칸 한 벌(`FieldSpec`)을 받아 돌게 해 두었다. 같은 코드를 두 벌 두면 한쪽만 고쳤을 때 두 화면이 다르게 군다.
 
@@ -310,7 +310,7 @@ npm run dev
 
 # 2. 두 화면을 각각 찍는다. 포트는 위에서 나온 주소에 맞춘다.
 CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
-for page in ""  "round/"; do
+for page in ""  "round-pouch-test/"; do
   name=$([ -z "$page" ] && echo screenshot || echo screenshot-round)
   "$CHROME" --headless --disable-gpu --hide-scrollbars \
     --force-device-scale-factor=2 --window-size=955,1400 \
