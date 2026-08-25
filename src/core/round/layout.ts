@@ -11,7 +11,6 @@ export type RoundPieceId = 'circles' | 'frontTop' | 'frontBottom' | 'back';
 
 export interface RoundPiece {
   readonly id: RoundPieceId;
-  readonly label: string;
   /** 이 본으로 몇 장을 재단하는가. 원은 한 장만 그리고 2장이라 적는다. */
   readonly count: number;
   readonly shape: 'rect' | 'circle';
@@ -73,25 +72,25 @@ export function buildRoundLayout(
 
   const pieces: readonly RoundPiece[] = [
     {
-      id: 'frontTop', label: '앞면 윗단', count: 1, shape: 'rect',
+      id: 'frontTop', count: 1, shape: 'rect',
       xMm: 0, yMm: 0,
       widthMm: frontCutWidth, heightMm: topCutHeight,
       finishedWidthMm: frontLengthMm, finishedHeightMm: Hl,
     },
     {
-      id: 'frontBottom', label: '앞면 아랫단', count: 1, shape: 'rect',
+      id: 'frontBottom', count: 1, shape: 'rect',
       xMm: 0, yMm: topCutHeight + PIECE_GAP_MM,
       widthMm: frontCutWidth, heightMm: bottomCutHeight,
       finishedWidthMm: frontLengthMm, finishedHeightMm: bodyHeightMm,
     },
     {
-      id: 'circles', label: '뚜껑·바닥', count: 2, shape: 'circle',
+      id: 'circles', count: 2, shape: 'circle',
       xMm: 0, yMm: row3Y,
       widthMm: circleCut, heightMm: circleCut,
       finishedWidthMm: D, finishedHeightMm: D,
     },
     {
-      id: 'back', label: '뒷면', count: 1, shape: 'rect',
+      id: 'back', count: 1, shape: 'rect',
       xMm: circleCut + PIECE_GAP_MM, yMm: row3Y,
       widthMm: backCutWidth, heightMm: backCutHeight,
       finishedWidthMm: backLengthMm, finishedHeightMm: Hs,

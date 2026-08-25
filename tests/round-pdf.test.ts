@@ -41,7 +41,7 @@ describe('buildRoundPdf', () => {
   });
 
   it('조각 라벨의 글자가 모두 서브셋 안에 있다', () => {
-    const labels = layout.pieces.map((p) => p.label).join('');
+    const labels = [t('ko','round.piece.frontTop'),t('ko','round.piece.frontBottom'),t('ko','round.piece.circles'),t('ko','round.piece.back'),t('ko','paper.sheets',2)].join('');
     expect([...labels].filter((c) => !KOREAN_FONT_CHARS.has(c))).toEqual([]);
   });
 

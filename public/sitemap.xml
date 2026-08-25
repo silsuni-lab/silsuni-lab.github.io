@@ -53,7 +53,13 @@
     <xhtml:link rel="alternate" hreflang="ja" href="https://silsuni-lab.github.io/ja/" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://silsuni-lab.github.io/" />
   </url>
-  <url>
+  <!--
+    아래 round-pouch-test는 아직 시험 중이라 검색엔진에 noindex다. sitemap에
+    넣는 건(언어 교차 링크 포함) 언젠가 공개할 때를 위한 자리 — noindex라
+    지금 인덱싱되진 않지만, 공개 시 HTML에서 noindex만 떼면 그대로다.
+    tests/pages.test.ts가 이 목록을 지킨다.
+  -->
+    <url>
     <loc>https://silsuni-lab.github.io/round-pouch-test/</loc>
     <xhtml:link rel="alternate" hreflang="ko" href="https://silsuni-lab.github.io/round-pouch-test/" />
     <xhtml:link rel="alternate" hreflang="en" href="https://silsuni-lab.github.io/en/round-pouch-test/" />

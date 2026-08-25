@@ -84,7 +84,8 @@ export function renderRoundPreviewSvg(layout: RoundLayout, pagination: Paginatio
 
   const labels = layout.pieces
     .map((p) => {
-      const text = p.count > 1 ? `${p.label} ${p.count}장` : p.label;
+      const name = t(locale, `round.piece.${p.id}` as never);
+      const text = p.count > 1 ? `${name} ${t(locale, 'paper.sheets', p.count)}` : name;
       return `<text class="piece-label" x="${round1(p.xMm + p.widthMm / 2)}"` +
         ` y="${round1(p.yMm + p.heightMm / 2)}" text-anchor="middle"` +
         ` dominant-baseline="middle" font-size="${labelSize}" fill="${BAND_LABEL_COLOR}">${escapeXml(text)}</text>`;

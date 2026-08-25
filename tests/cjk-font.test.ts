@@ -54,6 +54,14 @@ const PDF_KEYS = [
   'pdf.testSquareMetric',
   'pdf.testSquareImperial',
   'pdf.printNote',
+  // 원통 PDF도 인쇄한다 — 라벨·조각명. 여기 빠뜨리면 zh/ja 원통 PDF가
+  // 빈 글리프로 나가도 아무도 못 잡는다.
+  'round.pattern.name',
+  'round.pattern.noSeam',
+  'round.piece.frontTop',
+  'round.piece.frontBottom',
+  'round.piece.circles',
+  'round.piece.back',
 ] as const;
 
 // 서브셋 생성기와 같은 라틴 집합. 칸 번호(A, B…)·계정(@silsuni_lab)·치수 표기(*).
@@ -66,7 +74,7 @@ describe('CJK 서브셋 — 문구 커버리지', () => {
 
   for (const [locale, { chars }] of CJK_CASES) {
     it(`${locale}의 PDF 문구가 서브셋에 모두 담긴다`, () => {
-      const text = PDF_KEYS.map((key) => t(locale, key)).join('');
+      const text = PDF_KEYS.map((key) => t(locale, key)).join('') + t(locale, 'paper.sheets', 2);
       const missing = [...new Set(text)].filter((ch) => !chars.has(ch));
       expect(missing, `${locale} 빠진 글자`).toEqual([]);
     });
