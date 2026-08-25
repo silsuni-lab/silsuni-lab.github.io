@@ -1,7 +1,6 @@
 // vitest 설정을 함께 두므로 'vite'가 아니라 'vitest/config'에서 defineConfig를 가져온다.
 // 'vite'의 defineConfig에는 test 필드 타입이 없어 `tsc --noEmit`이 실패한다.
 import { resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 // 확장자를 적는다. vite가 설정 파일을 네이티브(node)로 읽는 판에서는
 // 확장자 없는 지정자를 풀지 못해 빌드가 멈춘다 — 지금은 경고지만
@@ -25,24 +24,26 @@ const localeInputs = Object.fromEntries(
   ]),
 );
 
-/*
- * package.json이 "type": "module"이라 이 파일에는 __dirname이 없다.
- * 설정 파일 자기 위치를 기준으로 절대 경로를 만든다.
- */
-const entry = (path: string) => fileURLToPath(new URL(path, import.meta.url));
+const roundInputs = Object.fromEntries(
+  LOCALES.map((locale) => [
+    `round-${locale}`,
+    resolve(locale === DEFAULT_LOCALE ? 'round-pouch-test/index.html' : `${locale}/round-pouch-test/index.html`),
+  ]),
+);
 
 export default defineConfig({
   base: './',
   /*
-   * 언어별 정적 박스 페이지(ko는 뿌리, 나머지는 하위 경로)와, main이 분리한
-   * 원통 시험 화면(round-pouch-test)을 함께 뽑는다. 원통 화면은 아직 시험
-   * 중이라 noindex다 — 공개 시 라운드 로케일 페이지를 함께 낸다.
+   * 언어별 정적 박스 페이지(ko는 뿌리, 나머지는 하위 경로)와, 원통 화면
+   * (noindex 시험 페이지)을 로케일별로 함께 뽑는다. box·round 모두 5개
+   * 언어로 나간다. 위 목록은 LOCALES에서 유도해 언어를 늘리면 빌드가
+   * 아예 통과하지 못하게 한다.
    */
   build: {
     rollupOptions: {
       input: {
         ...localeInputs,
-        round: entry('round-pouch-test/index.html'),
+        ...roundInputs,
       },
     },
   },

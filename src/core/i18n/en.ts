@@ -146,6 +146,12 @@ export const en: Catalog = {
   'round.backRatio.20': '20% · default',
   'round.backRatio.25': '25%',
   'round.backRatio.30': '30% · wide hinge',
+  // 원통 화면 — 미리보기·모양 aria, 범례.
+  'round.shape.ariaLabel': (diameterMm: number, sideHeightMm: number, lidHeightMm: number) =>
+    `The finished round pouch — ${diameterMm}mm diameter, ${sideHeightMm}mm side, ${lidHeightMm}mm lid`,
+  'round.preview.ariaLabel': (count: number) => `Round pouch pattern, ${count} pieces`,
+  'round.legend.cut': 'Cutting line — cut along this line',
+  'round.legend.seam': (seamMm: number) => `Stitching line — ${seamMm}mm inside the cutting line`,
   // 언어
   'lang.switch': 'Language',
 };

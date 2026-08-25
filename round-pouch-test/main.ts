@@ -12,6 +12,7 @@ import {
 import { buildRoundLayout } from '../src/core/round/layout';
 import { paginate, type PaperSize } from '../src/core/tiling';
 import { currentLocale } from '../src/core/i18n/locales';
+import { languageOptions } from '../src/ui/lang';
 import { t } from '../src/core/i18n/messages';
 import {
   readInputs,
@@ -30,6 +31,8 @@ import { isStaleChunkError, keepState, takeState, type ScreenState } from '../sr
 import '../src/style.css';
 
 const locale = currentLocale();
+const langNavEl = document.querySelector('nav.lang-nav') as HTMLElement;
+const langSelectEl = document.getElementById('lang-select') as HTMLSelectElement;
 
 const presetsEl = document.getElementById('presets')!;
 const inputsEl = document.getElementById('inputs')!;
@@ -81,7 +84,7 @@ function refresh(): void {
   }
 
   showError([]);
-  shapeEl.innerHTML = renderRoundShapeSvg(result.value);
+  shapeEl.innerHTML = renderRoundShapeSvg(result.value, locale);
 
   const layout = buildRoundLayout(result.value, addSeam ? SEAM_MM : 0, backRatio);
 
@@ -90,13 +93,13 @@ function refresh(): void {
   const byPaper = { a4: paginate(layout, 'a4'), a3: paginate(layout, 'a3') };
   const pagination = byPaper[paper];
 
-  previewEl.innerHTML = renderRoundPreviewSvg(layout, pagination);
+  previewEl.innerHTML = renderRoundPreviewSvg(layout, pagination, locale);
   summaryEl.textContent = describePagination(pagination, locale);
   downloadBtn.disabled = false;
 
   // 견본 색은 CSS가 아니라 roundLegendItems가 준다. 도면에 그린 색과 같은
   // 출처라 범례가 딴 색을 가리킬 수 없다.
-  legendEl.innerHTML = roundLegendItems(layout)
+  legendEl.innerHTML = roundLegendItems(layout, locale)
     .map((item) => {
       const style = item.fill === undefined
         ? `border-top-color: ${item.color}`
@@ -220,6 +223,18 @@ renderPaperOptions(papersEl, paper, (next) => {
   refresh();
 });
 downloadBtn.addEventListener('click', () => void download());
+
+function renderLanguageSelect(): void {
+  const label = t(locale, 'lang.switch');
+  langNavEl.setAttribute('aria-label', label);
+  langSelectEl.setAttribute('aria-label', label);
+  const options = languageOptions(locale);
+  langSelectEl.innerHTML = options
+    .map((option) => `<option value="${option.href}"${option.current ? ' selected' : ''}>${option.label}</option>`)
+    .join('');
+  langSelectEl.addEventListener('change', () => { if (langSelectEl.value) location.href = langSelectEl.value; });
+}
+renderLanguageSelect();
 
 // 첫 화면은 첫 번째 프리셋으로 채운다. 되살린 화면이면 치던 값을 되돌린다.
 if (kept === undefined) writeInputValues(ROUND_FIELDS, ROUND_PRESETS[0]!);

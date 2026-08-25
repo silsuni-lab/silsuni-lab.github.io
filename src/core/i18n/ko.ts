@@ -124,6 +124,12 @@ export const ko = {
   'round.backRatio.20': '20% · 기본',
   'round.backRatio.25': '25%',
   'round.backRatio.30': '30% · 경첩 넓게',
+  // 원통 화면 — 미리보기·모양 aria, 범례.
+  'round.shape.ariaLabel': (diameterMm: number, sideHeightMm: number, lidHeightMm: number) =>
+    `지름 ${diameterMm}mm, 옆높이 ${sideHeightMm}mm, 뚜껑 높이 ${lidHeightMm}mm 원통 파우치의 완성 예상 모습`,
+  'round.preview.ariaLabel': (count: number) => `원통 파우치 조각 ${count}종 미리보기`,
+  'round.legend.cut': '재단선 — 이 선을 따라 자릅니다',
+  'round.legend.seam': (seamMm: number) => `완성선 — 재단선에서 ${seamMm}mm 안쪽`,
   // 언어
   'lang.switch': '언어',
 };

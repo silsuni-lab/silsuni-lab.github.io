@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 choisuing
 
+import { t } from '../../core/i18n/messages';
+import type { Locale } from '../../core/i18n/locales';
 import type { Pagination } from '../../core/tiling';
 import type { RoundLayout, RoundPiece } from '../../core/round/layout';
 import { escapeXml, type LegendItem } from '../preview';
@@ -60,7 +62,7 @@ function pieceShape(
     ` fill="${fill}" stroke="${stroke}" stroke-width="${round1(width)}" />`;
 }
 
-export function renderRoundPreviewSvg(layout: RoundLayout, pagination: Pagination): string {
+export function renderRoundPreviewSvg(layout: RoundLayout, pagination: Pagination, locale: Locale): string {
   const w = layout.totalWidthMm;
   const h = layout.totalHeightMm;
   const cutStroke = w * CUT_STROKE_RATIO;
@@ -123,7 +125,7 @@ export function renderRoundPreviewSvg(layout: RoundLayout, pagination: Paginatio
   return [
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${round1(w)} ${round1(h)}"`,
     ` style="overflow: visible; width: 100%; max-width: 100%; height: auto;" role="img"`,
-    ` aria-label="${escapeXml(`원통 파우치 조각 ${layout.pieces.length}종 미리보기`)}">`,
+    ` aria-label="${escapeXml(t(locale, 'round.preview.ariaLabel', layout.pieces.length))}">`,
     shapes, tiles, tileLabels, labels,
     `</svg>`,
   ].join('');
@@ -133,16 +135,16 @@ export function renderRoundPreviewSvg(layout: RoundLayout, pagination: Paginatio
  * 범례는 실제로 그린 선만, 실제로 쓴 색으로 담는다. 원통에는 골선도
  * 중앙선도 없다 — 그리지도 않은 선을 적어 두면 도면에서 찾다가 헤맨다.
  */
-export function roundLegendItems(layout: RoundLayout): readonly LegendItem[] {
+export function roundLegendItems(layout: RoundLayout, locale: Locale): readonly LegendItem[] {
   const items: LegendItem[] = [
-    { swatch: 'swatch-cut', color: CUT_COLOR, text: '재단선 — 이 선을 따라 자릅니다' },
-    { swatch: 'swatch-tile', color: TILE_COLOR, text: '인쇄 페이지 경계 — 칸 번호는 PDF와 같습니다' },
+    { swatch: 'swatch-cut', color: CUT_COLOR, text: t(locale, 'round.legend.cut') },
+    { swatch: 'swatch-tile', color: TILE_COLOR, text: t(locale, 'legend.tile') },
   ];
   if (layout.seamMm > 0) {
     items.splice(1, 0, {
       swatch: 'swatch-seam',
       color: SEAM_COLOR,
-      text: `완성선 — 재단선에서 ${round1(layout.seamMm)}mm 안쪽`,
+      text: t(locale, 'round.legend.seam', round1(layout.seamMm)),
     });
   }
   return items;

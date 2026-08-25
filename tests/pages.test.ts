@@ -41,6 +41,45 @@ function idsOf(html: string): string[] {
 /** 한국어가 아닌 페이지들. 기준(ko)과 대조하거나 한글 잔존을 볼 때 쓴다. */
 const TRANSLATED = LANG_FILES.filter(([locale]) => locale !== DEFAULT_LOCALE);
 
+/** 원통(round) 페이지 파일. box와 같은 규칙 — 뿌리(ko)는 최상위, 나머지는 <locale>/ 아래. */
+const ROUND_LANG_FILE: Readonly<Record<Locale, string>> = {
+  ko: 'round-pouch-test/index.html',
+  en: 'en/round-pouch-test/index.html',
+  'zh-TW': 'zh-TW/round-pouch-test/index.html',
+  'zh-CN': 'zh-CN/round-pouch-test/index.html',
+  ja: 'ja/round-pouch-test/index.html',
+};
+const ROUND_FILES: readonly [Locale, string][] = LOCALES.map((l) => [l, ROUND_LANG_FILE[l]]);
+
+const roundSiteUrlOf = (locale: Locale) =>
+  locale === DEFAULT_LOCALE ? `${SITE_URL}/round-pouch-test/` : `${SITE_URL}/${locale}/round-pouch-test/`;
+
+describe('정적 페이지 — 원통 다섯 언어', () => {
+  it('각 언어에 원통 페이지가 있다', () => {
+    for (const [locale, file] of ROUND_FILES) {
+      expect(read(file), file).toMatch(new RegExp(`<html lang="${locale}">`));
+      expect(read(file), `${file} 드롭다운`).toContain('id="lang-select"');
+    }
+  });
+
+  it('한국어가 아닌 원통 페이지에는 한글이 없다', () => {
+    for (const [locale, file] of ROUND_FILES) {
+      if (locale === DEFAULT_LOCALE) continue;
+      expect(read(file), `${locale} 원통 한글 잔존`).not.toMatch(/[가-힣]/);
+    }
+  });
+
+  it('원통 페이지에 로케일 전부의 교차 링크와 x-default가 있다', () => {
+    for (const [, file] of ROUND_FILES) {
+      const html = read(file);
+      for (const locale of LOCALES) {
+        expect(html, `${file} ${locale}`).toContain(`hreflang="${locale}" href="${roundSiteUrlOf(locale)}"`);
+      }
+      expect(html, `${file} x-default`).toContain(`hreflang="x-default" href="${roundSiteUrlOf(DEFAULT_LOCALE)}"`);
+    }
+  });
+});
+
 describe('정적 페이지 — 다섯 언어', () => {
   it('로케일마다 정적 페이지가 하나씩 있다', () => {
     // LOCALES를 늘려 놓고 페이지를 안 만들면 링크만 나가고 404가 된다.
@@ -121,11 +160,14 @@ describe('hreflang — 언어별 주소를 남긴다', () => {
 });
 
 describe('sitemap.xml', () => {
-  it('로케일마다 한 줄씩 담는다 — URL 개수가 로케일 수와 같다', () => {
+  it('box·round 로케일마다 한 줄씩 담는다', () => {
     const xml = read('public/sitemap.xml');
-    expect(xml.match(/<loc>/g)).toHaveLength(LOCALES.length);
+    // box 5개 + round 5개 = 로케일 수의 두 배. 손으로 세면 두 화면을 나중에
+    // 넣을 때 잊는다.
+    expect(xml.match(/<loc>/g)).toHaveLength(LOCALES.length * 2);
     for (const locale of LOCALES) {
       expect(xml).toContain(`<loc>${siteUrlOf(locale)}</loc>`);
+      expect(xml).toContain(`<loc>${roundSiteUrlOf(locale)}</loc>`);
     }
   });
 

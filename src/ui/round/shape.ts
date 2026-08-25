@@ -2,6 +2,8 @@
 // Copyright (C) 2026 choisuing
 
 import type { RoundDimensions } from '../../core/round/dimensions';
+import { t } from '../../core/i18n/messages';
+import type { Locale } from '../../core/i18n/locales';
 import { escapeXml } from '../preview';
 // 눈높이와 투명도는 색이 아니라 그리는 규칙이라 shape.ts에 남아 있다.
 import { DEPTH_ANGLE_DEG, DEPTH_SCALE, HIDDEN_SIDE_OPACITY } from '../shape';
@@ -68,7 +70,7 @@ function ring(
     ` stroke-width="${round1(width)}" stroke-linecap="round"${extra} />`;
 }
 
-export function renderRoundShapeSvg(dimensions: RoundDimensions): string {
+export function renderRoundShapeSvg(dimensions: RoundDimensions, locale: Locale): string {
   const { diameterMm: D, sideHeightMm: Hs, lidHeightMm: Hl } = dimensions;
 
   const rx = D / 2;
@@ -157,9 +159,7 @@ export function renderRoundShapeSvg(dimensions: RoundDimensions): string {
   const viewWidth = spanX + pad + rightPad;
   const viewHeight = topPad + Hs + 2 * ry + pad;
 
-  const label =
-    `지름 ${round1(D)}mm, 옆높이 ${round1(Hs)}mm, 뚜껑 높이 ${round1(Hl)}mm` +
-    ` 원통 파우치의 완성 예상 모습`;
+  const label = t(locale, 'round.shape.ariaLabel', round1(D), round1(Hs), round1(Hl));
 
   return [
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${round1(viewWidth)} ${round1(viewHeight)}"`,

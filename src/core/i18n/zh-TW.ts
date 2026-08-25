@@ -121,6 +121,12 @@ export const zhTW: Catalog = {
   'round.backRatio.20': '20% · 預設',
   'round.backRatio.25': '25%',
   'round.backRatio.30': '30% · 鉸鏈寬',
+  // 원통 화면 — 미리보기·모양 aria, 범례.
+  'round.shape.ariaLabel': (diameterMm: number, sideHeightMm: number, lidHeightMm: number) =>
+    `完成後的圓筒袋 — 直徑 ${diameterMm}mm、側面 ${sideHeightMm}mm、蓋 ${lidHeightMm}mm`,
+  'round.preview.ariaLabel': (count: number) => `圓筒袋版型，共 ${count} 片`,
+  'round.legend.cut': '裁切線 — 沿此線裁剪',
+  'round.legend.seam': (seamMm: number) => `縫合線 — 距裁切線向內 ${seamMm}mm`,
   // 언어
   'lang.switch': '語言',
 };
