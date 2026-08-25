@@ -25,9 +25,12 @@ const localeInputs = Object.fromEntries(
 );
 
 const roundInputs = Object.fromEntries(
+  // 라운드는 `/round-pouch-test/{lang}/` — 라운드가 최상위, 언어가 그 아래다.
+  // 박스(`/{lang}/`)와 달리 구조가 뒤집힌다. 그래도 목록은 LOCALES에서 유도해
+  // 언어를 늘리면 라운드 페이지도 함께 있어야 빌드가 통과한다.
   LOCALES.map((locale) => [
     `round-${locale}`,
-    resolve(locale === DEFAULT_LOCALE ? 'round-pouch-test/index.html' : `${locale}/round-pouch-test/index.html`),
+    resolve(locale === DEFAULT_LOCALE ? 'round-pouch-test/index.html' : `round-pouch-test/${locale}/index.html`),
   ]),
 );
 
