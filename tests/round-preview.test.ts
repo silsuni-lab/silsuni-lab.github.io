@@ -78,6 +78,31 @@ describe('renderRoundPreviewSvg', () => {
     const bare = buildRoundLayout({ diameterMm: 130, sideHeightMm: 130, lidHeightMm: 30 }, 0);
     expect(renderRoundPreviewSvg(bare, paginate(bare, 'a4'), 'ko')).not.toContain('class="seam-line"');
   });
+
+  it('재단선과 완성선을 같은 색·같은 두께로 긋는다', () => {
+    // 사각 미리보기와 같은 스펙이다. colors.ts의 PREVIEW_LINE_COLOR 참고.
+    const cut = svg.match(/class="piece piece-back"[^>]*stroke="([^"]+)" stroke-width="([\d.]+)"/)!;
+    const seam = svg.match(/class="seam-line"[^>]*stroke="([^"]+)" stroke-width="([\d.]+)"/)!;
+    expect(seam[1]).toBe(cut[1]);
+    expect(Number(seam[2])).toBe(Number(cut[2]));
+  });
+
+  it('시접이 있으면 재단선과 완성선 사이가 띠로 남는다', () => {
+    /*
+     * 이 띠가 위 결정의 전제다. 두 선이 색도 두께도 같으므로, 어느 쪽을
+     * 잘라야 하는지 알려 주는 것은 띠의 바깥이냐 안이냐뿐이다. 띠가 사라지면
+     * 원통 도안은 같은 선 두 줄만 남아 읽을 수 없게 된다.
+     */
+    const cutFill = svg.match(/class="piece piece-back"[^>]*fill="([^"]+)"/)![1];
+    const seamFill = svg.match(/class="seam-line"[^>]*fill="([^"]+)"/)![1];
+    expect(cutFill).not.toBe(seamFill);
+    expect(cutFill).not.toBe('none');
+
+    // 시접이 0이면 띠가 없으므로 재단선은 도안 채움색으로 돌아간다.
+    const bare = buildRoundLayout({ diameterMm: 130, sideHeightMm: 130, lidHeightMm: 30 }, 0);
+    const bareSvg = renderRoundPreviewSvg(bare, paginate(bare, 'a4'), 'ko');
+    expect(bareSvg.match(/class="piece piece-back"[^>]*fill="([^"]+)"/)![1]).toBe(seamFill);
+  });
 });
 
 describe('roundLegendItems — 실제로 그린 선만 담는다', () => {

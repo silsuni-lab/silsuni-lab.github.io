@@ -12,9 +12,9 @@ import { escapeXml, type LegendItem } from '../preview';
  */
 import {
   BAND_LABEL_COLOR,
-  CUT_COLOR,
   PATTERN_FILL,
-  SEAM_COLOR,
+  PREVIEW_LINE_COLOR,
+  SEAM_BAND_FILL,
   TILE_COLOR,
 } from '../../core/colors';
 
@@ -24,7 +24,6 @@ const round1 = (v: number) => Math.round(v * 10) / 10;
  * 선 굵기와 글자 크기는 도안 폭에 비례시킨다. mm 고정값으로 두면 작은
  * 도안에서 선이 굵고 글자가 커 보이고, 큰 도안에서는 반대가 된다.
  */
-const CUT_STROKE_RATIO = 0.004;
 const THIN_STROKE_RATIO = 0.002;
 const LABEL_RATIO = 0.026;
 /** 칸 번호 글자. 사각 미리보기와 같은 값이라 두 화면에서 같은 크기로 보인다. */
@@ -34,8 +33,8 @@ const TILE_LABEL_RATIO = 0.024;
  * 조각 하나의 테두리. 원과 사각형을 같은 함수로 받는다.
  *
  * insetMm만큼 안으로 들어간 자리에 그린다 — 0이면 재단선, 시접 폭이면
- * 완성선이다. 채움은 재단선일 때만 준다. 완성선까지 칠하면 재단선 채움을
- * 덮어 시접 자리만 색이 달라 보인다.
+ * 완성선이다. 채움은 부르는 쪽이 정한다. 시접 띠를 만들려면 바깥 도형과
+ * 안쪽 도형에 서로 다른 색을 줘야 하기 때문이다.
  */
 function pieceShape(
   piece: RoundPiece,
@@ -43,8 +42,8 @@ function pieceShape(
   cls: string,
   stroke: string,
   width: number,
+  fill: string,
 ): string {
-  const fill = insetMm === 0 ? PATTERN_FILL : 'none';
   if (piece.shape === 'circle') {
     const r = piece.widthMm / 2 - insetMm;
     if (r <= 0) return '';
@@ -65,18 +64,28 @@ function pieceShape(
 export function renderRoundPreviewSvg(layout: RoundLayout, pagination: Pagination, locale: Locale): string {
   const w = layout.totalWidthMm;
   const h = layout.totalHeightMm;
-  const cutStroke = w * CUT_STROKE_RATIO;
   const thinStroke = w * THIN_STROKE_RATIO;
   const labelSize = round1(w * LABEL_RATIO);
   const tileLabelSize = round1(w * TILE_LABEL_RATIO);
 
   const shapes = layout.pieces
     .map((p) => {
-      // 재단선이 먼저다. 완성선은 시접만큼 안으로 들어간 자리라 위에 얹는다.
-      const cut = pieceShape(p, 0, `piece piece-${p.id}`, CUT_COLOR, cutStroke);
+      /*
+       * 재단선이 먼저고 완성선을 그 위에 얹는다. 두 도형의 채움색을 달리
+       * 하면 그 사이(=시접)만 분홍으로 남는다 — 사각 미리보기가 evenodd로
+       * 만드는 띠와 같은 것을, 조각이 이미 따로 놓여 있어 더 쉽게 얻는다.
+       *
+       * 이 띠가 있어야 도안 선을 한 색으로 합칠 수 있다. 재단선과 완성선이
+       * 색도 두께도 같으므로, 둘을 가르는 것은 띠의 바깥이냐 안이냐뿐이다.
+       */
+      const hasSeam = layout.seamMm > 0;
+      const cut = pieceShape(
+        p, 0, `piece piece-${p.id}`, PREVIEW_LINE_COLOR, thinStroke,
+        hasSeam ? SEAM_BAND_FILL : PATTERN_FILL,
+      );
       // 시접이 0이면 완성선이 재단선과 같은 자리다. 겹쳐 그으면 선만 두꺼워진다.
-      const seam = layout.seamMm > 0
-        ? pieceShape(p, layout.seamMm, 'seam-line', SEAM_COLOR, thinStroke)
+      const seam = hasSeam
+        ? pieceShape(p, layout.seamMm, 'seam-line', PREVIEW_LINE_COLOR, thinStroke, PATTERN_FILL)
         : '';
       return cut + seam;
     })
@@ -138,14 +147,25 @@ export function renderRoundPreviewSvg(layout: RoundLayout, pagination: Paginatio
  */
 export function roundLegendItems(layout: RoundLayout, locale: Locale): readonly LegendItem[] {
   const items: LegendItem[] = [
-    { swatch: 'swatch-cut', color: CUT_COLOR, text: t(locale, 'round.legend.cut') },
+    { swatch: 'swatch-cut', color: PREVIEW_LINE_COLOR, text: t(locale, 'round.legend.cut') },
     { swatch: 'swatch-tile', color: TILE_COLOR, text: t(locale, 'legend.tile') },
   ];
   if (layout.seamMm > 0) {
     items.splice(1, 0, {
       swatch: 'swatch-seam',
-      color: SEAM_COLOR,
+      color: PREVIEW_LINE_COLOR,
       text: t(locale, 'round.legend.seam', round1(layout.seamMm)),
+    });
+    /*
+     * 시접 띠. 도안 선을 한 색으로 합친 뒤로는 이 띠가 재단선과 완성선을
+     * 가르는 유일한 단서라, 범례에서 빠지면 안 된다. 문구는 사각과 같은
+     * 것을 쓴다 — 뜻이 똑같고, 두 화면이 같은 것을 다르게 부를 이유가 없다.
+     */
+    items.splice(2, 0, {
+      swatch: 'swatch-seam-band',
+      color: PREVIEW_LINE_COLOR,
+      fill: SEAM_BAND_FILL,
+      text: t(locale, 'legend.seamAllowance', round1(layout.seamMm)),
     });
   }
   return items;
