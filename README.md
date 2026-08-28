@@ -35,7 +35,7 @@ Enter the dimensions in millimetres. The tool drafts the flat pattern, tiles it 
 
 **What it does for you**
 
-- **True scale, verified.** Two red test squares are printed on the first sheet — one 30&nbsp;mm (3&nbsp;cm), one 1&nbsp;inch. Measure whichever suits your ruler; if it matches, every other measurement is right.
+- **True scale, verified.** A red test square is printed on the first sheet. Measure it; if it matches, every other measurement is right. **In English you get two** — 30&nbsp;mm (3&nbsp;cm) and 1&nbsp;inch — so you can use whichever ruler you own. The other four languages get the 30&nbsp;mm square alone, since an inch ruler is not what those readers reach for.
 - **Multi-sheet assembly.** Neighbouring sheets overlap by 10&nbsp;mm. Cut along the dashed line on the left and top edges, then slide each sheet until the red diamonds line up and tape.
 - **Seam allowance is optional.** On by default. Turn it off and the pattern comes out at finished size, for when you prefer to add the allowance by hand as you cut. The sheet is then labelled `시접없음` (*no seam allowance*) and the file gets a `-noseam` suffix, so a stray printout can never be mistaken for the other kind.
 - **Half-size printing** *(boxy pouch only)*. The pattern is symmetric about the middle of the base, so you can print only the top half and place the marked fold edge on folded fabric. Roughly halves the number of sheets.
@@ -78,9 +78,18 @@ npm run build    # dist/ 생성
 
 ## 축척 확인
 
-첫 도안 장 오른쪽 위에 빨간 네모가 **둘** 인쇄된다. 왼쪽이 1인치(25.4mm), 오른쪽이 30mm(3cm)다. 자기 자에 맞는 쪽을 재서 눈금과 맞으면 나머지 치수도 전부 맞다.
+첫 도안 장 오른쪽 위에 빨간 네모가 인쇄된다. 재서 눈금과 맞으면 나머지 치수도 전부 맞다.
 
-둘 다 찍는 까닭이 있다. 하나만 있으면 다른 자를 쓰는 사람은 눈금 사이를 눈대중해야 하고, 그러면 축척이 어긋났는지 맞았는지를 못 가린다 — 둘 다 찍으면 그런 경우가 없다.
+**몇 개가 찍히는지는 고른 언어를 따른다.**
+
+| 언어 | 찍히는 네모 |
+|---|---|
+| English | 1인치(25.4mm)와 30mm(3cm), 둘 |
+| 그 밖의 넷 | 30mm(3cm) 하나 |
+
+인치 자를 쓰는 곳은 영어를 고르는 사람들뿐이다. 나머지 언어권에 1인치 네모를 찍으면 잴 일이 없는 도형이 첫 장 자리만 차지한다. 영어에서는 자가 갈리므로 둘을 나란히 찍어 자기 자에 맞는 쪽을 재게 한다 — 하나만 있으면 다른 자를 쓰는 사람이 눈금 사이를 눈대중해야 하고, 그러면 축척이 어긋났는지 맞았는지를 못 가린다.
+
+30mm를 오른쪽 끝에 붙박고 1인치를 그 왼쪽에 붙인다. 인치가 빠져도 30mm는 제자리 그대로라 언어를 바꿔도 도안이 밀리지 않는다.
 
 화면과 입력은 mm 하나로만 말한다.
 
@@ -165,7 +174,7 @@ npm run build    # dist/ 생성
 
 **안내 페이지는 없다.** PDF는 도안 장으로만 이루어진다. 설명 한 장을 앞에 두면 실수로 그것까지 인쇄하게 되고, 무엇보다 읽지 않는다.
 
-대신 **첫 도안 장(A1) 오른쪽 위**에 **빨간 축척 확인 네모**(1인치·30mm)가 찍혀 나온다. 인쇄한 뒤 자기 자에 맞는 쪽을 재서 눈금과 맞으면 그대로 재단하고, 어긋났으면 배율을 고쳐 다시 인쇄한 뒤 재단한다. 프린터 배율은 모든 장에 똑같이 적용되므로 한 장만 재면 된다.
+대신 **첫 도안 장(A1) 오른쪽 위**에 **빨간 축척 확인 네모**가 찍혀 나온다(30mm 하나, 영어에서는 1인치까지 둘 — [축척 확인](#축척-확인) 참고). 인쇄한 뒤 재서 눈금과 맞으면 그대로 재단하고, 어긋났으면 배율을 고쳐 다시 인쇄한 뒤 재단한다. 프린터 배율은 모든 장에 똑같이 적용되므로 한 장만 재면 된다.
 
 사각형은 **도안보다 먼저 그린다.** 나중에 그리면 흰 바탕이 재단선을 끊는다. 자를 대는 것은 사각형의 빨간 변이라 도안 선이 위로 지나가도 재는 데 지장이 없다.
 
@@ -219,7 +228,7 @@ A4 3열을 예로 들면 겹침 구간은 도안 `184~194`이고 그 한가운�
 
 점선은 도안 선이 아니라 조립 표시라서 진회색 긴 점선(`6,3`)으로 긋는다. 재단선(검정 실선)·완성선(`2,2` 점선)·접힘선(연회색 `4,4` 점선)과 색과 간격 양쪽으로 갈린다.
 
-**빨강은 원래 이 자리(첫 장 오른쪽 위)의 단일 축척 사각형 전용이었다.** 지금은 1인치·30mm 두 네모가 모두 빨갛고, 마름모도 같은 빨강이라 색만으로는 가리기 어렵다. 그래서 `tests/pdf.test.ts`는 한 변 30mm라는 크기로 30mm 네모를 식별한다.
+**빨강은 원래 이 자리(첫 장 오른쪽 위)의 단일 축척 사각형 전용이었다.** 지금은 축척 네모(영어면 둘)가 모두 빨갛고, 마름모도 같은 빨강이라 색만으로는 가리기 어렵다. 그래서 `tests/pdf.test.ts`는 한 변 30mm라는 크기로 30mm 네모를 식별한다.
 
 ## 도면의 선과 표시
 
@@ -314,7 +323,7 @@ A4 3열을 예로 들면 겹침 구간은 도안 `184~194`이고 그 한가운�
 ## 구조
 
 - `src/core/` — 도안 계산·타일링·PDF 생성. DOM을 참조하지 않아 Node에서도 그대로 쓸 수 있다.
-- `src/core/page.ts` — PDF 페이지 기계(맞춤표·칸 번호·겹침·1인치·30mm 확인 사각). 파우치 종류와 무관해서 따로 갈라 두었다.
+- `src/core/page.ts` — PDF 페이지 기계(맞춤표·칸 번호·겹침·축척 확인 사각). 파우치 종류와 무관해서 따로 갈라 두었다.
 - `src/core/round/` — 원통 파우치의 치수 검증·조각 배치·PDF. 사각 쪽과 같은 모양을 따르되 파일을 나눠 서로 섞이지 않게 했다.
 - `scripts/build-korean-font.py` — PDF용 한글 서브셋 폰트 생성기.
 - `src/ui/` — 입력 폼, 전개도 미리보기(`preview.ts`), 완성 예상 선화(`shape.ts`).

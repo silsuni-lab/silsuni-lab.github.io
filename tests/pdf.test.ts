@@ -38,6 +38,7 @@ import {
   toPagePoint,
 } from '../src/core/pdf';
 import type { Dimensions } from '../src/core/dimensions';
+import { DEFAULT_LOCALE, type Locale } from '../src/core/i18n/locales';
 
 const travel: Dimensions = { widthMm: 270, depthMm: 100, heightMm: 140 };
 const layout = buildLayout(travel);
@@ -138,36 +139,60 @@ describe('buildPdf — 완성선', () => {
   });
 });
 
-describe('축척 확인용 네모 — mm 자와 인치 자에 하나씩', () => {
+describe('축척 확인용 네모 — 30mm는 늘, 1인치는 영어에서만', () => {
   /*
-   * 네모를 둘 그린다. 30mm는 mm 자로, 25.4mm(1인치)는 인치 자로 잰다.
-   * 하나만 그리면 다른 자를 쓰는 사람은 눈금 사이를 눈대중해야 하고,
-   * 그러면 축척이 틀렸는지 맞았는지를 못 가린다 — 원단이 걸린 자리다.
+   * 30mm 네모는 어느 언어에서나 그린다. 1인치 네모는 영어 화면에서만
+   * 덧붙인다 — 인치 자를 쓰는 곳은 영어를 고르는 사람들뿐이고, 나머지
+   * 언어권에서는 잴 일이 없는 네모가 첫 장 자리만 차지한다.
    *
-   * 둘 다 인쇄한다. 하나만 있으면 다른 자를 쓰는 사람이 잴 수 없는 네모를
-   * 받는다.
+   * 30mm를 오른쪽 끝에 붙박고 인치를 그 왼쪽에 붙이므로, 인치가 빠져도
+   * 30mm는 제자리 그대로다. 아래 "자리가 로케일에 흔들리지 않는다"가 지킨다.
    */
-  const rectsOf = (p: Pagination) => scaleSquareRectsMm(p);
+  const rectsOf = (p: Pagination, locale: Locale = DEFAULT_LOCALE) => scaleSquareRectsMm(p, locale);
+  const metricOf = (p: Pagination, locale: Locale = DEFAULT_LOCALE) =>
+    rectsOf(p, locale).find((r) => r.sizeMm === SCALE_SQUARE_MM)!;
 
-  it('네모가 둘이고 각각 30mm와 1인치다', () => {
+  it('영어가 아니면 30mm 하나만 그린다', () => {
+    for (const locale of ['ko', 'ja', 'zh-TW', 'zh-CN'] as const) {
+      const rects = rectsOf(paginate(layout, 'a4'), locale);
+      expect(rects, locale).toHaveLength(1);
+      expect(rects[0]!.sizeMm).toBe(30);
+    }
+  });
+
+  it('영어면 30mm와 1인치 둘을 그린다', () => {
     // 반환 순서: [인치(왼쪽), mm(오른쪽)] — 인치가 작고 왼쪽, mm이 오른쪽에 플러시.
-    const [inch, cm] = rectsOf(paginate(layout, 'a4'));
-    expect(inch.sizeMm).toBeCloseTo(25.4, 10);
-    expect(cm.sizeMm).toBe(30);
+    const [inch, cm] = rectsOf(paginate(layout, 'a4'), 'en');
+    expect(inch!.sizeMm).toBeCloseTo(25.4, 10);
+    expect(cm!.sizeMm).toBe(30);
     expect(SCALE_SQUARE_MM).toBe(30);
     expect(INCH_SQUARE_MM).toBeCloseTo(25.4, 10);
   });
 
-  it('나란히 놓이고 서로 겹치지 않는다', () => {
-    const [inch, cm] = rectsOf(paginate(layout, 'a4'));
+  it('영어에서 둘이 나란히 놓이고 서로 겹치지 않는다', () => {
+    const [inch, cm] = rectsOf(paginate(layout, 'a4'), 'en');
     // 위를 맞춰야 두 네모의 윗변이 한 줄에 놓여 눈으로 견주기 쉽다.
-    expect(inch.yMm).toBe(cm.yMm);
+    expect(inch!.yMm).toBe(cm!.yMm);
     // 인치 네모가 왼쪽, mm 네모가 오른쪽. 사이가 벌어져 있어야 두 개로 보인다.
-    expect(inch.xMm + inch.sizeMm).toBeLessThan(cm.xMm);
-    expect(cm.xMm - (inch.xMm + inch.sizeMm)).toBeGreaterThanOrEqual(3);
+    expect(inch!.xMm + inch!.sizeMm).toBeLessThan(cm!.xMm);
+    expect(cm!.xMm - (inch!.xMm + inch!.sizeMm)).toBeGreaterThanOrEqual(3);
   });
 
-  it('모든 용지·방향에서 둘 다 인쇄 영역 안에 들어간다', () => {
+  it('30mm 네모 자리가 로케일에 흔들리지 않는다', () => {
+    /*
+     * 인치가 붙고 떨어져도 30mm는 같은 자리여야 한다. 흔들리면 언어를 바꿀
+     * 때마다 첫 장 오른쪽 위가 달라 보이고, 도안 자리까지 밀릴 수 있다.
+     */
+    const pagination = paginate(layout, 'a4');
+    const ko = metricOf(pagination, 'ko');
+    for (const locale of ['en', 'ja', 'zh-TW', 'zh-CN'] as const) {
+      const other = metricOf(pagination, locale);
+      expect(other.xMm, locale).toBe(ko.xMm);
+      expect(other.yMm, locale).toBe(ko.yMm);
+    }
+  });
+
+  it('모든 용지·방향·로케일에서 인쇄 영역 안에 들어간다', () => {
     for (const paper of ['a4', 'a3'] as const) {
       for (const dims of [
         { widthMm: 270, depthMm: 100, heightMm: 140 },
@@ -175,23 +200,25 @@ describe('축척 확인용 네모 — mm 자와 인치 자에 하나씩', () => 
         { widthMm: 400, depthMm: 200, heightMm: 300 },
       ]) {
         const pagination = paginate(buildLayout(dims), paper);
-        for (const rect of rectsOf(pagination)) {
-          expect(rect.xMm).toBeGreaterThanOrEqual(PAGE_MARGIN_MM);
-          expect(rect.yMm).toBeGreaterThanOrEqual(PAGE_MARGIN_MM);
-          expect(rect.xMm + rect.sizeMm).toBeLessThanOrEqual(
-            pagination.pageWidthMm - PAGE_MARGIN_MM,
-          );
-          expect(rect.yMm + rect.sizeMm).toBeLessThanOrEqual(
-            pagination.pageHeightMm - PAGE_MARGIN_MM,
-          );
+        for (const locale of ['ko', 'en'] as const) {
+          for (const rect of rectsOf(pagination, locale)) {
+            expect(rect.xMm).toBeGreaterThanOrEqual(PAGE_MARGIN_MM);
+            expect(rect.yMm).toBeGreaterThanOrEqual(PAGE_MARGIN_MM);
+            expect(rect.xMm + rect.sizeMm).toBeLessThanOrEqual(
+              pagination.pageWidthMm - PAGE_MARGIN_MM,
+            );
+            expect(rect.yMm + rect.sizeMm).toBeLessThanOrEqual(
+              pagination.pageHeightMm - PAGE_MARGIN_MM,
+            );
+          }
         }
       }
     }
   });
 
-  it('도안 이름과 멀도록 둘 다 오른쪽 위에 놓인다', () => {
+  it('도안 이름과 멀도록 오른쪽 위에 놓인다', () => {
     const pagination = paginate(layout, 'a4');
-    for (const rect of rectsOf(pagination)) {
+    for (const rect of rectsOf(pagination, 'en')) {
       expect(rect.xMm).toBeGreaterThan(pagination.pageWidthMm / 2);
       expect(rect.yMm).toBeLessThan(pagination.pageHeightMm / 2);
     }
@@ -200,7 +227,7 @@ describe('축척 확인용 네모 — mm 자와 인치 자에 하나씩', () => 
   it('첫 도안 장에만 그리고 나머지 장은 건드리지 않는다', async () => {
     const pagination = paginate(layout, 'a4');
     expect(pagination.pages.length).toBeGreaterThan(1);
-    const doc = await PDFDocument.load(await buildPdf(layout, pagination));
+    const doc = await PDFDocument.load(await buildPdf(layout, pagination, 'en'));
 
     expect(hasScaleSquare(doc, 0)).toBe(true);
     expect(hasInchSquare(doc, 0)).toBe(true);
@@ -210,9 +237,18 @@ describe('축척 확인용 네모 — mm 자와 인치 자에 하나씩', () => 
     }
   });
 
-  it('두 네모가 실제로 콘텐츠에 들어간다', async () => {
+  it('한국어 PDF에는 30mm만 들어가고 인치는 아예 없다', async () => {
     const pagination = paginate(layout, 'a4');
-    const doc = await PDFDocument.load(await buildPdf(layout, pagination));
+    const doc = await PDFDocument.load(await buildPdf(layout, pagination, 'ko'));
+    const content = pageContent(doc, 0);
+    expect(content).toContain(squareEdge(30));
+    expect(content).not.toContain(squareEdge(25.4));
+    expect(hasInchSquare(doc, 0)).toBe(false);
+  });
+
+  it('영어 PDF에는 두 네모가 모두 들어간다', async () => {
+    const pagination = paginate(layout, 'a4');
+    const doc = await PDFDocument.load(await buildPdf(layout, pagination, 'en'));
     expect(doc.getPageCount()).toBe(pagination.pages.length);
     const content = pageContent(doc, 0);
     // 두 크기의 변이 다 나와야 한다.

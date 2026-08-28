@@ -420,18 +420,30 @@ export interface ScaleSquare {
 }
 
 /**
- * 축척 확인용 네모 둘의 자리와 크기 (mm). 첫 도안 장 오른쪽 위에 나란히 둔다.
- * 1인치(왼쪽)와 30mm(오른쪽 플러시). 자를 고르게 하지 않고 둘 다 인쇄해,
- * 어느 자를 쓰는 사람이든 축척이 맞는지 잴 수 있게 한다.
+ * 축척 확인용 네모의 자리와 크기 (mm). 첫 도안 장 오른쪽 위에 둔다.
+ *
+ * 30mm 네모는 언제나 그린다. 1인치 네모는 **영어 화면에서만** 덧붙인다.
+ * 인치 자를 쓰는 곳은 영어를 고르는 사람들뿐이고, 나머지 언어권에서는 잴
+ * 일이 없는 네모가 첫 장 자리만 차지한다.
+ *
+ * 30mm를 오른쪽 끝에 붙박고 1인치를 그 왼쪽에 붙이므로, 인치가 빠져도
+ * 30mm는 제자리 그대로다 — 언어를 바꿔도 도안이 밀리지 않는다.
  */
-export function scaleSquareRectsMm(pagination: Pagination): readonly [ScaleSquare, ScaleSquare] {
+export function scaleSquareRectsMm(
+  pagination: Pagination,
+  locale: Locale,
+): readonly ScaleSquare[] {
   const yMm = PAGE_MARGIN_MM + 10;
   const rightMm = pagination.pageWidthMm - PAGE_MARGIN_MM - 2;
   const metricXMm = rightMm - SCALE_SQUARE_MM;
   const inchXMm = metricXMm - SQUARE_GAP_MM - INCH_SQUARE_MM;
+  const metric: ScaleSquare = {
+    xMm: metricXMm, yMm, sizeMm: SCALE_SQUARE_MM, labelKey: 'pdf.testSquareMetric',
+  };
+  if (locale !== 'en') return [metric];
   return [
     { xMm: inchXMm, yMm, sizeMm: INCH_SQUARE_MM, labelKey: 'pdf.testSquareImperial' },
-    { xMm: metricXMm, yMm, sizeMm: SCALE_SQUARE_MM, labelKey: 'pdf.testSquareMetric' },
+    metric,
   ];
 }
 
@@ -458,7 +470,7 @@ export function drawPatternNote(ctx: PageContext, boldFont: PDFFont, locale: Loc
  * 빨간색으로만 그린다. 라벨은 로케일별 문구를 쓴다.
  */
 export function drawScaleSquares(page: PDFPage, pagination: Pagination, font: PDFFont, locale: Locale) {
-  for (const rect of scaleSquareRectsMm(pagination)) {
+  for (const rect of scaleSquareRectsMm(pagination, locale)) {
     const topLeft = toFramePoint(pagination, rect.xMm, rect.yMm);
     const sidePt = rect.sizeMm * MM_TO_PT;
 

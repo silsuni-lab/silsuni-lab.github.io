@@ -189,15 +189,34 @@ describe('네모 라벨이 말하는 크기', () => {
   });
 });
 
-describe('실제 PDF에 두 네모가 다 들어간다', () => {
-  const sidePt = (mm: number) => String(mm * MM_TO_PT);
+describe('실제 PDF의 축척 네모', () => {
+  /*
+   * 한 수만 찾으면 안 된다. 1인치는 정확히 72pt인데, 그 두 글자는 좌표와
+   * 색상값 안에도 흔히 들어 있어 아무 장에서나 걸린다. 두 수를 나란히 잇는
+   * 경로 레코드로 찾으면 그런 오탐이 없다 — pdf.test.ts의 squareEdge와 같다.
+   */
+  const sidePt = (mm: number) => {
+    const pt = String(mm * MM_TO_PT);
+    return `${pt} ${pt} l`;
+  };
 
-  it('모든 로케일의 첫 장에 30mm와 1인치 네모가 있다', async () => {
+  it('모든 로케일의 첫 장에 30mm 네모가 있다', async () => {
     for (const locale of LOCALES) {
       const doc = await PDFDocument.load(await buildPdf(layout, pagination, locale));
-      const text = pageText(doc, 0);
-      expect(text, `${locale} 30mm 네모`).toContain(sidePt(SCALE_SQUARE_MM));
-      expect(text, `${locale} 1인치 네모`).toContain(sidePt(INCH_SQUARE_MM));
+      expect(pageText(doc, 0), `${locale} 30mm 네모`).toContain(sidePt(SCALE_SQUARE_MM));
+    }
+  });
+
+  it('1인치 네모는 영어에만 있다', async () => {
+    /*
+     * 인치 자를 쓰는 곳은 영어를 고르는 사람들뿐이다. 나머지 언어권에서는
+     * 잴 일이 없는 네모가 첫 장 자리만 차지한다 — page.ts의
+     * scaleSquareRectsMm 주석 참고.
+     */
+    for (const locale of LOCALES) {
+      const doc = await PDFDocument.load(await buildPdf(layout, pagination, locale));
+      const has = pageText(doc, 0).includes(sidePt(INCH_SQUARE_MM));
+      expect(has, `${locale} 1인치 네모`).toBe(locale === 'en');
     }
   });
 
@@ -211,16 +230,16 @@ describe('실제 PDF에 두 네모가 다 들어간다', () => {
      */
     const doc = await PDFDocument.create();
     const font = await doc.embedFont(StandardFonts.Helvetica);
-    const [inch, cm] = scaleSquareRectsMm(pagination);
+    const [inch, cm] = scaleSquareRectsMm(pagination, 'en');
     const size = 9;
 
     const inchWidthPt = font.widthOfTextAtSize(t('en', 'pdf.testSquareImperial'), size);
-    expect(inch.xMm * MM_TO_PT + inchWidthPt, '인치 라벨이 mm 네모를 침범').toBeLessThanOrEqual(
-      cm.xMm * MM_TO_PT,
+    expect(inch!.xMm * MM_TO_PT + inchWidthPt, '인치 라벨이 mm 네모를 침범').toBeLessThanOrEqual(
+      cm!.xMm * MM_TO_PT,
     );
 
     const cmWidthPt = font.widthOfTextAtSize(t('en', 'pdf.testSquareMetric'), size);
-    expect(cm.xMm * MM_TO_PT + cmWidthPt, 'mm 라벨이 페이지 밖으로').toBeLessThanOrEqual(
+    expect(cm!.xMm * MM_TO_PT + cmWidthPt, 'mm 라벨이 페이지 밖으로').toBeLessThanOrEqual(
       pagination.pageWidthMm * MM_TO_PT,
     );
   });

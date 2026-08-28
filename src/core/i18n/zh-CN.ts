@@ -46,8 +46,9 @@ export const zhCN: Catalog = {
   'control.addSeam': '加缝份',
   'control.foldHalf': '对折版型',
   'control.download': '下载 PDF',
-  // 인쇄물에 네모가 둘 있으므로 크기를 짚지 않는다. 어느 자를 쓰든
-  // 자기 자에 맞는 네모를 재면 된다 — 크기는 네모 옆 라벨이 말한다.
+  // 크기를 짚지 않는다. 찍히는 네모 수가 언어를 따르므로(영어는 30mm와
+  // 1인치 둘, 나머지는 30mm 하나 — page.ts의 scaleSquareRectsMm 참고) 한
+  // 문구로 둘 다 가리켜야 한다. 크기는 네모 옆 라벨이 말한다.
   'control.printCheck': '打印后请用尺确认方格！',
 
   // 요약
@@ -118,7 +119,7 @@ export const zhCN: Catalog = {
   'round.error.backRatio': (min: number, max: number) => `背面比例必须介于 ${min}% 和 ${max}% 之间。`,
   'round.backRatio.10': '10% · 铰链窄',
   'round.backRatio.15': '15%',
-  'round.backRatio.20': '20% · 默认',
+  'round.backRatio.20': '20% · 默认（推荐）',
   'round.backRatio.25': '25%',
   'round.backRatio.30': '30% · 铰链宽',
   // 원통 화면 — 미리보기·모양 aria, 범례.

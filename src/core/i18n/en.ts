@@ -61,8 +61,9 @@ export const en: Catalog = {
   // 골선 반절 출력. 관례어 place on fold를 그대로 쓴다.
   'control.foldHalf': 'Half pattern (place on fold)',
   'control.download': 'Download PDF',
-  // 인쇄물에 네모가 둘 있으므로 크기를 짚지 않는다. 어느 자를 쓰든
-  // 자기 자에 맞는 네모를 재면 된다 — 크기는 네모 옆 라벨이 말한다.
+  // 크기를 짚지 않는다. 찍히는 네모 수가 언어를 따르므로(영어는 30mm와
+  // 1인치 둘, 나머지는 30mm 하나 — page.ts의 scaleSquareRectsMm 참고) 한
+  // 문구로 둘 다 가리켜야 한다. 크기는 네모 옆 라벨이 말한다.
   'control.printCheck': 'Check the printed test squares with your ruler!',
 
   // 요약
@@ -143,7 +144,7 @@ export const en: Catalog = {
     `The back ratio must be between ${min}% and ${max}%.`,
   'round.backRatio.10': '10% · narrow hinge',
   'round.backRatio.15': '15%',
-  'round.backRatio.20': '20% · default',
+  'round.backRatio.20': '20% · default (recommended)',
   'round.backRatio.25': '25%',
   'round.backRatio.30': '30% · wide hinge',
   // 원통 화면 — 미리보기·모양 aria, 범례.
