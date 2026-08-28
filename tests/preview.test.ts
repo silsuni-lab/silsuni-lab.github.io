@@ -47,12 +47,37 @@ describe('renderPreviewSvg', () => {
     expect(svg).not.toContain('class="fold-line"');
   });
 
-  it('완성선을 재단선보다 얇은 실선으로 그린다', () => {
-    const seam = svg.match(/class="seam-line"[^>]*stroke-width="([\d.]+)"/);
-    const cut = svg.match(/<polygon points="[^"]*"[^>]*stroke-width="([\d.]+)"/);
-    expect(Number(seam![1])).toBeLessThan(Number(cut![1]));
+  it('완성선을 재단선과 같은 색·같은 두께의 실선으로 그린다', () => {
+    /*
+     * 화면에서는 도안 선 셋(재단선·완성선·중앙선)을 한 색, 한 두께로 둔다.
+     * 둘을 갈라 주는 것은 사이를 채운 시접 띠다 — 바깥이 재단선, 안쪽이
+     * 완성선. 종이는 띠를 칠하지 않아 색으로 가르므로 PDF는 그대로다.
+     */
+    const seam = svg.match(/class="seam-line"[^>]*stroke="([^"]+)"[^>]*stroke-width="([\d.]+)"/)!;
+    const cut = svg.match(/<polygon points="[^"]*"[^>]*stroke="([^"]+)"[^>]*stroke-width="([\d.]+)"/)!;
+    expect(seam[1]).toBe(cut[1]);
+    expect(Number(seam[2])).toBe(Number(cut[2]));
+    // 둘을 가르는 시접 띠가 실제로 그려져 있어야 이 결정이 성립한다.
+    expect(svg).toContain('class="seam-band"');
     // 실선이므로 점선 지정이 없어야 한다.
     expect(svg).not.toMatch(/class="seam-line"[^>]*stroke-dasharray/);
+  });
+
+  it('중앙선도 같은 색·두께이고 일점쇄선으로만 갈린다', () => {
+    const center = svg.match(/class="center-line"[^>]*stroke="([^"]+)"[^>]*stroke-width="([\d.]+)"/)!;
+    const cut = svg.match(/<polygon points="[^"]*"[^>]*stroke="([^"]+)"[^>]*stroke-width="([\d.]+)"/)!;
+    expect(center[1]).toBe(cut[1]);
+    expect(Number(center[2])).toBe(Number(cut[2]));
+    expect(svg).toMatch(/class="center-line"[^>]*stroke-dasharray/);
+  });
+
+  it('골선만 도안 선보다 굵게 남는다', () => {
+    // 자르는 선으로 오인하면 도안이 반쪽이 된다. 색과 두께로 함께 가른다.
+    const half = halveOnFold(buildLayout({ widthMm: 270, heightMm: 140, depthMm: 100 }));
+    const halfSvg = renderPreviewSvg(half, paginate(half, 'a4'), 'ko');
+    const fold = Number(halfSvg.match(/class="fold-edge"[^>]*stroke-width="([\d.]+)"/)![1]);
+    const cut = Number(halfSvg.match(/<polygon points="[^"]*"[^>]*stroke-width="([\d.]+)"/)![1]);
+    expect(fold).toBeGreaterThan(cut);
   });
 });
 

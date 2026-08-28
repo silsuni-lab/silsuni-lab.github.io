@@ -40,7 +40,7 @@ Enter the dimensions in millimetres. The tool drafts the flat pattern, tiles it 
 - **Seam allowance is optional.** On by default. Turn it off and the pattern comes out at finished size, for when you prefer to add the allowance by hand as you cut. The sheet is then labelled `시접없음` (*no seam allowance*) and the file gets a `-noseam` suffix, so a stray printout can never be mistaken for the other kind.
 - **Half-size printing** *(boxy pouch only)*. The pattern is symmetric about the middle of the base, so you can print only the top half and place the marked fold edge on folded fabric. Roughly halves the number of sheets.
 - **The round pouch hinge is a ratio, not a length.** The back panel carries no zipper, so it becomes the hinge between lid and body. 80&nbsp;mm of back panel is 19.6&nbsp;% of the circumference at Ø130 but 50.9&nbsp;% at Ø50 — where the lid no longer opens at all. Taking it as a share of the circumference (10–30&nbsp;%) keeps the meaning intact at every diameter.
-- **Legend lists only what was drawn.** Cut line, stitch line, fold line, centre line, fold edge and assembly marks each get their own colour *and* dash pattern. Turn a feature off and its legend entry disappears with it — you never hunt the drawing for a line that isn't there.
+- **Legend lists only what was drawn.** In the *printed* pattern, cut line, stitch line, fold line, centre line, fold edge and assembly marks each get their own colour *and* dash pattern. The on-screen preview draws cut, stitch and centre lines in one weight and one colour instead — the pink seam band already shows which side is which, and the centre line is a dash-dot. Either way, turn a feature off and its legend entry disappears with it — you never hunt the drawing for a line that isn't there.
 
 **Runs entirely in your browser.** No account, no upload, no server. Your measurements never leave the page. Fonts and icons are bundled, so nothing is fetched from a third party.
 
@@ -223,8 +223,14 @@ A4 3열을 예로 들면 겹침 구간은 도안 `184~194`이고 그 한가운�
 
 ## 도면의 선과 표시
 
-아래는 **인쇄된 사각 파우치 도면** 이야기다. 화면 미리보기는 이 가운데 접힘선을 그리지
-않는다 — 아래 "화면에는 접힘선이 없다" 참고.
+아래는 **인쇄된 사각 파우치 도면** 이야기다. 화면 미리보기는 두 가지가 다르다. 접힘선을
+그리지 않고(아래 "화면에는 접힘선이 없다" 참고), 재단선·완성선·중앙선을 **한 색 한 두께로**
+긋는다.
+
+화면이 색을 안 나눠도 되는 것은 다른 단서가 있기 때문이다. 재단선과 완성선 사이는 시접 띠가
+분홍으로 차 있어 바깥이 재단선, 안쪽이 완성선임이 드러나고, 중앙선은 일점쇄선이라 실선과
+섞이지 않는다. 종이는 띠를 칠하지 않으므로 색이 유일한 단서고, 그래서 아래 표대로 나간다.
+까닭은 `src/core/colors.ts`의 `PREVIEW_LINE_COLOR`에 적어 두었다.
 
 **원통 파우치는 선이 셋뿐이다** — 재단선, 완성선, 이어붙임. 접을 자리도 중심선도 골선도 없어서 그 세 줄은 도면에도 범례에도 나오지 않는다. 그리지도 않은 선을 범례에 적어 두면 도면에서 찾다가 헤맨다.
 

@@ -340,8 +340,14 @@ body {
  * 적어 두고 손으로 맞췄는데, 한쪽만 고치면 범례가 도면과 다른 색을
  * 가리켰다.
  */
+/*
+ * 견본은 도면에 그린 그대로여야 한다. 재단선·완성선·중앙선은 도면에서 색도
+ * 두께도 같으므로(colors.ts의 PREVIEW_LINE_COLOR) 견본도 같은 1px로 둔다.
+ * 재단선만 굵게 두면 범례가 도면에 없는 차이를 있다고 말하게 된다.
+ * 중앙선은 도면과 같이 점선 모양으로만 갈리고, 골선은 실제로 굵으므로 굵다.
+ */
 .swatch { flex: none; width: 26px; height: 0; border-top-style: solid; }
-.swatch-cut { border-top-width: 2px; }
+.swatch-cut { border-top-width: 1px; }
 .swatch-seam { border-top-width: 1px; }
 .swatch-tile { border-top-width: 2px; border-top-style: dashed; }
 .swatch-center { border-top-width: 1px; border-top-style: dashed; }

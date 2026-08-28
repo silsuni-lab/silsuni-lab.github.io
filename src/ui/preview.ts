@@ -12,14 +12,12 @@ import {
 } from '../core/dimensions';
 import {
   BAND_LABEL_COLOR,
-  CENTER_COLOR,
-  CUT_COLOR,
   DIM_LABEL_COLOR,
   FOLD_EDGE_COLOR,
   PATTERN_FILL,
   PATTERN_TITLE_COLOR,
+  PREVIEW_LINE_COLOR,
   SEAM_BAND_FILL,
-  SEAM_COLOR,
   TILE_COLOR,
 } from '../core/colors';
 
@@ -35,8 +33,12 @@ export function escapeXml(value: string): string {
  * 선 두께와 글자 크기는 도안 폭에 비례시킨다. mm 고정값으로 두면 작은 도안에서
  * 선이 굵고 글자가 커 보이고, 큰 도안에서는 반대가 된다. 화면에서 SVG 폭이
  * 컨테이너에 맞춰지므로 도안 폭이 곧 표시 배율이다.
+ *
+ * 도안 선(재단선·완성선·중앙선)은 THIN 하나로 나간다 — 까닭은 colors.ts의
+ * PREVIEW_LINE_COLOR에 적었다. 굵은 쪽은 골선에만 남는다. 자르는 선으로 오인해
+ * 잘라 버리면 도안이 반쪽이 되므로, 색(빨강)에 더해 두께로도 갈라 놓는다.
  */
-const CUT_STROKE_RATIO = 0.003;
+const FOLD_EDGE_STROKE_RATIO = 0.0036;
 const THIN_STROKE_RATIO = 0.002;
 const BAND_LABEL_RATIO = 0.017;
 const DIM_LABEL_RATIO = 0.015;
@@ -75,7 +77,7 @@ export function renderPreviewSvg(layout: Layout, pagination: Pagination, locale:
   const w = layout.totalWidthMm;
   const h = layout.totalHeightMm;
 
-  const cutStroke = round1(w * CUT_STROKE_RATIO);
+  const foldEdgeStroke = round1(w * FOLD_EDGE_STROKE_RATIO);
   const thinStroke = round1(w * THIN_STROKE_RATIO);
   const bandLabelSize = round1(w * BAND_LABEL_RATIO);
   const dimLabelSize = round1(w * DIM_LABEL_RATIO);
@@ -114,7 +116,7 @@ export function renderPreviewSvg(layout: Layout, pagination: Pagination, locale:
 
   const seamLine = !hasSeam
     ? ''
-    : `<polygon class="seam-line" points="${toPolygonPoints(layout.seamLineMm)}" fill="none" stroke="${SEAM_COLOR}" stroke-width="${thinStroke}" />`;
+    : `<polygon class="seam-line" points="${toPolygonPoints(layout.seamLineMm)}" fill="none" stroke="${PREVIEW_LINE_COLOR}" stroke-width="${thinStroke}" />`;
 
   /*
    * 접힘선(layout.foldLinesMm)은 화면에 그리지 않는다. 빠뜨린 게 아니라
@@ -135,13 +137,13 @@ export function renderPreviewSvg(layout: Layout, pagination: Pagination, locale:
 
   /*
    * 세로 중앙선. 앞판·바닥의 가로 한가운데라 원단에 올릴 때 기준이 된다.
-   * 선 종류가 이미 여럿이라 제도에서 중심선에 쓰는 일점쇄선으로 긋는다.
-   * 모양만으로 갈리므로 색은 눈에 띄지 않는 회색이면 된다.
+   * 제도에서 중심선에 쓰는 일점쇄선으로 긋는다. 화면에서는 재단선·완성선과
+   * 색도 두께도 같으므로, 이 선을 갈라 주는 것은 오직 이 점선 모양뿐이다.
    */
   const centerLine =
     `<line class="center-line" x1="${round1(centerXMm(layout))}" y1="0"` +
     ` x2="${round1(centerXMm(layout))}" y2="${round1(h)}"` +
-    ` stroke="${CENTER_COLOR}" stroke-width="${thinStroke}"` +
+    ` stroke="${PREVIEW_LINE_COLOR}" stroke-width="${thinStroke}"` +
     ` stroke-dasharray="${dash(0.026, 0.012)} ${dash(0.004, 0.012)}" />`;
 
   /*
@@ -165,7 +167,7 @@ export function renderPreviewSvg(layout: Layout, pagination: Pagination, locale:
 
     return `<line class="fold-edge" x1="0" y1="${round1(yMm)}"` +
       ` x2="${round1(w)}" y2="${round1(yMm)}"` +
-      ` stroke="${FOLD_EDGE_COLOR}" stroke-width="${round1(cutStroke * 1.2)}" />` + arcs;
+      ` stroke="${FOLD_EDGE_COLOR}" stroke-width="${foldEdgeStroke}" />` + arcs;
   })();
 
   /*
@@ -208,7 +210,7 @@ export function renderPreviewSvg(layout: Layout, pagination: Pagination, locale:
     // WebKit의 0폭 계산도 우연히 비켜 가 있었다. 폭을 직접 못 박아 우연에 기대지 않는다.
     ` style="overflow: visible; width: 100%; max-width: 100%; height: auto;" role="img"`,
     ` aria-label="${escapeXml(t(locale, 'preview.ariaLabel', round1(w), round1(h)))}">`,
-    `<polygon points="${points}" fill="${PATTERN_FILL}" stroke="${CUT_COLOR}" stroke-width="${cutStroke}" />`,
+    `<polygon points="${points}" fill="${PATTERN_FILL}" stroke="${PREVIEW_LINE_COLOR}" stroke-width="${thinStroke}" />`,
     seamBand,
     seamLine,
     // 페이지 경계는 도안 위에 얹어야 보인다. 도안 채움이 불투명해서
@@ -246,20 +248,20 @@ export interface LegendItem {
  */
 export function legendItems(layout: Layout, locale: Locale): readonly LegendItem[] {
   const items: LegendItem[] = [
-    { swatch: 'swatch-cut', color: CUT_COLOR, text: t(locale, 'legend.cutLine') },
+    { swatch: 'swatch-cut', color: PREVIEW_LINE_COLOR, text: t(locale, 'legend.cutLine') },
   ];
 
   if (layout.seamMm > 0) {
-    items.push({ swatch: 'swatch-seam', color: SEAM_COLOR, text: t(locale, 'legend.stitchLine') });
+    items.push({ swatch: 'swatch-seam', color: PREVIEW_LINE_COLOR, text: t(locale, 'legend.stitchLine') });
     items.push({
       swatch: 'swatch-seam-band',
-      color: SEAM_COLOR,
+      color: PREVIEW_LINE_COLOR,
       fill: SEAM_BAND_FILL,
       text: t(locale, 'legend.seamAllowance', round1(layout.seamMm)),
     });
   }
 
-  items.push({ swatch: 'swatch-center', color: CENTER_COLOR, text: t(locale, 'legend.centerLine') });
+  items.push({ swatch: 'swatch-center', color: PREVIEW_LINE_COLOR, text: t(locale, 'legend.centerLine') });
 
   if (layout.foldEdgeYMm !== undefined) {
     items.push({
