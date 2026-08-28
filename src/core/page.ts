@@ -530,6 +530,33 @@ export async function loadFonts(
 }
 
 /**
+ * 출처 덩어리가 차지하는 크기 (mm, 배율 1 기준).
+ *
+ * 크기 상수(TITLE_SIZE 등)를 이 파일 밖으로 내보내지 않으려고 둔 함수다.
+ * 부르는 쪽은 "이 덩어리가 들어갈 자리가 있나"만 알면 되고, 그 답을 내려면
+ * 세 줄의 글자 크기와 줄 간격을 알아야 한다.
+ *
+ * 폭은 가장 긴 줄로 잰다. 계정이 이름보다 크게 찍히므로 이름만 재면 모자란다.
+ */
+export function sourceBlockSizeMm(
+  font: PDFFont,
+  title: string,
+  locale: Locale,
+): { heightMm: number; widthMm: number } {
+  const aboveMm = font.heightAtSize(TITLE_SIZE) / MM_TO_PT / 2;
+  const belowMm = HANDLE_OFFSET_MM + font.heightAtSize(HANDLE_SIZE) / MM_TO_PT / 2;
+  const widthOf = (value: string, size: number) => font.widthOfTextAtSize(value, size) / MM_TO_PT;
+  return {
+    heightMm: aboveMm + belowMm,
+    widthMm: Math.max(
+      widthOf(title, TITLE_SIZE),
+      widthOf(t(locale, 'pdf.watermark'), MESSAGE_SIZE),
+      widthOf(WATERMARK_HANDLE, HANDLE_SIZE),
+    ),
+  };
+}
+
+/**
  * 도안 이름·권유·계정 세 줄을 한 덩어리로 그린다.
  *
  * 덩어리를 주어진 자리 한가운데에 맞춘다. 이름을 가운데 두고 아래로
@@ -545,10 +572,25 @@ export function drawSourceBlock(
   availableHeightMm: number,
   title: string,
   locale: Locale,
+  availableWidthMm?: number,
 ): void {
   const aboveMm = font.heightAtSize(TITLE_SIZE) / MM_TO_PT / 2;
   const belowMm = HANDLE_OFFSET_MM + font.heightAtSize(HANDLE_SIZE) / MM_TO_PT / 2;
-  const scale = titleScale(availableHeightMm, aboveMm + belowMm);
+  /*
+   * 배율은 세로 자리가 정하지만, 폭도 넘기면 안 된다. 세로가 넉넉하고 가로가
+   * 좁은 조각에서 실제로 넘쳤다 — 납작 파우치의 뒷면(63*50)은 세로 여유가
+   * 39mm라 배율이 1.9배까지 커지는데, 그러면 제목이 101mm가 되어 63mm 조각
+   * 밖으로 나간다. 폭이 정하는 배율로 한 번 더 조인다.
+   *
+   * 1 아래로는 내려가지 않는다. 자리가 없다고 예전보다 작게 찍으면 지금
+   * 쓰던 사람에게는 고친 게 아니라 망가뜨린 것이 된다 — titleScale과 같다.
+   */
+  const heightScale = titleScale(availableHeightMm, aboveMm + belowMm);
+  const widthMm = sourceBlockSizeMm(font, title, locale).widthMm;
+  const widthScale = availableWidthMm === undefined || widthMm <= 0
+    ? heightScale
+    : Math.max(1, (availableWidthMm - 2 * TITLE_MARGIN_MM) / widthMm);
+  const scale = Math.min(heightScale, widthScale);
   const titleYMm = centerYMm - ((aboveMm + belowMm) * scale) / 2 + aboveMm * scale;
 
   const draw = (value: string, size: number, yMm: number, opacity?: number) => {

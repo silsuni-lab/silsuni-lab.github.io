@@ -39,6 +39,7 @@ import {
 } from '../src/core/pdf';
 import type { Dimensions } from '../src/core/dimensions';
 import { DEFAULT_LOCALE, type Locale } from '../src/core/i18n/locales';
+import { loadFonts, sourceBlockSizeMm, TITLE_MARGIN_MM as MARGIN } from '../src/core/page';
 
 const travel: Dimensions = { widthMm: 270, depthMm: 100, heightMm: 140 };
 const layout = buildLayout(travel);
@@ -798,5 +799,38 @@ describe('buildPdf — 워터마크', () => {
     const doc = await PDFDocument.load(await buildPdf(layout, paginate(layout, 'a4')));
     const states = doc.getPages()[0]!.node.Resources()!.lookup(PDFName.of('ExtGState'))!.toString();
     expect(states).toContain(`/ca ${WATERMARK_OPACITY}`);
+  });
+});
+
+describe('출처 문구는 앞판 폭도 넘지 않는다', () => {
+  /*
+   * 세로 자리만 보고 배율을 키우면 좁고 높은 파우치에서 문구가 앞판 좌우로
+   * 넘친다. 100*200*100이면 배율이 상한 2.25까지 올라가 덩어리가 130mm가
+   * 되는데 앞판은 120mm뿐이다. 원통 쪽에서 같은 결함을 눈으로 확인하고
+   * 여기도 재 보니 마찬가지였다.
+   */
+  it('좁고 높은 파우치에서 덩어리가 앞판 안에 머문다', async () => {
+    const doc = await PDFDocument.create();
+    const { font } = await loadFonts(doc, 'ko');
+
+    for (const dims of [
+      { widthMm: 100, heightMm: 300, depthMm: 200 },
+      { widthMm: 100, heightMm: 200, depthMm: 100 },
+      { widthMm: 270, heightMm: 140, depthMm: 100 },
+    ]) {
+      const l = buildLayout(dims);
+      const front = l.bands.find((b) => b.id === 'front')!;
+      const block = sourceBlockSizeMm(font, patternTitle(l.dimensions, l.seamMm, 'ko'), 'ko');
+
+      // drawSourceBlock이 쓰는 것과 같은 셈.
+      const heightScale = titleScale(front.heightMm, block.heightMm);
+      const widthScale = Math.max(1, (front.widthMm - 2 * MARGIN) / block.widthMm);
+      const scale = Math.min(heightScale, widthScale);
+
+      const drawnMm = block.widthMm * scale;
+      expect(drawnMm, `${dims.widthMm}x${dims.heightMm}x${dims.depthMm}`).toBeLessThanOrEqual(
+        front.widthMm,
+      );
+    }
   });
 });

@@ -17,9 +17,10 @@ import {
 import type { Pagination } from '../tiling';
 import {
   drawAlignmentMarks, drawJoinMarks, drawPatternNote, drawScaleSquares,
-  drawSourceBlock, loadFonts, MM_TO_PT, pdfColor, toPagePoint,
+  drawSourceBlock, loadFonts, MARK, MM_TO_PT, pdfColor, sourceBlockSizeMm, TITLE_MARGIN_MM, toPagePoint,
   type PageContext,
 } from '../page';
+import { WATERMARK_HANDLE, WATERMARK_OPACITY } from '../dimensions';
 import { t } from '../i18n/messages';
 import { DEFAULT_LOCALE, type Locale } from '../i18n/locales';
 import { roundPatternTitle } from './dimensions';
@@ -131,6 +132,98 @@ function drawPieceLabel(ctx: PageContext, piece: RoundPiece, font: PDFFont, seam
   });
 }
 
+
+/*
+ * 조각마다 찍는 두 줄 — 파우치 이름과 계정. 바탕 크기(pt)와 줄 간격(mm)이고
+ * 여기에 배율을 곱해 쓴다.
+ *
+ * 조각 이름(LABEL_SIZE=9)보다 작게 잡았다. 그 조각이 무엇인지 알려 주는
+ * 것이 먼저고, 어느 도안의 조각인지는 그다음이다.
+ */
+const PIECE_NAME_SIZE = 8;
+const PIECE_HANDLE_SIZE = 10;
+const PIECE_HANDLE_OFFSET_MM = 5;
+
+/**
+ * 이보다 더 줄여야 들어가면 아예 안 찍는다.
+ *
+ * 억지로 넣으면 완성선을 넘어 시접이나 재단선까지 글자가 나가는데, 그건
+ * 조각을 알아보게 하려다 오히려 재단을 방해하는 것이다. 안 찍혀도 조각
+ * 이름은 그대로 남으므로 무엇인지는 알 수 있다.
+ */
+const PIECE_MARK_MIN_SCALE = 0.6;
+
+/**
+ * 조각 표시 두 줄이 앉을 자리. 조각 이름 몫을 비켜 준 나머지의 한가운데다.
+ *
+ * 사각과 원이 다르다. 사각은 이름이 맨 위(완성선 안쪽)에 있으므로 그 아래
+ * 전부가 남고, 원은 이름이 한가운데 있으므로 그 아래 절반만 남는다.
+ * titleBlockRegion과 같은 셈을 조각 모양에 맞춰 나눈 것이다.
+ */
+export function pieceMarkRegion(
+  piece: RoundPiece,
+  font: PDFFont,
+): { centerYMm: number; availableHeightMm: number } {
+  const reservedMm = labelZoneHeightMm(font);
+  const pieceCenterYMm = piece.yMm + piece.heightMm / 2;
+
+  if (piece.shape === 'circle') {
+    const availableHeightMm = Math.max(0, piece.finishedHeightMm / 2 - reservedMm);
+    return { centerYMm: pieceCenterYMm + reservedMm + availableHeightMm / 2, availableHeightMm };
+  }
+  return {
+    centerYMm: pieceCenterYMm + reservedMm / 2,
+    availableHeightMm: Math.max(0, piece.finishedHeightMm - reservedMm),
+  };
+}
+
+/**
+ * 조각마다 파우치 이름과 계정을 찍는다. 치수는 넣지 않는다.
+ *
+ * 조각이 넷으로 흩어져 있어, 다 오려 놓고 나면 어느 도안의 조각인지 알 
+ * 방법이 없었다. 치수까지 조각마다 되풀이하면 종이가 빽빽해지고, 치수는
+ * 어차피 가장 큰 조각의 출처 덩어리에 한 번 적힌다.
+ *
+ * 그 출처 덩어리가 있는 조각은 건너뛴다. 거기엔 이름도 계정도 이미 있다.
+ */
+function drawPieceMark(ctx: PageContext, piece: RoundPiece, font: PDFFont, locale: Locale) {
+  const { centerYMm, availableHeightMm } = pieceMarkRegion(piece, font);
+
+  const aboveMm = font.heightAtSize(PIECE_NAME_SIZE) / MM_TO_PT / 2;
+  const belowMm = PIECE_HANDLE_OFFSET_MM + font.heightAtSize(PIECE_HANDLE_SIZE) / MM_TO_PT / 2;
+  const blockMm = aboveMm + belowMm;
+
+  // 키우지는 않는다. 조각 이름보다 커지면 무엇이 주인지가 뒤집힌다.
+  const room = availableHeightMm - 2 * TITLE_MARGIN_MM;
+  const scale = Math.min(1, room / blockMm);
+  if (scale < PIECE_MARK_MIN_SCALE) return;
+
+  const nameYMm = centerYMm - (blockMm * scale) / 2 + aboveMm * scale;
+  const xMm = piece.xMm + piece.widthMm / 2;
+
+  const draw = (value: string, size: number, yMm: number, opacity?: number) => {
+    const anchor = toPagePoint(ctx.pagination, ctx.page, xMm, yMm);
+    ctx.pdfPage.drawText(value, {
+      x: anchor.x - font.widthOfTextAtSize(value, size) / 2,
+      y: anchor.y,
+      size,
+      font,
+      color: MARK,
+      ...(opacity === undefined ? {} : { opacity }),
+    });
+  };
+
+  draw(t(locale, 'round.pattern.name'), PIECE_NAME_SIZE * scale, nameYMm);
+  // 계정은 어디서나 같은 투명도로 물러나 있는다. 색까지 옅게 잡으면
+  // 옅은 잉크로 뽑을 때 종이에서 사라진다.
+  draw(
+    WATERMARK_HANDLE,
+    PIECE_HANDLE_SIZE * scale,
+    nameYMm + PIECE_HANDLE_OFFSET_MM * scale,
+    WATERMARK_OPACITY,
+  );
+}
+
 export async function buildRoundPdf(
   layout: RoundLayout,
   pagination: Pagination,
@@ -138,7 +231,18 @@ export async function buildRoundPdf(
 ): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   const { font, boldFont } = await loadFonts(doc, locale);
-  const titlePiece = roundTitlePiece(layout);
+
+  /*
+   * 출처 덩어리를 실제로 담을 수 있는 조각을 고른다. 넓이만 보면 아주 넓고
+   * 아주 낮은 조각이 뽑혀 글자가 재단선 밖으로 나간다 — layout.ts의
+   * roundTitlePiece 주석 참고. 조각 이름 몫까지 더해 필요한 높이를 넘긴다.
+   */
+  const title = roundPatternTitle(layout.dimensions, layout.seamMm, locale);
+  const block = sourceBlockSizeMm(font, title, locale);
+  const titlePiece = roundTitlePiece(layout, {
+    minHeightMm: block.heightMm + 2 * TITLE_MARGIN_MM + labelZoneHeightMm(font),
+    minWidthMm: block.widthMm,
+  });
 
   for (const page of pagination.pages) {
     const pdfPage = doc.addPage([pagination.pageWidthMm * MM_TO_PT, pagination.pageHeightMm * MM_TO_PT]);
@@ -156,6 +260,8 @@ export async function buildRoundPdf(
       // 완성선은 시접만큼 안으로 들어간 자리. 시접이 0이면 그리지 않는다.
       if (layout.seamMm > 0) drawPieceOutline(ctx, piece, layout.seamMm, SEAM_COLOR, 0.5);
       drawPieceLabel(ctx, piece, font, layout.seamMm, locale);
+      // 출처 덩어리가 앉을 조각은 건너뛴다 — 거기엔 이름도 계정도 이미 있다.
+      if (piece !== titlePiece) drawPieceMark(ctx, piece, font, locale);
     }
 
     if (titlePiece !== undefined) {
@@ -172,8 +278,9 @@ export async function buildRoundPdf(
         titlePiece.xMm + titlePiece.widthMm / 2,
         centerYMm,
         availableHeightMm,
-        roundPatternTitle(layout.dimensions, layout.seamMm, locale),
+        title,
         locale,
+        titlePiece.finishedWidthMm,
       );
     }
 

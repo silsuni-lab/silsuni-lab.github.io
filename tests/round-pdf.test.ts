@@ -2,12 +2,15 @@
 // Copyright (C) 2026 choisuing
 
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
 import { PDFDocument, PDFName } from 'pdf-lib';
 import { buildRoundLayout, roundTitlePiece } from '../src/core/round/layout';
-import { buildRoundPdf, labelZoneHeightMm, titleBlockRegion } from '../src/core/round/pdf';
+import { buildRoundPdf, labelZoneHeightMm, pieceMarkRegion, titleBlockRegion } from '../src/core/round/pdf';
 import { paginate } from '../src/core/tiling';
 import { t } from '../src/core/i18n/messages';
-import { KOREAN_FONT_CHARS, loadFonts } from '../src/core/page';
+import { KOREAN_FONT_CHARS, loadFonts, MM_TO_PT, sourceBlockSizeMm, TITLE_MARGIN_MM } from '../src/core/page';
+import { ROUND_PRESETS } from '../src/core/constants';
+import { roundPatternTitle } from '../src/core/round/dimensions';
 
 const golden = { diameterMm: 130, sideHeightMm: 130, lidHeightMm: 30 };
 const layout = buildRoundLayout(golden);
@@ -84,5 +87,93 @@ describe('buildRoundPdf', () => {
       // 라벨 몫을 뺀 뒤에도 출처 문구가 앉을 자리가 실제로 남아 있어야 한다.
       expect(availableHeightMm).toBeGreaterThan(0);
     }
+  });
+});
+
+describe('출처 덩어리를 담을 수 있는 조각에 앉힌다', () => {
+  /*
+   * 넓이만 보고 고르면 담지도 못할 조각이 뽑힌다. 납작 파우치(100/50/20)의
+   * 앞면 두 단은 251*20으로 가장 넓지만 완성 높이가 20mm뿐이라, 조각 이름
+   * 몫을 빼면 9.4mm만 남는다. 덩어리는 23.6mm가 필요해 글자가 완성선을 넘고
+   * 재단선 위까지 나갔다 — 눈으로 확인한 결함이다.
+   *
+   * 세로만 봐도 모자란다. 세로가 넉넉하고 가로가 좁은 조각에서는 배율이
+   * 커져 이번엔 옆으로 넘친다. 두 방향을 함께 지킨다.
+   */
+  it('모든 프리셋에서 덩어리가 조각의 완성 영역 안에 들어간다', async () => {
+    const doc = await PDFDocument.create();
+    const { font } = await loadFonts(doc, 'ko');
+
+    for (const preset of ROUND_PRESETS) {
+      const l = buildRoundLayout(preset);
+      const title = roundPatternTitle(l.dimensions, l.seamMm, 'ko');
+      const block = sourceBlockSizeMm(font, title, 'ko');
+      const piece = roundTitlePiece(l, {
+        minHeightMm: block.heightMm + 2 * TITLE_MARGIN_MM + labelZoneHeightMm(font),
+        minWidthMm: block.widthMm,
+      })!;
+
+      const { availableHeightMm } = titleBlockRegion(piece, l.seamMm, font);
+      expect(availableHeightMm, `${preset.id} 세로`).toBeGreaterThanOrEqual(
+        block.heightMm + 2 * TITLE_MARGIN_MM,
+      );
+      expect(piece.finishedWidthMm, `${preset.id} 가로`).toBeGreaterThanOrEqual(
+        block.widthMm + 2 * TITLE_MARGIN_MM,
+      );
+    }
+  });
+
+  it('자리가 넉넉한 프리셋은 예전처럼 앞면 아랫단을 고른다', async () => {
+    // 좁은 경우만 달라져야 한다. 넓은 도안까지 자리가 바뀌면 도안이 낯설어진다.
+    const doc = await PDFDocument.create();
+    const { font } = await loadFonts(doc, 'ko');
+    const l = buildRoundLayout({ diameterMm: 130, sideHeightMm: 130, lidHeightMm: 30 });
+    const block = sourceBlockSizeMm(font, roundPatternTitle(l.dimensions, l.seamMm, 'ko'), 'ko');
+    const piece = roundTitlePiece(l, {
+      minHeightMm: block.heightMm + 2 * TITLE_MARGIN_MM + labelZoneHeightMm(font),
+      minWidthMm: block.widthMm,
+    })!;
+    expect(piece.id).toBe('frontBottom');
+  });
+});
+
+describe('조각마다 파우치 이름과 계정을 찍는다', () => {
+  it('모든 프리셋의 모든 조각에 두 줄이 들어갈 자리가 있다', async () => {
+    /*
+     * 조각이 넷으로 흩어져 있어, 다 오려 놓으면 어느 도안의 조각인지 알 수
+     * 없었다. 자리가 없으면 아예 안 찍도록 해 두었으므로(PIECE_MIN_SCALE),
+     * 프리셋에서 실제로 찍히는지를 여기서 지킨다.
+     */
+    const doc = await PDFDocument.create();
+    const { font } = await loadFonts(doc, 'ko');
+    // drawPieceMark와 같은 셈. 상수가 바뀌면 이 값도 함께 고쳐야 한다.
+    const blockMm =
+      font.heightAtSize(8) / MM_TO_PT / 2 + 5 + font.heightAtSize(10) / MM_TO_PT / 2;
+
+    for (const preset of ROUND_PRESETS) {
+      const l = buildRoundLayout(preset);
+      for (const piece of l.pieces) {
+        const { availableHeightMm } = pieceMarkRegion(piece, font);
+        const scale = Math.min(1, (availableHeightMm - 2 * TITLE_MARGIN_MM) / blockMm);
+        expect(scale, `${preset.id} ${piece.id}`).toBeGreaterThanOrEqual(0.6);
+      }
+    }
+  });
+
+  it('치수는 조각에 되풀이하지 않는다', async () => {
+    /*
+     * 치수는 출처 덩어리에 한 번만 적힌다. 조각마다 되풀이하면 종이가
+     * 빽빽해지고, 짧은 조각에서는 들어가지도 않는다.
+     */
+    const l = buildRoundLayout({ diameterMm: 130, sideHeightMm: 130, lidHeightMm: 30 });
+    const bytes = await buildRoundPdf(l, paginate(l, 'a4'), 'ko');
+    const doc = await PDFDocument.load(bytes);
+    expect(doc.getPages().length).toBeGreaterThan(0);
+    // 치수 문자열이 도안 전체에서 한 번만 나오는지는 콘텐츠 스트림으로 세기
+    // 어렵다(서브셋 폰트라 글자가 코드로 바뀐다). 대신 조각 표시 쪽이 치수를
+    // 만들지 않는다는 것을 roundPatternTitle을 안 부르는 것으로 지킨다.
+    const source = readFileSync(new URL('../src/core/round/pdf.ts', import.meta.url), 'utf8');
+    const markFn = source.slice(source.indexOf('function drawPieceMark'));
+    expect(markFn.slice(0, markFn.indexOf('\n}'))).not.toContain('roundPatternTitle');
   });
 });

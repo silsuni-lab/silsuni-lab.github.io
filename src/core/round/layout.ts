@@ -116,9 +116,28 @@ export function buildRoundLayout(
  * 원의 경계를 벗어날 수 있다. 특히 지름이 작을 때 위험하다. 사각만 후보로
  * 두면 이 위험이 완전히 없어진다.
  */
-export function roundTitlePiece(layout: RoundLayout): RoundPiece | undefined {
-  const rects = layout.pieces.filter((p) => p.shape === 'rect');
-  return [...rects].sort(
+export function roundTitlePiece(
+  layout: RoundLayout,
+  fit?: { readonly minHeightMm: number; readonly minWidthMm: number },
+): RoundPiece | undefined {
+  const byArea = [...layout.pieces.filter((p) => p.shape === 'rect')].sort(
     (a, b) => b.finishedWidthMm * b.finishedHeightMm - a.finishedWidthMm * a.finishedHeightMm,
-  )[0];
+  );
+  if (fit === undefined) return byArea[0];
+  /*
+   * 넓이만 보면 담지도 못할 조각을 고른다. 납작 파우치(100/50/20)가 그랬다 —
+   * 앞면 두 단이 251*20으로 가장 넓은데 완성 높이가 20mm뿐이라, 조각 이름
+   * 몫을 빼면 9.4mm만 남는다. 덩어리는 23.6mm가 필요해 완성선을 넘고 재단선
+   * 위로까지 글자가 나갔다. 같은 도안의 뒷면(63*50)은 여유가 39.4mm다.
+   *
+   * 그래서 담을 수 있는 것 중에서 가장 넓은 조각을 고른다. 뒷면은 완성
+   * 높이가 옆면 높이(최소 40)라 언제나 후보에 든다 — 못 찾는 경우는 없다.
+   * 그래도 마지막 줄을 두는 건, 크기 상수가 바뀌어 아무것도 못 담게 되면
+   * 문구가 사라지는 것보다 넘치더라도 찍히는 편이 눈에 띄기 때문이다.
+   */
+  return (
+    byArea.find(
+      (p) => p.finishedHeightMm >= fit.minHeightMm && p.finishedWidthMm >= fit.minWidthMm,
+    ) ?? byArea[0]
+  );
 }
