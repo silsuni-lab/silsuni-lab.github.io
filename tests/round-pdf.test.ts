@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { PDFDocument, PDFName } from 'pdf-lib';
 import { buildRoundLayout, roundTitlePiece } from '../src/core/round/layout';
-import { buildRoundPdf, labelZoneHeightMm, pieceMarkRegion, titleBlockRegion } from '../src/core/round/pdf';
+import { buildRoundPdf, circleStackYMm, labelZoneHeightMm, pieceMarkRegion, titleBlockRegion } from '../src/core/round/pdf';
 import { paginate } from '../src/core/tiling';
 import { t } from '../src/core/i18n/messages';
 import { KOREAN_FONT_CHARS, loadFonts, MM_TO_PT, sourceBlockSizeMm, TITLE_MARGIN_MM } from '../src/core/page';
@@ -152,11 +152,44 @@ describe('조각마다 파우치 이름과 계정을 찍는다', () => {
 
     for (const preset of ROUND_PRESETS) {
       const l = buildRoundLayout(preset);
-      for (const piece of l.pieces) {
+      // 원은 배율을 두지 않는다 — 아래 "원은 세 줄을 한가운데에 쌓는다" 참고.
+      for (const piece of l.pieces.filter((p) => p.shape === 'rect')) {
         const { availableHeightMm } = pieceMarkRegion(piece, font);
         const scale = Math.min(1, (availableHeightMm - 2 * TITLE_MARGIN_MM) / blockMm);
         expect(scale, `${preset.id} ${piece.id}`).toBeGreaterThanOrEqual(0.6);
       }
+    }
+  });
+
+  it('원은 세 줄을 한가운데에 쌓는다', async () => {
+    /*
+     * 셋을 나눠 놓으면 이름만 한가운데에 뜨고 나머지 둘이 아래로 처져 한
+     * 덩어리로 안 읽힌다. 글자 덩어리의 가운데가 원의 가운데와 맞아야 한다 —
+     * 기준선만 가운데에 두면 아래로 뻗은 두 줄만큼 덩어리가 위로 치우친다.
+     */
+    const doc = await PDFDocument.create();
+    const { font } = await loadFonts(doc, 'ko');
+
+    for (const preset of ROUND_PRESETS) {
+      const l = buildRoundLayout(preset);
+      const circle = l.pieces.find((p) => p.shape === 'circle')!;
+      const { labelYMm, nameYMm, handleYMm } = circleStackYMm(circle, font);
+
+      // 순서가 위에서 아래로여야 한다.
+      expect(labelYMm, `${preset.id} 순서`).toBeLessThan(nameYMm);
+      expect(nameYMm, `${preset.id} 순서`).toBeLessThan(handleYMm);
+
+      // 맨 윗줄의 위쪽 절반부터 맨 아랫줄의 아래쪽 절반까지가 글자 덩어리다.
+      const topMm = labelYMm - font.heightAtSize(9) / MM_TO_PT / 2;
+      const bottomMm = handleYMm + font.heightAtSize(10) / MM_TO_PT / 2;
+      const circleCenterYMm = circle.yMm + circle.heightMm / 2;
+      expect((topMm + bottomMm) / 2, `${preset.id} 중앙`).toBeCloseTo(circleCenterYMm, 6);
+
+      // 덩어리가 완성선 안에 있어야 한다.
+      const finishedTopMm = circleCenterYMm - circle.finishedHeightMm / 2;
+      const finishedBottomMm = circleCenterYMm + circle.finishedHeightMm / 2;
+      expect(topMm, `${preset.id} 위`).toBeGreaterThan(finishedTopMm);
+      expect(bottomMm, `${preset.id} 아래`).toBeLessThan(finishedBottomMm);
     }
   });
 

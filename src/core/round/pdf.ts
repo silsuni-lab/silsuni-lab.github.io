@@ -111,24 +111,45 @@ function drawPieceOutline(
  * 가장 큰 조각(roundTitlePiece가 고르는 자리) 한가운데 찍히는 출처 문구와
  * 자리가 겹친다. 출처 문구 쪽에서 라벨 몫(labelZoneHeightMm)을 미리 비워
  * 두므로, 라벨은 언제나 그 비워 둔 자리 안에 들어간다.
- * 원 조각은 위쪽으로 갈수록 폭이 좁아져 라벨이 밖으로 삐져나가므로 그대로
- * 가운데에 둔다 — 원은 애초에 출처 문구 후보에서 빠져 있어 겹칠 일도 없다.
+ * 원 조각은 이 함수를 쓰지 않는다. 세 줄을 한 덩어리로 원 한가운데에 쌓는
+ * drawCircleStack이 자리를 정한다.
  */
 function drawPieceLabel(ctx: PageContext, piece: RoundPiece, font: PDFFont, seamMm: number, locale: Locale) {
+  drawCentered(
+    ctx, font,
+    pieceLabelText(piece, locale),
+    LABEL_SIZE,
+    piece.xMm + piece.widthMm / 2,
+    piece.yMm + seamMm + LABEL_TOP_OFFSET_MM,
+    LABEL_COLOR,
+  );
+}
+
+/** 조각 이름과 장수. 몇 장을 재단할지 여기서만 알 수 있다. */
+function pieceLabelText(piece: RoundPiece, locale: Locale): string {
   const label = t(locale, `round.piece.${piece.id}` as never);
-  const text = piece.count > 1
-    ? `${label} ${t(locale, 'paper.sheets', piece.count)}`
-    : label;
-  const yMm = piece.shape === 'circle'
-    ? piece.yMm + piece.heightMm / 2
-    : piece.yMm + seamMm + LABEL_TOP_OFFSET_MM;
-  const anchor = toPagePoint(ctx.pagination, ctx.page, piece.xMm + piece.widthMm / 2, yMm);
-  ctx.pdfPage.drawText(text, {
-    x: anchor.x - font.widthOfTextAtSize(text, LABEL_SIZE) / 2,
+  return piece.count > 1 ? `${label} ${t(locale, 'paper.sheets', piece.count)}` : label;
+}
+
+/** 한 줄을 xMm 기준 가운데 정렬로 찍는다. 조각에 얹는 글자는 모두 이걸 쓴다. */
+function drawCentered(
+  ctx: PageContext,
+  font: PDFFont,
+  value: string,
+  size: number,
+  xMm: number,
+  yMm: number,
+  color: ReturnType<typeof pdfColor>,
+  opacity?: number,
+): void {
+  const anchor = toPagePoint(ctx.pagination, ctx.page, xMm, yMm);
+  ctx.pdfPage.drawText(value, {
+    x: anchor.x - font.widthOfTextAtSize(value, size) / 2,
     y: anchor.y,
-    size: LABEL_SIZE,
+    size,
     font,
-    color: LABEL_COLOR,
+    color,
+    ...(opacity === undefined ? {} : { opacity }),
   });
 }
 
@@ -165,16 +186,61 @@ export function pieceMarkRegion(
   font: PDFFont,
 ): { centerYMm: number; availableHeightMm: number } {
   const reservedMm = labelZoneHeightMm(font);
-  const pieceCenterYMm = piece.yMm + piece.heightMm / 2;
-
-  if (piece.shape === 'circle') {
-    const availableHeightMm = Math.max(0, piece.finishedHeightMm / 2 - reservedMm);
-    return { centerYMm: pieceCenterYMm + reservedMm + availableHeightMm / 2, availableHeightMm };
-  }
   return {
-    centerYMm: pieceCenterYMm + reservedMm / 2,
+    centerYMm: piece.yMm + piece.heightMm / 2 + reservedMm / 2,
     availableHeightMm: Math.max(0, piece.finishedHeightMm - reservedMm),
   };
+}
+
+/**
+ * 원 조각의 세 줄 — 조각 이름·파우치 이름·계정 — 의 기준선.
+ *
+ * 사각과 달리 셋을 한 덩어리로 묶어 원 한가운데에 앉힌다. 사각은 이름이
+ * 맨 위(완성선 안쪽)에 있어야 출처 문구와 안 겹치지만, 원은 겹칠 문구가
+ * 없다 — 원은 출처 문구 후보에서 빠져 있다. 그래서 셋을 나눠 놓을 까닭이
+ * 없고, 나눠 놓으면 이름만 한가운데에 뜨고 나머지 둘이 아래로 처져 한
+ * 덩어리로 안 읽힌다.
+ *
+ * 위아래 균형은 drawSourceBlock과 같은 셈으로 잡는다. 맨 윗줄의 위쪽 절반과
+ * 맨 아랫줄의 아래쪽 절반까지 넣어야 글자 덩어리의 가운데가 원의 가운데와
+ * 맞는다 — 기준선만 가운데에 두면 덩어리가 위로 치우친다.
+ */
+export function circleStackYMm(
+  piece: RoundPiece,
+  font: PDFFont,
+): { labelYMm: number; nameYMm: number; handleYMm: number } {
+  const heightMm = (size: number) => font.heightAtSize(size) / MM_TO_PT;
+
+  // 기준선 사이 거리. 이름 → 파우치 이름은 글자 한 줄에 틈을 더한 만큼.
+  const labelToNameMm = heightMm(PIECE_NAME_SIZE) + LABEL_SOURCE_GAP_MM;
+  const nameToHandleMm = PIECE_HANDLE_OFFSET_MM;
+
+  const aboveMm = heightMm(LABEL_SIZE) / 2;
+  const belowMm = labelToNameMm + nameToHandleMm + heightMm(PIECE_HANDLE_SIZE) / 2;
+
+  const labelYMm = piece.yMm + piece.heightMm / 2 - (aboveMm + belowMm) / 2 + aboveMm;
+  return {
+    labelYMm,
+    nameYMm: labelYMm + labelToNameMm,
+    handleYMm: labelYMm + labelToNameMm + nameToHandleMm,
+  };
+}
+
+/**
+ * 원 조각에 세 줄을 한가운데로 쌓는다. 가로도 모두 가운데 정렬이다.
+ *
+ * 배율을 두지 않는다. 원은 지름이 최소 80mm라 세 줄이 언제나 넉넉히 들어간다.
+ * 사각 조각에서 배율을 두는 것은 완성 높이가 20mm까지 내려가기 때문이다.
+ */
+function drawCircleStack(ctx: PageContext, piece: RoundPiece, font: PDFFont, locale: Locale) {
+  const xMm = piece.xMm + piece.widthMm / 2;
+  const { labelYMm, nameYMm, handleYMm } = circleStackYMm(piece, font);
+
+  drawCentered(ctx, font, pieceLabelText(piece, locale), LABEL_SIZE, xMm, labelYMm, LABEL_COLOR);
+  drawCentered(ctx, font, t(locale, 'round.pattern.name'), PIECE_NAME_SIZE, xMm, nameYMm, MARK);
+  drawCentered(
+    ctx, font, WATERMARK_HANDLE, PIECE_HANDLE_SIZE, xMm, handleYMm, MARK, WATERMARK_OPACITY,
+  );
 }
 
 /**
@@ -201,26 +267,12 @@ function drawPieceMark(ctx: PageContext, piece: RoundPiece, font: PDFFont, local
   const nameYMm = centerYMm - (blockMm * scale) / 2 + aboveMm * scale;
   const xMm = piece.xMm + piece.widthMm / 2;
 
-  const draw = (value: string, size: number, yMm: number, opacity?: number) => {
-    const anchor = toPagePoint(ctx.pagination, ctx.page, xMm, yMm);
-    ctx.pdfPage.drawText(value, {
-      x: anchor.x - font.widthOfTextAtSize(value, size) / 2,
-      y: anchor.y,
-      size,
-      font,
-      color: MARK,
-      ...(opacity === undefined ? {} : { opacity }),
-    });
-  };
-
-  draw(t(locale, 'round.pattern.name'), PIECE_NAME_SIZE * scale, nameYMm);
+  drawCentered(ctx, font, t(locale, 'round.pattern.name'), PIECE_NAME_SIZE * scale, xMm, nameYMm, MARK);
   // 계정은 어디서나 같은 투명도로 물러나 있는다. 색까지 옅게 잡으면
   // 옅은 잉크로 뽑을 때 종이에서 사라진다.
-  draw(
-    WATERMARK_HANDLE,
-    PIECE_HANDLE_SIZE * scale,
-    nameYMm + PIECE_HANDLE_OFFSET_MM * scale,
-    WATERMARK_OPACITY,
+  drawCentered(
+    ctx, font, WATERMARK_HANDLE, PIECE_HANDLE_SIZE * scale, xMm,
+    nameYMm + PIECE_HANDLE_OFFSET_MM * scale, MARK, WATERMARK_OPACITY,
   );
 }
 
@@ -259,9 +311,14 @@ export async function buildRoundPdf(
       drawPieceOutline(ctx, piece, 0, CUT_COLOR, 1.2);
       // 완성선은 시접만큼 안으로 들어간 자리. 시접이 0이면 그리지 않는다.
       if (layout.seamMm > 0) drawPieceOutline(ctx, piece, layout.seamMm, SEAM_COLOR, 0.5);
-      drawPieceLabel(ctx, piece, font, layout.seamMm, locale);
-      // 출처 덩어리가 앉을 조각은 건너뛴다 — 거기엔 이름도 계정도 이미 있다.
-      if (piece !== titlePiece) drawPieceMark(ctx, piece, font, locale);
+      if (piece.shape === 'circle') {
+        // 원은 세 줄을 한 덩어리로 한가운데에 쌓는다. 겹칠 출처 문구가 없다.
+        drawCircleStack(ctx, piece, font, locale);
+      } else {
+        drawPieceLabel(ctx, piece, font, layout.seamMm, locale);
+        // 출처 덩어리가 앉을 조각은 건너뛴다 — 거기엔 이름도 계정도 이미 있다.
+        if (piece !== titlePiece) drawPieceMark(ctx, piece, font, locale);
+      }
     }
 
     if (titlePiece !== undefined) {
