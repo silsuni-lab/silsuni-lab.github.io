@@ -98,9 +98,9 @@ export const ja: Catalog = {
   'round.field.diameterMm': '直径',
   'round.field.sideHeightMm': '側面の高さ',
   'round.field.lidHeightMm': '蓋の高さ',
-  'round.preset.coin': '小銭・イヤホンポーチ',
-  'round.preset.cotton': 'コットンケース',
-  'round.preset.sewingbox': '裁縫箱',
+  'round.preset.flat': '平たいポーチ',
+  'round.preset.pencase': '筒形ペンケース',
+  'round.preset.cosmetic': '化粧ポーチ',
   'round.control.backRatio': '背面',
   // 원통(round) — 패턴 이름·조각 이름·검증 오류·뒷면 비율 표기.
   'round.pattern.name': '円筒ファスナーポーチ',

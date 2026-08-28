@@ -122,9 +122,9 @@ export const en: Catalog = {
   'round.field.diameterMm': 'Diameter',
   'round.field.sideHeightMm': 'Side height',
   'round.field.lidHeightMm': 'Lid height',
-  'round.preset.coin': 'Coin & earbud pouch',
-  'round.preset.cotton': 'Cotton pad case',
-  'round.preset.sewingbox': 'Sewing kit',
+  'round.preset.flat': 'Flat round pouch',
+  'round.preset.pencase': 'Cylindrical pencil case',
+  'round.preset.cosmetic': 'Cosmetics pouch',
   'round.control.backRatio': 'Back',
   // 원통(round) — 패턴 이름·조각 이름·검증 오류·뒷면 비율 표기.
   'round.pattern.name': 'Round zipper pouch',

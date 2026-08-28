@@ -152,7 +152,7 @@ describe('roundTitlePiece — 출처 문구가 앉을 조각', () => {
   });
 
   it('원이 외접 사각형으로는 더 커 보이는 경우에도 사각 조각을 고른다', () => {
-    // 원 넓이를 D*D로 재면 여기서 원이 뽑힌다. 80/60/20은 프리셋 크기다.
+    // 원 넓이를 D*D로 재면 여기서 원이 뽑힌다. 지름에 비해 옆면이 낮은 치수다.
     expect(roundTitlePiece(buildRoundLayout({ diameterMm: 80, sideHeightMm: 60, lidHeightMm: 20 }))!.id).toBe('frontBottom');
     expect(roundTitlePiece(buildRoundLayout({ diameterMm: 300, sideHeightMm: 120, lidHeightMm: 10 }))!.id).toBe('frontBottom');
   });

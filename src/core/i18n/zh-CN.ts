@@ -98,9 +98,9 @@ export const zhCN: Catalog = {
   'round.field.diameterMm': '直径',
   'round.field.sideHeightMm': '侧面高度',
   'round.field.lidHeightMm': '盖子高度',
-  'round.preset.coin': '硬币·耳机包',
-  'round.preset.cotton': '化妆棉盒',
-  'round.preset.sewingbox': '针线盒',
+  'round.preset.flat': '扁圆收纳包',
+  'round.preset.pencase': '圆筒笔袋',
+  'round.preset.cosmetic': '化妆包',
   'round.control.backRatio': '背面',
   // 원통(round) — 패턴 이름·조각 이름·검증 오류·뒷면 비율 표기.
   'round.pattern.name': '圆筒拉链袋',

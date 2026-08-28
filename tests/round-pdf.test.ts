@@ -55,7 +55,9 @@ describe('buildRoundPdf', () => {
     /*
      * 130/130/30(골든 케이스)은 앞면 아랫단이 완성 높이 90mm라 라벨과
      * 출처 문구를 겹쳐 놓아도 눈에 안 띄었다. 80/60/20은 완성 높이가
-     * 30mm뿐이라 실제로 겹쳐 찍히는 걸 눈으로 확인한 프리셋이다.
+     * 30mm뿐이라 실제로 겹쳐 찍히는 걸 눈으로 확인한 치수다.
+     * 100/50/20은 첫 프리셋(납작 파우치)이라 화면을 열면 바로 이 도안이
+     * 뜬다. 완성 높이가 20mm로 프리셋 중 가장 짧아 여기가 제일 위험하다.
      * 300/40/10은 허용 범위에서 몸통이 가장 납작해지는 극단값이다.
      */
     const doc = await PDFDocument.create();
@@ -63,6 +65,7 @@ describe('buildRoundPdf', () => {
 
     for (const dims of [
       { diameterMm: 80, sideHeightMm: 60, lidHeightMm: 20 },
+      { diameterMm: 100, sideHeightMm: 50, lidHeightMm: 20 },
       golden,
       { diameterMm: 300, sideHeightMm: 40, lidHeightMm: 10 },
     ]) {

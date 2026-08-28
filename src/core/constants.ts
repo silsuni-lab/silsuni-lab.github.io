@@ -84,7 +84,7 @@ export const BOX_FIELDS: FieldSpec<DimensionField> = {
   presetPrefix: 'preset',
 };
 
-/** 원통 파우치 프리셋. 작은 것, 도해와 같은 크기, 큰 것으로 잡았다. */
+/** 원통 파우치 프리셋. 납작한 것, 길쭉한 것, 도해와 같은 크기로 잡았다. */
 export interface RoundPreset {
   readonly id: string;
   readonly diameterMm: number;
@@ -93,9 +93,9 @@ export interface RoundPreset {
 }
 
 export const ROUND_PRESETS: readonly RoundPreset[] = [
-  { id: 'coin', diameterMm: 80, sideHeightMm: 60, lidHeightMm: 20 },
-  { id: 'cotton', diameterMm: 130, sideHeightMm: 130, lidHeightMm: 30 },
-  { id: 'sewingbox', diameterMm: 160, sideHeightMm: 100, lidHeightMm: 25 },
+  { id: 'flat', diameterMm: 100, sideHeightMm: 50, lidHeightMm: 20 },
+  { id: 'pencase', diameterMm: 80, sideHeightMm: 200, lidHeightMm: 50 },
+  { id: 'cosmetic', diameterMm: 130, sideHeightMm: 130, lidHeightMm: 30 },
 ];
 
 /**

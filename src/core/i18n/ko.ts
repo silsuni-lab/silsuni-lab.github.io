@@ -101,9 +101,9 @@ export const ko = {
   'round.field.diameterMm': '지름',
   'round.field.sideHeightMm': '옆면 높이',
   'round.field.lidHeightMm': '뚜껑 높이',
-  'round.preset.coin': '동전·이어폰 파우치',
-  'round.preset.cotton': '화장솜 케이스',
-  'round.preset.sewingbox': '반짇고리',
+  'round.preset.flat': '납작 파우치',
+  'round.preset.pencase': '원통형 필통',
+  'round.preset.cosmetic': '화장품 파우치',
   'round.control.backRatio': '뒷면',
   // 원통(round) — 패턴 이름·조각 이름·검증 오류·뒷면 비율 표기.
   'round.pattern.name': '동글동글 원통 파우치',

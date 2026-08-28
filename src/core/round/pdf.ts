@@ -51,8 +51,8 @@ const LABEL_SOURCE_GAP_MM = 2;
  *
  * 라벨 글자 실제 높이를 폰트에서 직접 잰다. 대충 어림한 값을 쓰면 폰트나
  * 라벨 크기를 바꿀 때 조용히 다시 겹친다 — 골든 케이스(130/130/30)처럼 큰
- * 조각에서는 안 보이다가 짧은 조각(예: 80/60/20의 앞면 아랫단, 완성 높이
- * 30mm)에서만 드러나는 버그였다.
+ * 조각에서는 안 보이다가 짧은 조각(예: 첫 프리셋 100/50/20의 앞면 아랫단,
+ * 완성 높이 20mm)에서만 드러나는 버그였다.
  */
 export function labelZoneHeightMm(font: PDFFont): number {
   return LABEL_TOP_OFFSET_MM + font.heightAtSize(LABEL_SIZE) / MM_TO_PT + LABEL_SOURCE_GAP_MM;
