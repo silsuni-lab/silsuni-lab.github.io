@@ -205,8 +205,13 @@ function drawCenterAndTitle(ctx: PageContext, layout: Layout, font: PDFFont, loc
    * 파우치에서 문구가 앞판 좌우로 넘친다 — 100*200*100이면 덩어리가 130mm인데
    * 앞판은 120mm다. 넓은 도안에서는 폭이 배율을 잡지 않으므로 그대로다.
    */
-  drawSourceBlock(ctx, font, point.xMm, point.yMm, front.heightMm,
-    patternTitle(layout.dimensions, layout.seamMm, locale), locale, front.widthMm);
+  drawSourceBlock(ctx, font, locale, {
+    xMm: point.xMm,
+    centerYMm: point.yMm,
+    availableHeightMm: front.heightMm,
+    availableWidthMm: front.widthMm,
+    title: patternTitle(layout.dimensions, layout.seamMm, locale),
+  });
 }
 
 export async function buildPdf(

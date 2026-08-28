@@ -118,26 +118,44 @@ export function buildRoundLayout(
  */
 export function roundTitlePiece(
   layout: RoundLayout,
-  fit?: { readonly minHeightMm: number; readonly minWidthMm: number },
+  fit?: {
+    /** 덩어리가 배율 1로 차지하는 크기. */
+    readonly blockHeightMm: number;
+    readonly blockWidthMm: number;
+    /** 조각 위쪽에서 조각 이름 몫으로 비워 두는 높이. */
+    readonly reservedTopMm: number;
+    /** 덩어리와 조각 경계 사이에 남길 여백. */
+    readonly marginMm: number;
+  },
 ): RoundPiece | undefined {
   const byArea = [...layout.pieces.filter((p) => p.shape === 'rect')].sort(
     (a, b) => b.finishedWidthMm * b.finishedHeightMm - a.finishedWidthMm * a.finishedHeightMm,
   );
   if (fit === undefined) return byArea[0];
+
   /*
    * 넓이만 보면 담지도 못할 조각을 고른다. 납작 파우치(100/50/20)가 그랬다 —
    * 앞면 두 단이 251*20으로 가장 넓은데 완성 높이가 20mm뿐이라, 조각 이름
    * 몫을 빼면 9.4mm만 남는다. 덩어리는 23.6mm가 필요해 완성선을 넘고 재단선
-   * 위로까지 글자가 나갔다. 같은 도안의 뒷면(63*50)은 여유가 39.4mm다.
+   * 위로까지 글자가 나갔다.
    *
-   * 그래서 담을 수 있는 것 중에서 가장 넓은 조각을 고른다. 뒷면은 완성
-   * 높이가 옆면 높이(최소 40)라 언제나 후보에 든다 — 못 찾는 경우는 없다.
-   * 그래도 마지막 줄을 두는 건, 크기 상수가 바뀌어 아무것도 못 담게 되면
-   * 문구가 사라지는 것보다 넘치더라도 찍히는 편이 눈에 띄기 때문이다.
+   * 세로만 봐도 모자란다. 세로가 넉넉하고 가로가 좁은 조각에서는 배율이
+   * 커져 이번엔 옆으로 넘친다. 두 방향을 함께 본다.
    */
-  return (
-    byArea.find(
-      (p) => p.finishedHeightMm >= fit.minHeightMm && p.finishedWidthMm >= fit.minWidthMm,
-    ) ?? byArea[0]
-  );
+  const roomRatio = (p: RoundPiece) =>
+    Math.min(
+      (p.finishedHeightMm - fit.reservedTopMm - 2 * fit.marginMm) / fit.blockHeightMm,
+      (p.finishedWidthMm - 2 * fit.marginMm) / fit.blockWidthMm,
+    );
+
+  const roomy = byArea.filter((p) => roomRatio(p) >= 1);
+  if (roomy.length > 0) return roomy[0];
+
+  /*
+   * 하나도 못 담는 경우가 있다. 납작 파우치에 뒷면 10%를 고르면 앞면 두 단은
+   * 너무 낮고(20mm) 뒷면은 너무 좁다(31mm). 그때는 가장 덜 모자란 조각을
+   * 고르고, 덩어리 쪽에서 배율을 1 아래로 내려 맞춘다(TITLE_SCALE_MIN).
+   * 넓이로 고르면 세로가 9.4mm뿐인 조각이 뽑혀 훨씬 크게 넘친다.
+   */
+  return [...byArea].sort((a, b) => roomRatio(b) - roomRatio(a))[0];
 }

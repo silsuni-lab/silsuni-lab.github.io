@@ -8,9 +8,12 @@ import { buildRoundLayout, roundTitlePiece } from '../src/core/round/layout';
 import { buildRoundPdf, circleStackYMm, labelZoneHeightMm, pieceMarkRegion, titleBlockRegion } from '../src/core/round/pdf';
 import { paginate } from '../src/core/tiling';
 import { t } from '../src/core/i18n/messages';
-import { KOREAN_FONT_CHARS, loadFonts, MM_TO_PT, sourceBlockSizeMm, TITLE_MARGIN_MM } from '../src/core/page';
-import { ROUND_PRESETS } from '../src/core/constants';
-import { roundPatternTitle } from '../src/core/round/dimensions';
+import {
+  KOREAN_FONT_CHARS, loadFonts, MM_TO_PT, sourceBlockSizeMm,
+  titleScale, TITLE_MARGIN_MM, TITLE_SCALE_MIN,
+} from '../src/core/page';
+import { ROUND_PRESETS, SEAM_MM } from '../src/core/constants';
+import { roundBackRatioChoices, roundPatternTitle } from '../src/core/round/dimensions';
 
 const golden = { diameterMm: 130, sideHeightMm: 130, lidHeightMm: 30 };
 const layout = buildRoundLayout(golden);
@@ -100,26 +103,41 @@ describe('출처 덩어리를 담을 수 있는 조각에 앉힌다', () => {
    * 세로만 봐도 모자란다. 세로가 넉넉하고 가로가 좁은 조각에서는 배율이
    * 커져 이번엔 옆으로 넘친다. 두 방향을 함께 지킨다.
    */
-  it('모든 프리셋에서 덩어리가 조각의 완성 영역 안에 들어간다', async () => {
+  it('모든 프리셋과 모든 뒷면 비율에서 덩어리가 조각 안에 들어간다', async () => {
+    /*
+     * 뒷면 비율까지 돌린다. 납작 파우치에 10%를 고르면 앞면 두 단은 너무
+     * 낮고(20mm) 뒷면은 너무 좁아(31mm) 담을 조각이 하나도 없다. 그때는
+     * 가장 덜 모자란 조각을 고르고 배율을 1 아래로 내려 맞춘다. 프리셋만
+     * 돌리면 이 구멍이 안 잡힌다 — 실제로 못 잡고 있었다.
+     */
     const doc = await PDFDocument.create();
     const { font } = await loadFonts(doc, 'ko');
 
     for (const preset of ROUND_PRESETS) {
-      const l = buildRoundLayout(preset);
-      const title = roundPatternTitle(l.dimensions, l.seamMm, 'ko');
-      const block = sourceBlockSizeMm(font, title, 'ko');
-      const piece = roundTitlePiece(l, {
-        minHeightMm: block.heightMm + 2 * TITLE_MARGIN_MM + labelZoneHeightMm(font),
-        minWidthMm: block.widthMm,
-      })!;
+      for (const choice of roundBackRatioChoices('ko')) {
+        const where = `${preset.id} r=${choice.value}`;
+        const l = buildRoundLayout(preset, SEAM_MM, choice.value);
+        const title = roundPatternTitle(l.dimensions, l.seamMm, 'ko');
+        const block = sourceBlockSizeMm(font, title, 'ko');
+        const piece = roundTitlePiece(l, {
+          blockHeightMm: block.heightMm,
+          blockWidthMm: block.widthMm,
+          reservedTopMm: labelZoneHeightMm(font),
+          marginMm: TITLE_MARGIN_MM,
+        })!;
 
-      const { availableHeightMm } = titleBlockRegion(piece, l.seamMm, font);
-      expect(availableHeightMm, `${preset.id} 세로`).toBeGreaterThanOrEqual(
-        block.heightMm + 2 * TITLE_MARGIN_MM,
-      );
-      expect(piece.finishedWidthMm, `${preset.id} 가로`).toBeGreaterThanOrEqual(
-        block.widthMm + 2 * TITLE_MARGIN_MM,
-      );
+        const { availableHeightMm } = titleBlockRegion(piece, l.seamMm, font);
+        // drawSourceBlock이 쓰는 것과 같은 셈.
+        const heightScale = titleScale(availableHeightMm, block.heightMm, TITLE_SCALE_MIN);
+        const widthScale = Math.max(
+          TITLE_SCALE_MIN,
+          (piece.finishedWidthMm - 2 * TITLE_MARGIN_MM) / block.widthMm,
+        );
+        const scale = Math.min(heightScale, widthScale);
+
+        expect(block.heightMm * scale, `${where} 세로`).toBeLessThanOrEqual(availableHeightMm);
+        expect(block.widthMm * scale, `${where} 가로`).toBeLessThanOrEqual(piece.finishedWidthMm);
+      }
     }
   });
 
@@ -130,8 +148,10 @@ describe('출처 덩어리를 담을 수 있는 조각에 앉힌다', () => {
     const l = buildRoundLayout({ diameterMm: 130, sideHeightMm: 130, lidHeightMm: 30 });
     const block = sourceBlockSizeMm(font, roundPatternTitle(l.dimensions, l.seamMm, 'ko'), 'ko');
     const piece = roundTitlePiece(l, {
-      minHeightMm: block.heightMm + 2 * TITLE_MARGIN_MM + labelZoneHeightMm(font),
-      minWidthMm: block.widthMm,
+      blockHeightMm: block.heightMm,
+      blockWidthMm: block.widthMm,
+      reservedTopMm: labelZoneHeightMm(font),
+      marginMm: TITLE_MARGIN_MM,
     })!;
     expect(piece.id).toBe('frontBottom');
   });

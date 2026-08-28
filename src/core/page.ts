@@ -252,14 +252,25 @@ export const TITLE_MARGIN_MM = 1.5;
  * 키우면 문구가 앞판을 넘어 바닥 밴드를 침범하고, 그러면 재단선을 읽는 데
  * 방해가 된다.
  *
- * 1보다 작아지지는 않는다. 자리가 없다고 예전보다 작게 찍으면 지금 쓰던
- * 사람에게는 고친 게 아니라 망가뜨린 것이 된다.
+ * 기본으로는 1보다 작아지지 않는다. 자리가 없다고 예전보다 작게 찍으면 지금
+ * 쓰던 사람에게는 고친 게 아니라 망가뜨린 것이 된다.
+ *
+ * minScale로 그 바닥을 내릴 수 있다. 원통에서 아주 좁은 조각밖에 없을 때
+ * 쓴다 — 그때는 작게 찍히는 것보다 조각 밖으로 넘치는 것이 나쁘다.
  */
-export function titleScale(frontHeightMm: number, blockMm: number): number {
+export function titleScale(frontHeightMm: number, blockMm: number, minScale = 1): number {
   if (blockMm <= 0) return 1;
   const room = frontHeightMm - 2 * TITLE_MARGIN_MM;
-  return Math.min(TITLE_SCALE_MAX, Math.max(1, room / blockMm));
+  return Math.min(TITLE_SCALE_MAX, Math.max(minScale, room / blockMm));
 }
+
+/**
+ * 아무 조각도 덩어리를 담지 못할 때 내려갈 수 있는 바닥.
+ *
+ * 이보다 작으면 읽을 수 없어 찍는 뜻이 없다. 여기까지 내려도 안 들어가면
+ * 넘치는 채로 찍힌다 — 문구가 통째로 사라지는 것보다 눈에 띄기 때문이다.
+ */
+export const TITLE_SCALE_MIN = 0.5;
 
 export interface PageContext {
   readonly pdfPage: PDFPage;
@@ -564,16 +575,24 @@ export function sourceBlockSizeMm(
  * 덩어리 세로는 실제 글꼴에서 잰다 — 어림한 비율로 잡으면 글꼴을 바꿀 때
  * 조용히 넘친다.
  */
+export interface SourceBlockPlacement {
+  readonly xMm: number;
+  readonly centerYMm: number;
+  readonly availableHeightMm: number;
+  /** 조각·앞판의 완성 폭. 넘기지 않으면 폭은 배율을 잡지 않는다. */
+  readonly availableWidthMm?: number;
+  readonly title: string;
+  /** 배율의 바닥. 담을 조각이 아예 없을 때만 1 아래로 내린다. */
+  readonly minScale?: number;
+}
+
 export function drawSourceBlock(
   ctx: PageContext,
   font: PDFFont,
-  xMm: number,
-  centerYMm: number,
-  availableHeightMm: number,
-  title: string,
   locale: Locale,
-  availableWidthMm?: number,
+  place: SourceBlockPlacement,
 ): void {
+  const { xMm, centerYMm, availableHeightMm, availableWidthMm, title } = place;
   const aboveMm = font.heightAtSize(TITLE_SIZE) / MM_TO_PT / 2;
   const belowMm = HANDLE_OFFSET_MM + font.heightAtSize(HANDLE_SIZE) / MM_TO_PT / 2;
   /*
@@ -585,11 +604,12 @@ export function drawSourceBlock(
    * 1 아래로는 내려가지 않는다. 자리가 없다고 예전보다 작게 찍으면 지금
    * 쓰던 사람에게는 고친 게 아니라 망가뜨린 것이 된다 — titleScale과 같다.
    */
-  const heightScale = titleScale(availableHeightMm, aboveMm + belowMm);
+  const minScale = place.minScale ?? 1;
+  const heightScale = titleScale(availableHeightMm, aboveMm + belowMm, minScale);
   const widthMm = sourceBlockSizeMm(font, title, locale).widthMm;
   const widthScale = availableWidthMm === undefined || widthMm <= 0
     ? heightScale
-    : Math.max(1, (availableWidthMm - 2 * TITLE_MARGIN_MM) / widthMm);
+    : Math.max(minScale, (availableWidthMm - 2 * TITLE_MARGIN_MM) / widthMm);
   const scale = Math.min(heightScale, widthScale);
   const titleYMm = centerYMm - ((aboveMm + belowMm) * scale) / 2 + aboveMm * scale;
 
