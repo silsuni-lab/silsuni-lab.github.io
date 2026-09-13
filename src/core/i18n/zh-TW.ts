@@ -75,6 +75,7 @@ export const zhTW: Catalog = {
   'legend.seamAllowance': (seamMm: number) => `縫份 ${seamMm}mm — 已含在內`,
   'legend.centerLine': '中心線 — 版型寬度的正中央',
   'legend.foldEdge': '對摺線 — 置於布料對摺處',
+  'legend.grainline': '布紋方向 — 裁剪前將箭頭與布料經向對齊',
   'legend.tile': '列印頁邊界 — 頁碼與 PDF 相同',
 
   // 오류

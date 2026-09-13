@@ -61,6 +61,18 @@ describe('전개도 미리보기 — 대비', () => {
     expect(contrast(colorOf(previewSvg, 'seam-line', 'stroke'), PATTERN_FILL)).toBeGreaterThanOrEqual(3);
   });
 
+  it('식서선이 3:1 이상이다', () => {
+    expect(contrast(colorOf(previewSvg, 'grainline', 'stroke'), PATTERN_FILL)).toBeGreaterThanOrEqual(3);
+  });
+
+  it('식서선이 다른 도안 선과 다른 색이다', () => {
+    // 갈라 주는 단서가 화살촉 하나뿐이면, 촉이 가려진 자리에서 구별이 사라진다.
+    const grain = colorOf(previewSvg, 'grainline', 'stroke');
+    expect(grain).not.toBe(colorOf(previewSvg, 'seam-line', 'stroke'));
+    expect(grain).not.toBe(colorOf(previewSvg, 'page-tile', 'stroke'));
+    expect(grain).not.toBe(colorOf(previewSvg, 'center-line', 'stroke'));
+  });
+
   it('페이지 경계선과 완성선을 색과 선 모양 양쪽으로 구별한다', () => {
     // 명도만으로는 갈라지지 않는 조합이라(청록과 갈색은 명도가 비슷하다)
     // 색이 다르다는 것과 선 모양이 다르다는 것을 함께 확인한다.

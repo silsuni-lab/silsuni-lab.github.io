@@ -1,8 +1,22 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 choisuing
 
-import { SEAM_MM, ZIPPER_ALLOWANCE_MM } from './constants';
+import {
+  GRAIN_LENGTH_RATIO,
+  GRAIN_RESERVE_MM,
+  SEAM_MM,
+  ZIPPER_ALLOWANCE_MM,
+  type Line,
+  type Point,
+} from './constants';
 import type { Dimensions } from './dimensions';
+
+/*
+ * 좌표 두 벌은 constants.ts에 있다. 원통도 같은 것을 쓰기 때문이다.
+ * 여기서 다시 내보내 예전 경로(`from './layout'`)가 그대로 돌게 둔다.
+ */
+export type { Line, Point };
+export { GRAIN_RESERVE_MM };
 
 export type BandId = 'topFront' | 'front' | 'bottom' | 'back' | 'topBack';
 
@@ -12,18 +26,6 @@ export interface Band {
   readonly yMm: number;
   readonly widthMm: number;
   readonly heightMm: number;
-}
-
-export interface Point {
-  readonly xMm: number;
-  readonly yMm: number;
-}
-
-export interface Line {
-  readonly x1Mm: number;
-  readonly y1Mm: number;
-  readonly x2Mm: number;
-  readonly y2Mm: number;
 }
 
 export interface Layout {
@@ -37,6 +39,15 @@ export interface Layout {
   /** 재단선 안쪽으로 시접만큼 들어간 박음질선. */
   readonly seamLineMm: readonly Point[];
   readonly foldLinesMm: readonly Line[];
+  /**
+   * 식서방향 (mm). 원단 결을 이 방향으로 놓고 재단하라는 표시다.
+   * 양끝 화살표 기호 하나로 말하고 글자는 찍지 않는다 — 화면 범례가 설명한다.
+   *
+   * 가로로 눕히는 까닭은 골선 반접기다. foldEdgeYMm이 가로선으로 놓이는데
+   * 원단을 접어 재단할 때 접는 자리는 식서와 나란하다. 세로로 잡으면 반접기
+   * 재단이 성립하지 않는다.
+   */
+  readonly grainlineMm: Line;
   /** 이 도안에 넣은 시접 (mm). 0이면 완성선이 곧 재단선이다. */
   readonly seamMm: number;
   /**
@@ -191,6 +202,18 @@ export function buildLayout(dimensions: Dimensions, seamMm: number = SEAM_MM): L
     foldLinesMm.push({ x1Mm: foldLeft, y1Mm: yMm, x2Mm: foldRight, y2Mm: yMm });
   }
 
+  /*
+   * 식서선은 앞판에 둔다. 반접기에서 온전히 남는 가장 넓은 밴드다 —
+   * 뒤판에 두면 절반만 인쇄할 때 통째로 잘려 나간다.
+   *
+   * 세로로는 아래쪽 띠에 앉힌다. 앞판 한가운데는 출처 덩어리 세 줄이
+   * 차지하는 자리다(patternTitlePointMm).
+   */
+  const frontBand = bands.find((band) => band.id === 'front')!;
+  const grainHalfMm = (frontBand.widthMm * GRAIN_LENGTH_RATIO) / 2;
+  const grainCenterXMm = frontBand.xMm + frontBand.widthMm / 2;
+  const grainYMm = frontBand.yMm + frontBand.heightMm - GRAIN_RESERVE_MM / 2;
+
   return {
     dimensions,
     totalWidthMm,
@@ -200,6 +223,12 @@ export function buildLayout(dimensions: Dimensions, seamMm: number = SEAM_MM): L
     outlineMm,
     seamLineMm: S === 0 ? outlineMm : offsetInward(outlineMm, S),
     foldLinesMm,
+    grainlineMm: {
+      x1Mm: grainCenterXMm - grainHalfMm,
+      y1Mm: grainYMm,
+      x2Mm: grainCenterXMm + grainHalfMm,
+      y2Mm: grainYMm,
+    },
     seamMm: S,
   };
 }

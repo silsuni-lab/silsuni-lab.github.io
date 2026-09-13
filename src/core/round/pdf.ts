@@ -15,9 +15,10 @@ import {
   SEAM_COLOR as SEAM_HEX,
 } from '../colors';
 import type { Pagination } from '../tiling';
+import { GRAIN_RESERVE_MM } from '../constants';
 import {
   drawAlignmentMarks, drawJoinMarks, drawPatternNote, drawScaleSquares,
-  drawSourceBlock, loadFonts, MARK, MM_TO_PT, pdfColor, sourceBlockSizeMm,
+  drawGrainline, drawSourceBlock, loadFonts, MARK, MM_TO_PT, pdfColor, sourceBlockSizeMm,
   TITLE_MARGIN_MM, TITLE_SCALE_MIN, toPagePoint,
   type PageContext,
 } from '../page';
@@ -72,9 +73,20 @@ export function titleBlockRegion(
   seamMm: number,
   font: PDFFont,
 ): { centerYMm: number; availableHeightMm: number } {
+  /*
+   * 위로는 라벨 몫, 아래로는 식서 몫을 비운다.
+   *
+   * 식서 몫은 조각이 감당할 만큼만 가져간다. 통째로 12mm를 빼면 얇은 조각에서
+   * 남는 높이가 0이 되어 덩어리가 아예 앉지 못한다 — 그때는 덩어리를 지키는
+   * 쪽이 옳다. 식서선은 가로로도 물러나 있어 조금 가까워져도 견딘다.
+   */
   const reservedTopMm = labelZoneHeightMm(font);
-  const availableHeightMm = Math.max(0, titlePiece.finishedHeightMm - reservedTopMm);
-  const centerYMm = titlePiece.yMm + titlePiece.heightMm / 2 + reservedTopMm / 2;
+  const roomMm = Math.max(0, titlePiece.finishedHeightMm - reservedTopMm);
+  const grainReserveMm = Math.min(GRAIN_RESERVE_MM, roomMm * 0.35);
+
+  const availableHeightMm = roomMm - grainReserveMm;
+  const centerYMm =
+    titlePiece.yMm + titlePiece.heightMm / 2 + reservedTopMm / 2 - grainReserveMm / 2;
   return { centerYMm, availableHeightMm };
 }
 
@@ -357,6 +369,8 @@ export async function buildRoundPdf(
       drawPieceOutline(ctx, piece, 0, CUT_COLOR, 1.2);
       // 완성선은 시접만큼 안으로 들어간 자리. 시접이 0이면 그리지 않는다.
       if (layout.seamMm > 0) drawPieceOutline(ctx, piece, layout.seamMm, SEAM_COLOR, 0.5);
+      // 식서선은 도안 선 다음, 글자보다 앞이다. 도면에 속한 선이다.
+      drawGrainline(ctx, piece.grainlineMm);
       if (piece.shape === 'circle') {
         // 원은 세 줄을 한 덩어리로 한가운데에 쌓는다. 겹칠 출처 문구가 없다.
         drawCircleStack(ctx, piece, font, locale, title);

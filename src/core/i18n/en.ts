@@ -94,6 +94,7 @@ export const en: Catalog = {
   'legend.seamAllowance': (seamMm: number) => `Seam allowance ${seamMm}mm — already included`,
   'legend.centerLine': 'Center line — middle of the pattern',
   'legend.foldEdge': 'Place on fold — lay this edge on the fabric fold',
+  'legend.grainline': 'Grainline — align the arrow with the fabric grain before cutting',
   'legend.tile': 'Page edge — tile labels match the PDF',
 
   // 오류

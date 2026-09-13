@@ -150,3 +150,26 @@ describe('renderRoundShapeSvg — 완성 예상', () => {
     expect(shape).toContain('aria-label=');
   });
 });
+
+describe('식서방향 — 원통 미리보기', () => {
+  it('조각마다 하나씩 그린다', () => {
+    const found = svg.match(/class="grainline"/g) ?? [];
+    expect(found.length).toBe(layout.pieces.length);
+  });
+
+  it('원은 세로로 선다', () => {
+    // 조각 순서는 layout.pieces를 따른다. 원은 셋째다.
+    const all = [...svg.matchAll(/<[^>]*class="grainline"[^>]*>/g)].map((m) => m[0]);
+    const circleIndex = layout.pieces.findIndex((p) => p.shape === 'circle');
+    const el = all[circleIndex]!;
+    const at = (name: string) => Number(el.match(new RegExp(`${name}="([-\\d.]+)"`))![1]);
+    expect(at('x1')).toBe(at('x2'));
+    expect(at('y1')).toBeLessThan(at('y2'));
+  });
+
+  it('범례가 뜻을 설명한다', () => {
+    const grain = roundLegendItems(layout, 'ko').find((i) => i.swatch === 'swatch-grain');
+    expect(grain).toBeDefined();
+    expect(grain!.text).toContain('식서');
+  });
+});

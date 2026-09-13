@@ -352,6 +352,27 @@ body {
 .swatch-tile { border-top-width: 2px; border-top-style: dashed; }
 .swatch-center { border-top-width: 1px; border-top-style: dashed; }
 .swatch-fold-edge { border-top-width: 2px; }
+
+/*
+ * 식서선 견본. 도면에서 이 선을 가르는 것은 색과 양끝 화살촉이므로
+ * 견본도 촉을 달아야 한다. 실선만 두면 재단선 견본과 색으로만 갈린다.
+ *
+ * 촉은 currentColor를 따른다 — 견본 색은 main.ts가 legendItems에서 받아
+ * 인라인으로 넣고, 거기서 color도 함께 준다.
+ */
+.swatch-grain { border-top-width: 1px; position: relative; }
+.swatch-grain::before,
+.swatch-grain::after {
+  content: "";
+  position: absolute;
+  top: -2px;
+  width: 4px;
+  height: 4px;
+  border-top: 1px solid currentColor;
+  border-left: 1px solid currentColor;
+}
+.swatch-grain::before { left: 0; transform: rotate(-45deg); }
+.swatch-grain::after { right: 0; transform: rotate(135deg); }
 .swatch-seam-band {
   height: 12px;
   border-width: 1px;

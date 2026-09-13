@@ -75,6 +75,7 @@ export const zhCN: Catalog = {
   'legend.seamAllowance': (seamMm: number) => `缝份 ${seamMm}mm — 已含在内`,
   'legend.centerLine': '中心线 — 版型宽度的正中央',
   'legend.foldEdge': '对折线 — 置于布料对折处',
+  'legend.grainline': '布纹方向 — 裁剪前将箭头与布料经向对齐',
   'legend.tile': '打印页边界 — 页码与 PDF 相同',
 
   // 오류

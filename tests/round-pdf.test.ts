@@ -3,7 +3,9 @@
 
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { PDFDocument, PDFName } from 'pdf-lib';
+import { PDFArray, PDFDocument, PDFName, PDFRawStream } from 'pdf-lib';
+import { inflateSync } from 'node:zlib';
+import { GRAIN_COLOR, hexToRgb01 } from '../src/core/colors';
 import { buildRoundLayout, roundTitlePiece } from '../src/core/round/layout';
 import { buildRoundPdf, circleStackYMm, labelZoneHeightMm, pieceMarkRegion, titleBlockRegion } from '../src/core/round/pdf';
 import { paginate } from '../src/core/tiling';
@@ -230,3 +232,86 @@ describe('조각마다 파우치 이름과 계정을 찍는다', () => {
     expect(markFn.slice(0, markFn.indexOf('\n}'))).not.toContain('roundPatternTitle');
   });
 });
+
+describe('식서방향 — 원통 PDF', () => {
+  it('도안에 식서선을 그린다', async () => {
+    const bytes = await buildRoundPdf(layout, paginate(layout, 'a4'), 'ko');
+    const doc = await PDFDocument.load(bytes);
+    const { r, g, b } = hexToRgb01(GRAIN_COLOR);
+    const op = `${r} ${g} ${b} RG`;
+    const pages = doc.getPages().map((_, i) => roundPageContent(doc, i));
+    expect(pages.some((c) => c.includes(op))).toBe(true);
+  });
+
+  it('조각마다 하나씩, 조각 안에 머문다', () => {
+    // 자리 계산은 layout이 하고 PDF는 그리기만 한다. 조각을 벗어나면
+    // 이웃 조각 위에 결 방향을 그리는 셈이라 재단이 어긋난다.
+    for (const piece of layout.pieces) {
+      const gr = piece.grainlineMm;
+      expect(Math.min(gr.x1Mm, gr.x2Mm), piece.id).toBeGreaterThanOrEqual(piece.xMm);
+      expect(Math.max(gr.y1Mm, gr.y2Mm), piece.id).toBeLessThanOrEqual(piece.yMm + piece.heightMm);
+    }
+  });
+
+  /*
+   * 사각은 앞판 아래쪽에 띠를 잡아 세로로 갈라 두지만, 원통은 뚜껑이 10mm까지
+   * 얇아질 수 있어 그 수를 못 쓴다. 대신 가로로 비킨다 — 그래서 여기서 볼 것은
+   * 위아래 거리가 아니라 "왼쪽 구석에 머무는가"다.
+   */
+  it('가운데 글자 자리를 비켜 왼쪽 구석에 머문다', () => {
+    for (const piece of layout.pieces) {
+      const g = piece.grainlineMm;
+      const finishedLeftMm = piece.xMm + layout.seamMm;
+      expect(Math.min(g.x1Mm, g.x2Mm), piece.id).toBeGreaterThan(finishedLeftMm);
+      expect(Math.max(g.x1Mm, g.x2Mm), piece.id)
+        .toBeLessThanOrEqual(finishedLeftMm + piece.finishedWidthMm * 0.45);
+    }
+  });
+
+  /*
+   * 이 검사가 없어서 한 번 놓쳤다. 미리보기는 조각 이름을 한가운데에 찍고
+   * PDF는 위쪽에 찍으므로, 미리보기만 보고는 PDF의 겹침을 못 본다. 납작
+   * 파우치 뒷면에서 출처 덩어리가 조각을 꽉 채우도록 커져 식서선을 덮었다.
+   */
+  it('모든 프리셋에서 출처 덩어리가 식서선 위에서 멈춘다', async () => {
+    const doc = await PDFDocument.create();
+    const { font } = await loadFonts(doc, 'ko');
+    for (const preset of ROUND_PRESETS) {
+      const l = buildRoundLayout(preset);
+      const piece = roundTitlePiece(l);
+      if (piece === undefined) continue;
+      const region = titleBlockRegion(piece, l.seamMm, font);
+      const blockBottomMm = region.centerYMm + region.availableHeightMm / 2;
+      expect(blockBottomMm, preset.id).toBeLessThanOrEqual(piece.grainlineMm.y1Mm);
+    }
+  });
+
+  it('식서선이 완성선 아래 변을 넘지 않는다', () => {
+    // 화살촉은 선에서 위아래로 1.5mm 벌어진다. 그만큼도 안에 있어야 한다.
+    for (const preset of ROUND_PRESETS) {
+      const l = buildRoundLayout(preset);
+      for (const piece of l.pieces) {
+        const finishedBottomMm = piece.yMm + piece.heightMm - l.seamMm;
+        expect(Math.max(piece.grainlineMm.y1Mm, piece.grainlineMm.y2Mm) + 1.5,
+          `${preset.id} ${piece.id}`).toBeLessThanOrEqual(finishedBottomMm);
+      }
+    }
+  });
+
+  it('출처 덩어리가 그 구석까지 넓어지지는 않는다', async () => {
+    // 덩어리는 가운데 정렬이라, 완성 폭의 30%보다 좁으면 식서선과 만나지 않는다.
+    const doc = await PDFDocument.create();
+    const { font } = await loadFonts(doc, 'ko');
+    const titlePiece = roundTitlePiece(layout)!;
+    const { widthMm } = sourceBlockSizeMm(font, roundPatternTitle(golden, SEAM_MM), 'ko');
+    expect(widthMm).toBeLessThan(titlePiece.finishedWidthMm * 0.3);
+  });
+});
+
+/** 해당 페이지의 콘텐츠 스트림을 풀어 텍스트로 돌려준다. (사각 쪽과 같은 셈) */
+function roundPageContent(doc: PDFDocument, index: number): string {
+  const contents = doc.getPage(index).node.Contents();
+  const stream = contents instanceof PDFArray ? contents.lookup(0) : contents;
+  if (!(stream instanceof PDFRawStream)) throw new Error('콘텐츠 스트림을 찾지 못했다');
+  return inflateSync(Buffer.from(stream.asUint8Array())).toString('latin1');
+}

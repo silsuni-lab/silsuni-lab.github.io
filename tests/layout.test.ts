@@ -612,3 +612,72 @@ describe('출처 문구 — 두 줄로 나뉜다', () => {
     expect(WATERMARK_HANDLE).not.toContain('*');
   });
 });
+
+/*
+ * 식서방향(GRAINLINE). 원단 결을 어느 쪽으로 놓고 재단할지 알려 주는 선이다.
+ * 기호 하나로 말한다 — 글자는 찍지 않고 화면 범례가 설명한다.
+ *
+ * 가로로 잡는 까닭이 있다. 골선 반접기를 쓰면 foldEdgeYMm이 가로선으로
+ * 놓이는데, 원단을 접어 재단할 때 접는 자리는 식서와 나란하다. 세로로
+ * 잡으면 반접기 재단이 성립하지 않는다.
+ */
+describe('식서방향 — 사각 전개도', () => {
+  const layout = buildLayout(travel);
+  const front = layout.bands.find((b) => b.id === 'front')!;
+
+  it('가로다', () => {
+    expect(layout.grainlineMm.y1Mm).toBe(layout.grainlineMm.y2Mm);
+    expect(layout.grainlineMm.x1Mm).toBeLessThan(layout.grainlineMm.x2Mm);
+  });
+
+  it('앞판 안에 있다', () => {
+    const { x1Mm, x2Mm, y1Mm } = layout.grainlineMm;
+    expect(x1Mm).toBeGreaterThanOrEqual(front.xMm);
+    expect(x2Mm).toBeLessThanOrEqual(front.xMm + front.widthMm);
+    expect(y1Mm).toBeGreaterThan(front.yMm);
+    expect(y1Mm).toBeLessThan(front.yMm + front.heightMm);
+  });
+
+  it('완성선 안쪽에 있다 — 시접에 걸치면 박음질에 물린다', () => {
+    const { x1Mm, x2Mm } = layout.grainlineMm;
+    expect(x1Mm).toBeGreaterThanOrEqual(front.xMm + layout.seamMm);
+    expect(x2Mm).toBeLessThanOrEqual(front.xMm + front.widthMm - layout.seamMm);
+  });
+
+  it('가로 한가운데에 놓인다', () => {
+    const { x1Mm, x2Mm } = layout.grainlineMm;
+    expect((x1Mm + x2Mm) / 2).toBeCloseTo(front.xMm + front.widthMm / 2, 9);
+  });
+
+  it('자를 대고 맞출 수 있게 넉넉히 길다 — 앞판 폭의 절반은 넘는다', () => {
+    const { x1Mm, x2Mm } = layout.grainlineMm;
+    expect(x2Mm - x1Mm).toBeGreaterThan(front.widthMm * 0.5);
+  });
+
+  it('도안 이름 자리와 세로로 떨어져 있다', () => {
+    // 출처 덩어리가 앞판 한가운데에 세 줄로 앉는다. 거기에 겹치면 둘 다 못 읽는다.
+    const title = patternTitlePointMm(layout)!;
+    expect(Math.abs(layout.grainlineMm.y1Mm - title.yMm)).toBeGreaterThan(front.heightMm * 0.2);
+  });
+
+  it('골선으로 절반만 남겨도 살아 있다', () => {
+    // 앞판은 반접기에서 온전히 남는다. 식서선이 뒤판에 있으면 잘려 나간다.
+    const half = halveOnFold(buildLayout(travel));
+    expect(half.grainlineMm.y1Mm).toBeLessThan(half.totalHeightMm);
+    expect(half.grainlineMm).toEqual(layout.grainlineMm);
+  });
+
+  it('가장 작은 파우치에서도 앞판을 벗어나지 않는다', () => {
+    const small = buildLayout({
+      widthMm: RANGES.widthMm.min,
+      heightMm: RANGES.heightMm.min,
+      depthMm: RANGES.depthMm.min,
+    });
+    const band = small.bands.find((b) => b.id === 'front')!;
+    const { x1Mm, x2Mm, y1Mm } = small.grainlineMm;
+    expect(x1Mm).toBeGreaterThanOrEqual(band.xMm + SEAM_MM);
+    expect(x2Mm).toBeLessThanOrEqual(band.xMm + band.widthMm - SEAM_MM);
+    expect(y1Mm).toBeGreaterThan(band.yMm);
+    expect(y1Mm).toBeLessThan(band.yMm + band.heightMm);
+  });
+});

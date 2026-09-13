@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 choisuing
 
-import { centerXMm, patternTitlePointMm, type Layout, type Point } from '../core/layout';
+import { centerXMm, patternTitlePointMm, type Layout, type Line, type Point } from '../core/layout';
 import type { Pagination } from '../core/tiling';
 import type { Locale } from '../core/i18n/locales';
 import { t } from '../core/i18n/messages';
@@ -14,12 +14,56 @@ import {
   BAND_LABEL_COLOR,
   DIM_LABEL_COLOR,
   FOLD_EDGE_COLOR,
+  GRAIN_COLOR,
   PATTERN_FILL,
   PATTERN_TITLE_COLOR,
   PREVIEW_LINE_COLOR,
   SEAM_BAND_FILL,
   TILE_COLOR,
 } from '../core/colors';
+
+/** 화살촉 팔 길이 (mm)와 벌어진 각. 30°는 제도에서 흔히 쓰는 값이다. */
+const ARROW_ARM_MM = 3;
+const ARROW_COS = Math.cos(Math.PI / 6);
+const ARROW_SIN = Math.sin(Math.PI / 6);
+
+/**
+ * 식서선 하나를 그린다. 선 하나와 양끝 화살촉 둘이다.
+ *
+ * 글자를 붙이지 않는다. 재단선·완성선·중앙선도 이름을 안 적고 범례가 뜻을
+ * 맡는다 — 식서만 글자를 달면 그 규칙에서 혼자 튄다. 도면에 이름이 붙는
+ * 선은 골선 하나뿐이고, 그건 잘못 자르면 도안이 반쪽이 되기 때문이다.
+ *
+ * 화살촉을 <defs>의 marker로 두지 않는다. marker는 stroke-width를 따라
+ * 커져서 두께를 조정할 때마다 촉 크기가 같이 흔들리고, 미리보기 둘이
+ * 서로 다른 배율을 쓰므로 한쪽을 맞추면 다른 쪽이 어긋난다.
+ */
+export function grainlineSvg(line: Line, strokeWidth: number, color: string): string {
+  const { x1Mm, y1Mm, x2Mm, y2Mm } = line;
+  const lengthMm = Math.hypot(x2Mm - x1Mm, y2Mm - y1Mm);
+  if (lengthMm <= 0) return '';
+
+  const uxMm = (x2Mm - x1Mm) / lengthMm;
+  const uyMm = (y2Mm - y1Mm) / lengthMm;
+
+  // 촉은 끝점에서 선을 거슬러 올라오며 좌우로 벌어진다.
+  const head = (xMm: number, yMm: number, towardMm: number) => {
+    const backX = -towardMm * uxMm * ARROW_COS * ARROW_ARM_MM;
+    const backY = -towardMm * uyMm * ARROW_COS * ARROW_ARM_MM;
+    const sideX = -uyMm * ARROW_SIN * ARROW_ARM_MM;
+    const sideY = uxMm * ARROW_SIN * ARROW_ARM_MM;
+    return `<path class="grain-arrow" d="M ${round1(xMm + backX + sideX)},${round1(yMm + backY + sideY)}` +
+      ` L ${round1(xMm)},${round1(yMm)}` +
+      ` L ${round1(xMm + backX - sideX)},${round1(yMm + backY - sideY)}"` +
+      ` fill="none" stroke="${color}" stroke-width="${strokeWidth}" />`;
+  };
+
+  return `<line class="grainline" x1="${round1(x1Mm)}" y1="${round1(y1Mm)}"` +
+    ` x2="${round1(x2Mm)}" y2="${round1(y2Mm)}"` +
+    ` stroke="${color}" stroke-width="${strokeWidth}" />` +
+    head(x1Mm, y1Mm, -1) +
+    head(x2Mm, y2Mm, 1);
+}
 
 export function escapeXml(value: string): string {
   return value
@@ -170,6 +214,9 @@ export function renderPreviewSvg(layout: Layout, pagination: Pagination, locale:
       ` stroke="${FOLD_EDGE_COLOR}" stroke-width="${foldEdgeStroke}" />` + arcs;
   })();
 
+  // 식서방향. 앞판 아래쪽 띠에 가로로 눕는다.
+  const grainline = grainlineSvg(layout.grainlineMm, thinStroke, GRAIN_COLOR);
+
   /*
    * 도안 이름과 치수. 앞판 한가운데가 가장 넓게 비어 있다.
    * 미리보기에는 밴드 이름이 이미 그 자리에 있어 한 줄 아래로 내린다.
@@ -213,6 +260,7 @@ export function renderPreviewSvg(layout: Layout, pagination: Pagination, locale:
     `<polygon points="${points}" fill="${PATTERN_FILL}" stroke="${PREVIEW_LINE_COLOR}" stroke-width="${thinStroke}" />`,
     seamBand,
     seamLine,
+    grainline,
     // 페이지 경계는 도안 위에 얹어야 보인다. 도안 채움이 불투명해서
     // 먼저 그리면 가운데가 덮이고 밖으로 나온 끝부분만 남는다.
     tiles,
@@ -262,6 +310,7 @@ export function legendItems(layout: Layout, locale: Locale): readonly LegendItem
   }
 
   items.push({ swatch: 'swatch-center', color: PREVIEW_LINE_COLOR, text: t(locale, 'legend.centerLine') });
+  items.push({ swatch: 'swatch-grain', color: GRAIN_COLOR, text: t(locale, 'legend.grainline') });
 
   if (layout.foldEdgeYMm !== undefined) {
     items.push({

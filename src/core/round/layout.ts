@@ -1,7 +1,15 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 choisuing
 
-import { SEAM_MM, ZIPPER_ALLOWANCE_MM } from '../constants';
+import {
+  GRAIN_BAND_EDGE_MM,
+  GRAIN_BAND_LENGTH_RATIO,
+  GRAIN_LENGTH_RATIO,
+  GRAIN_OFFSET_RATIO,
+  SEAM_MM,
+  ZIPPER_ALLOWANCE_MM,
+  type Line,
+} from '../constants';
 import { BACK_RATIO_DEFAULT, type RoundDimensions } from './dimensions';
 
 /** 조각 사이에 남기는 간격 (mm). 가위가 지나갈 자리다. */
@@ -23,6 +31,14 @@ export interface RoundPiece {
   /** 시접을 뺀 완성 치수. 박음질선을 그릴 때 쓴다. */
   readonly finishedWidthMm: number;
   readonly finishedHeightMm: number;
+  /**
+   * 식서방향 (mm). 조각마다 하나씩, 한가운데를 지난다.
+   *
+   * 띠는 둘레 방향(가로)이다. 사각에서 지퍼와 나란히 잡은 것과 같은 결로,
+   * 원통의 지퍼도 둘레를 돈다. 원은 세로다 — 파우치를 세워 둔 모양을
+   * 기준 삼아야 결이 있는 원단에서 마개 무늬가 바로 선다.
+   */
+  readonly grainlineMm: Line;
 }
 
 export interface RoundLayout {
@@ -70,7 +86,7 @@ export function buildRoundLayout(
 
   const row3Y = topCutHeight + PIECE_GAP_MM + bottomCutHeight + PIECE_GAP_MM;
 
-  const pieces: readonly RoundPiece[] = [
+  const bare: readonly Omit<RoundPiece, 'grainlineMm'>[] = [
     {
       id: 'frontTop', count: 1, shape: 'rect',
       xMm: 0, yMm: 0,
@@ -96,6 +112,47 @@ export function buildRoundLayout(
       finishedWidthMm: backLengthMm, finishedHeightMm: Hs,
     },
   ];
+
+  /*
+   * 식서선을 조각마다 얹는다. 한 자리에서 한꺼번에 하는 까닭은, 조각
+   * 목록에 하나를 더할 때 식서선만 빠뜨리는 일을 없애기 위해서다.
+   *
+   * 길이는 완성 치수로 잡는다. 재단 치수로 잡으면 시접 위로 화살촉이
+   * 올라가고, 원에서는 원주 밖으로 나간다.
+   *
+   * 자리는 조각 한가운데를 피한다. 거기엔 이미 글자가 앉는다 — 띠 조각은
+   * 위쪽에 조각 이름, 가운데에 출처 덩어리가 오고, 원은 세 줄을 한가운데
+   * 쌓는다. 가운데를 지나가면 식서선도 글자도 둘 다 못 읽는다.
+   *
+   * 비키는 방향은 사각과 다르다. 사각 앞판은 아래쪽에 띠를 잡아 글자 쪽
+   * 자리를 줄이지만, 원통은 뚜껑이 10mm까지 얇아질 수 있어 그 수를 못 쓴다.
+   * 자리를 줄이는 대신 글자를 비켜 간다.
+   *
+   * 띠는 가로·세로 두 방향으로 함께 물러난다. 한 방향만으로는 모자라다 —
+   * 넓고 낮은 띠(앞면 윗단 251*20)는 가로가 살리지만, 좁고 높은 띠
+   * (뒷면 31*50)는 가로로 물러나 봐야 가운데 라벨에 부딪힌다. 그쪽은
+   * 세로가 살린다. 원은 세로선이라 가로로만 물러난다.
+   *
+   * 방향이 곧 뜻이므로 방향만은 어떤 경우에도 안 바꾼다.
+   */
+  const pieces: readonly RoundPiece[] = bare.map((piece) => {
+    const cxMm = piece.xMm + piece.widthMm / 2;
+    const cyMm = piece.yMm + piece.heightMm / 2;
+
+    const offsetMm = piece.finishedWidthMm * GRAIN_OFFSET_RATIO;
+
+    if (piece.shape === 'circle') {
+      const halfMm = (piece.finishedHeightMm * GRAIN_LENGTH_RATIO) / 2;
+      const xMm = cxMm - offsetMm;
+      return { ...piece, grainlineMm: { x1Mm: xMm, y1Mm: cyMm - halfMm, x2Mm: xMm, y2Mm: cyMm + halfMm } };
+    }
+
+    const halfMm = (piece.finishedWidthMm * GRAIN_BAND_LENGTH_RATIO) / 2;
+    const xMm = cxMm - offsetMm;
+    // 완성선 아래 변에서 조금만 띄운다. 글자는 위쪽과 가운데를 쓴다.
+    const yMm = piece.yMm + piece.heightMm - S - GRAIN_BAND_EDGE_MM;
+    return { ...piece, grainlineMm: { x1Mm: xMm - halfMm, y1Mm: yMm, x2Mm: xMm + halfMm, y2Mm: yMm } };
+  });
 
   const totalWidthMm = Math.max(...pieces.map((p) => p.xMm + p.widthMm));
   const totalHeightMm = Math.max(...pieces.map((p) => p.yMm + p.heightMm));

@@ -3,7 +3,7 @@ import { inflateSync } from 'node:zlib';
 import { PDFArray, PDFDocument, PDFName, PDFRawStream } from 'pdf-lib';
 import fontkit from '@pdf-lib/fontkit';
 import { KOREAN_BOLD_FONT_BASE64 } from '../src/core/korean-font';
-import { buildLayout, halveOnFold, patternTitlePointMm, centerXMm } from '../src/core/layout';
+import { buildLayout, halveOnFold, patternTitlePointMm, centerXMm, GRAIN_RESERVE_MM } from '../src/core/layout';
 import {
   patternTitle,
   WATERMARK_MESSAGE,
@@ -12,7 +12,7 @@ import {
 } from '../src/core/dimensions';
 import { paginate, PAGE_MARGIN_MM, PAGE_OVERLAP_MM, type Page, type Pagination } from '../src/core/tiling';
 import { RANGES, SEAM_MM } from '../src/core/constants';
-import { CUT_COLOR, hexToRgb01, SCALE_COLOR } from '../src/core/colors';
+import { CUT_COLOR, GRAIN_COLOR, hexToRgb01, SCALE_COLOR } from '../src/core/colors';
 import {
   MM_TO_PT,
   SCALE_SQUARE_MM,
@@ -20,6 +20,7 @@ import {
   FOLD_EDGE_LABEL,
   foldEdgeLabelXMm,
   buildPdf,
+  frontTitleRegionMm,
   KOREAN_BOLD_FONT_CHARS,
   KOREAN_FONT_BASE64,
   KOREAN_FONT_CHARS,
@@ -831,6 +832,54 @@ describe('출처 문구는 앞판 폭도 넘지 않는다', () => {
       expect(drawnMm, `${dims.widthMm}x${dims.heightMm}x${dims.depthMm}`).toBeLessThanOrEqual(
         front.widthMm,
       );
+    }
+  });
+});
+
+/*
+ * 식서방향. 종이에는 기호만 나간다 — 글자를 안 찍는 까닭은 서브셋 폰트
+ * 때문이 아니라, 재단선·완성선·중앙선도 이름 없이 범례가 뜻을 맡기 때문이다.
+ */
+describe('식서방향 — PDF', () => {
+  it('앞판이 있는 장에 식서선을 그린다', async () => {
+    const bytes = await buildPdf(layout, paginate(layout, 'a4'), 'ko');
+    const doc = await PDFDocument.load(bytes);
+    const pages = doc.getPages().map((_, i) => pageContent(doc, i));
+    expect(pages.some((c) => c.includes(colorOp(GRAIN_COLOR, 'RG')))).toBe(true);
+  });
+
+  it('출처 덩어리가 식서선 몫을 비켜 준다', () => {
+    // 앞판 높이를 통째로 넘기면 덩어리가 앞판을 꽉 채우도록 커져 식서선을 덮는다.
+    const front = layout.bands.find((b) => b.id === 'front')!;
+    const region = frontTitleRegionMm(layout)!;
+    expect(region.availableHeightMm).toBe(front.heightMm - GRAIN_RESERVE_MM);
+  });
+
+  it('덩어리 한가운데가 식서선에서 멀어지는 쪽으로 올라간다', () => {
+    const region = frontTitleRegionMm(layout)!;
+    const naive = patternTitlePointMm(layout)!;
+    expect(region.centerYMm).toBeLessThan(naive.yMm);
+    expect(region.centerYMm).toBeCloseTo(naive.yMm - GRAIN_RESERVE_MM / 2, 9);
+  });
+
+  it('덩어리가 아무리 커져도 식서선 위에서 멈춘다', () => {
+    for (const dims of [
+      { widthMm: 100, heightMm: 50, depthMm: 40 },
+      { widthMm: 400, heightMm: 300, depthMm: 200 },
+      { widthMm: 100, heightMm: 300, depthMm: 40 },
+    ] as const) {
+      const l = buildLayout(dims);
+      const region = frontTitleRegionMm(l)!;
+      const blockBottomMm = region.centerYMm + region.availableHeightMm / 2;
+      expect(blockBottomMm, `${dims.widthMm}/${dims.heightMm}/${dims.depthMm}`)
+        .toBeLessThanOrEqual(l.grainlineMm.y1Mm);
+    }
+  });
+
+  it('글자로 풀어 쓰지 않는다', async () => {
+    // 서브셋 폰트에 없는 글자를 찍으면 그 자리가 빈다. 애초에 안 찍는다.
+    for (const ch of [...'식서방향']) {
+      expect(KOREAN_FONT_CHARS.has(ch), ch).toBe(false);
     }
   });
 });

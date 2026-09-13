@@ -15,13 +15,14 @@
  */
 import fontkit from '@pdf-lib/fontkit';
 import { rgb, StandardFonts, type PDFDocument, type PDFFont, type PDFPage } from 'pdf-lib';
-import { hexToRgb01, JOIN_DIAMOND_COLOR, MARK_COLOR, SCALE_COLOR } from './colors';
+import { GRAIN_COLOR, hexToRgb01, JOIN_DIAMOND_COLOR, MARK_COLOR, SCALE_COLOR } from './colors';
 import { KOREAN_BOLD_FONT_BASE64, KOREAN_FONT_BASE64 } from './korean-font';
 import { ZH_TW_FONT_BASE64, ZH_CN_FONT_BASE64, JA_FONT_BASE64 } from './cjk-fonts';
 import { WATERMARK_HANDLE, WATERMARK_OPACITY } from './dimensions';
 import { DEFAULT_LOCALE, type Locale } from './i18n/locales';
 import { t } from './i18n/messages';
 import { MM_PER_INCH } from './units';
+import type { Line } from './constants';
 import { PAGE_MARGIN_MM, PAGE_OVERLAP_MM, type Pagination, type Page } from './tiling';
 
 export const MM_TO_PT = 72 / 25.4;
@@ -224,6 +225,8 @@ export const MARK = pdfColor(MARK_COLOR);
 export const SCALE = pdfColor(SCALE_COLOR);
 /** 맞춤 마름모. 도안 선과 섞이지 않도록 빨강을 쓴다. */
 export const JOIN_DIAMOND = pdfColor(JOIN_DIAMOND_COLOR);
+/** 식서방향. 결 방향은 경고도 페이지도 아니라 빨강·청록을 비켜 간다. */
+export const GRAIN = pdfColor(GRAIN_COLOR);
 
 /*
  * 도안에 찍는 세 줄의 바탕 크기(pt)와 줄 간격(mm). 여기에 배율을 곱해 쓴다.
@@ -480,6 +483,53 @@ export function drawPatternNote(ctx: PageContext, boldFont: PDFFont, locale: Loc
  * 배율 100%로 인쇄됐는지 자로 확인하는 네모. 도면 선과 헷갈리지 않도록
  * 빨간색으로만 그린다. 라벨은 로케일별 문구를 쓴다.
  */
+/** 식서 화살촉 팔 길이 (mm)와 벌어진 각. 미리보기와 같은 값이라 화면에서 본 대로 나온다. */
+const GRAIN_ARM_MM = 3;
+const GRAIN_COS = Math.cos(Math.PI / 6);
+const GRAIN_SIN = Math.sin(Math.PI / 6);
+
+/** 식서선 굵기 (pt). 도안 선(재단 0.6·완성 0.4)보다 가늘게 둬서 도면을 방해하지 않는다. */
+const GRAIN_THICKNESS = 0.35;
+
+/**
+ * 식서선을 그린다 — 선 하나와 양끝 화살촉 둘. 글자는 찍지 않는다.
+ *
+ * 좌표는 도안 기준(mm)이라 toPagePoint를 쓴다. 조각을 걸쳐 인쇄해도 선이
+ * 두 장에 나뉘어 제자리에 앉는다.
+ *
+ * 화살촉은 종이에서 이 선을 가르는 두 단서 중 하나다(다른 하나는 색).
+ * 촉이 없으면 접힘선·중앙선과 같은 실선이 되어 뜻이 사라진다.
+ */
+export function drawGrainline(ctx: PageContext, line: Line): void {
+  const { x1Mm, y1Mm, x2Mm, y2Mm } = line;
+  const lengthMm = Math.hypot(x2Mm - x1Mm, y2Mm - y1Mm);
+  if (lengthMm <= 0) return;
+
+  const uxMm = (x2Mm - x1Mm) / lengthMm;
+  const uyMm = (y2Mm - y1Mm) / lengthMm;
+
+  const stroke = (axMm: number, ayMm: number, bxMm: number, byMm: number) => {
+    ctx.pdfPage.drawLine({
+      start: toPagePoint(ctx.pagination, ctx.page, axMm, ayMm),
+      end: toPagePoint(ctx.pagination, ctx.page, bxMm, byMm),
+      thickness: GRAIN_THICKNESS,
+      color: GRAIN,
+    });
+  };
+
+  stroke(x1Mm, y1Mm, x2Mm, y2Mm);
+
+  // 촉은 끝점에서 선을 거슬러 올라오며 좌우로 벌어진다.
+  for (const [xMm, yMm, towardMm] of [[x1Mm, y1Mm, -1], [x2Mm, y2Mm, 1]] as const) {
+    const backX = -towardMm * uxMm * GRAIN_COS * GRAIN_ARM_MM;
+    const backY = -towardMm * uyMm * GRAIN_COS * GRAIN_ARM_MM;
+    const sideX = -uyMm * GRAIN_SIN * GRAIN_ARM_MM;
+    const sideY = uxMm * GRAIN_SIN * GRAIN_ARM_MM;
+    stroke(xMm, yMm, xMm + backX + sideX, yMm + backY + sideY);
+    stroke(xMm, yMm, xMm + backX - sideX, yMm + backY - sideY);
+  }
+}
+
 export function drawScaleSquares(page: PDFPage, pagination: Pagination, font: PDFFont, locale: Locale) {
   for (const rect of scaleSquareRectsMm(pagination, locale)) {
     const topLeft = toFramePoint(pagination, rect.xMm, rect.yMm);

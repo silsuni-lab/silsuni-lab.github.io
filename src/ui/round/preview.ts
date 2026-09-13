@@ -5,13 +5,14 @@ import { t } from '../../core/i18n/messages';
 import type { Locale } from '../../core/i18n/locales';
 import type { Pagination } from '../../core/tiling';
 import type { RoundLayout, RoundPiece } from '../../core/round/layout';
-import { escapeXml, type LegendItem } from '../preview';
+import { escapeXml, grainlineSvg, type LegendItem } from '../preview';
 /*
  * 색은 core/colors.ts에서만 꺼낸다. 사각 미리보기와 같은 선은 같은 색이어야
  * 한다 — 값을 여기에 따로 적으면 한쪽만 고쳤을 때 두 화면이 조용히 갈라진다.
  */
 import {
   BAND_LABEL_COLOR,
+  GRAIN_COLOR,
   PATTERN_FILL,
   PREVIEW_LINE_COLOR,
   SEAM_BAND_FILL,
@@ -91,6 +92,14 @@ export function renderRoundPreviewSvg(layout: RoundLayout, pagination: Paginatio
     })
     .join('');
 
+  /*
+   * 식서방향. 띠는 둘레 방향(가로), 원은 세로다 — 어느 쪽인지는
+   * round/layout.ts가 정하고 여기서는 그대로 그리기만 한다.
+   */
+  const grainlines = layout.pieces
+    .map((p) => grainlineSvg(p.grainlineMm, thinStroke, GRAIN_COLOR))
+    .join('');
+
   const labels = layout.pieces
     .map((p) => {
       const name = t(locale, `round.piece.${p.id}` as never);
@@ -136,7 +145,7 @@ export function renderRoundPreviewSvg(layout: RoundLayout, pagination: Paginatio
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${round1(w)} ${round1(h)}"`,
     ` style="overflow: visible; width: 100%; max-width: 100%; height: auto;" role="img"`,
     ` aria-label="${escapeXml(t(locale, 'round.preview.ariaLabel', layout.pieces.length))}">`,
-    shapes, tiles, tileLabels, labels,
+    shapes, grainlines, tiles, tileLabels, labels,
     `</svg>`,
   ].join('');
 }
@@ -148,6 +157,7 @@ export function renderRoundPreviewSvg(layout: RoundLayout, pagination: Paginatio
 export function roundLegendItems(layout: RoundLayout, locale: Locale): readonly LegendItem[] {
   const items: LegendItem[] = [
     { swatch: 'swatch-cut', color: PREVIEW_LINE_COLOR, text: t(locale, 'round.legend.cut') },
+    { swatch: 'swatch-grain', color: GRAIN_COLOR, text: t(locale, 'legend.grainline') },
     { swatch: 'swatch-tile', color: TILE_COLOR, text: t(locale, 'legend.tile') },
   ];
   if (layout.seamMm > 0) {

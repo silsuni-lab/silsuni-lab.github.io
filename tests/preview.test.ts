@@ -323,13 +323,14 @@ describe('renderPreviewSvg — 시접 없이 뜬 도안', () => {
 });
 
 describe('legendItems — 범례는 실제로 그린 선만 알려준다', () => {
-  it('시접이 있으면 다섯 줄이다', () => {
+  it('시접이 있으면 여섯 줄이다', () => {
     const items = legendItems(buildLayout({ widthMm: 270, depthMm: 100, heightMm: 140 }), 'ko');
     expect(items.map((i) => i.text)).toEqual([
       '재단선 — 이 선대로 자릅니다',
       '완성선 — 여기를 박습니다',
       '시접 10mm — 이미 포함되어 있습니다',
       '중앙선 — 도안 폭의 한가운데',
+      '식서방향 — 원단 결을 이 화살표와 나란히 놓고 재단합니다',
       '인쇄 페이지 경계 — 칸 번호는 PDF와 같습니다',
     ]);
   });
@@ -448,5 +449,56 @@ describe('renderPreviewSvg — 출처 두 줄', () => {
       expect(yOf(cls)).toBeGreaterThan(front.yMm);
       expect(yOf(cls)).toBeLessThan(front.yMm + front.heightMm);
     }
+  });
+});
+
+/*
+ * 식서방향. 종이에는 기호만 나가고 뜻은 범례가 맡는다 — 재단선·완성선과
+ * 같은 규칙이다. 도면에 이름을 적는 선은 골선 하나뿐이고, 그건 잘못 자르면
+ * 도안이 반쪽이 되기 때문이다.
+ */
+describe('식서방향 — 미리보기', () => {
+  const svg = renderPreviewSvg(layout, paginate(layout, 'a4'), 'ko');
+
+  it('도면에 식서선을 그린다', () => {
+    expect(svg).toContain('class="grainline"');
+  });
+
+  it('전개도와 같은 자리·같은 방향이다', () => {
+    const el = svg.match(/<[^>]*class="grainline"[^>]*>/)![0];
+    const at = (name: string) => Number(el.match(new RegExp(`${name}="([-\\d.]+)"`))![1]);
+    expect(at('y1')).toBe(at('y2'));
+    expect(at('x1')).toBeLessThan(at('x2'));
+    expect(at('y1')).toBeCloseTo(layout.grainlineMm.y1Mm, 1);
+  });
+
+  it('양끝에 화살촉이 붙는다', () => {
+    // 화살촉이 없으면 그냥 선이라 접힘선·중앙선과 구별되지 않는다.
+    expect(svg).toContain('class="grain-arrow"');
+  });
+
+  it('글자를 찍지 않는다', () => {
+    expect(svg).not.toContain('GRAINLINE');
+    expect(svg).not.toContain('식서');
+  });
+
+  it('범례가 뜻을 설명한다', () => {
+    const items = legendItems(layout, 'ko');
+    const grain = items.find((i) => i.swatch === 'swatch-grain');
+    expect(grain).toBeDefined();
+    expect(grain!.text).toContain('식서');
+  });
+
+  it('범례 견본 색이 도면에 실제로 쓴 색과 같다', () => {
+    const el = svg.match(/<[^>]*class="grainline"[^>]*>/)![0];
+    const drawn = el.match(/stroke="(#[0-9a-fA-F]{3,6})"/)![1];
+    const grain = legendItems(layout, 'ko').find((i) => i.swatch === 'swatch-grain')!;
+    expect(grain.color).toBe(drawn);
+  });
+
+  it('시접을 빼도 식서선은 남는다', () => {
+    // 시접 0은 완성선을 따라 그릴 때 쓴다. 결 방향은 시접과 무관하다.
+    const noSeam = buildLayout({ widthMm: 270, depthMm: 100, heightMm: 140 }, 0);
+    expect(renderPreviewSvg(noSeam, paginate(noSeam, 'a4'), 'ko')).toContain('class="grainline"');
   });
 });

@@ -78,6 +78,7 @@ export const ko = {
   'legend.seamAllowance': (seamMm: number) => `시접 ${seamMm}mm — 이미 포함되어 있습니다`,
   'legend.centerLine': '중앙선 — 도안 폭의 한가운데',
   'legend.foldEdge': '골선 — 원단 접은 자리에 놓습니다',
+  'legend.grainline': '식서방향 — 원단 결을 이 화살표와 나란히 놓고 재단합니다',
   'legend.tile': '인쇄 페이지 경계 — 칸 번호는 PDF와 같습니다',
 
   // 오류

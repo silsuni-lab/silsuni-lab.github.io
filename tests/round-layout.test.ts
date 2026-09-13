@@ -167,3 +167,105 @@ describe('roundTitlePiece — 출처 문구가 앉을 조각', () => {
     }
   });
 });
+
+/*
+ * 식서방향(GRAINLINE). 사각과 같은 규칙을 따른다 — 기호만, 글자는 없다.
+ *
+ * 띠는 둘레 방향(가로)이다. 사각에서 지퍼와 나란히 잡은 것과 같은 결로,
+ * 원통의 지퍼도 둘레를 돈다. 원은 세로다 — 파우치를 세워 둔 모양을 기준
+ * 삼아야 결이 있는 원단에서 마개 무늬가 바로 선다.
+ */
+describe('식서방향 — 원통 조각', () => {
+  const layout = buildRoundLayout(golden);
+  const by = (id: string) => layout.pieces.find((p) => p.id === id)!;
+
+  it('조각마다 하나씩 있다', () => {
+    for (const piece of layout.pieces) {
+      expect(piece.grainlineMm, piece.id).toBeDefined();
+    }
+  });
+
+  it('띠 셋은 가로다 — 둘레 방향', () => {
+    for (const id of ['frontTop', 'frontBottom', 'back']) {
+      const g = by(id).grainlineMm;
+      expect(g.y1Mm, id).toBe(g.y2Mm);
+      expect(g.x1Mm, id).toBeLessThan(g.x2Mm);
+    }
+  });
+
+  it('원은 세로다 — 마개 무늬가 바로 서게', () => {
+    const g = by('circles').grainlineMm;
+    expect(g.x1Mm).toBe(g.x2Mm);
+    expect(g.y1Mm).toBeLessThan(g.y2Mm);
+  });
+
+  it('조각의 완성선 안쪽에 머문다', () => {
+    const S = layout.seamMm;
+    for (const piece of layout.pieces) {
+      const g = piece.grainlineMm;
+      expect(Math.min(g.x1Mm, g.x2Mm), piece.id).toBeGreaterThanOrEqual(piece.xMm + S);
+      expect(Math.max(g.x1Mm, g.x2Mm), piece.id).toBeLessThanOrEqual(piece.xMm + piece.widthMm - S);
+      // 왼쪽으로 물러나도 완성선 왼쪽 변을 넘지 않아야 한다.
+      expect(Math.min(g.y1Mm, g.y2Mm), piece.id).toBeGreaterThanOrEqual(piece.yMm + S);
+      expect(Math.max(g.y1Mm, g.y2Mm), piece.id).toBeLessThanOrEqual(piece.yMm + piece.heightMm - S);
+    }
+  });
+
+  /*
+   * 한가운데는 비운다. 거기엔 이미 글자가 앉는다 — 사각 조각은 위에 조각
+   * 이름, 가운데에 출처 덩어리가 오고, 원은 세 줄을 한가운데 쌓는다.
+   * 방향만 지키고 자리는 비켜 준다.
+   */
+  it('셋 다 가로로 왼쪽에 물러나 있다', () => {
+    for (const p of layout.pieces) {
+      const g = p.grainlineMm;
+      expect(Math.max(g.x1Mm, g.x2Mm), p.id).toBeLessThan(p.xMm + p.widthMm / 2);
+    }
+  });
+
+  it('띠는 세로로도 한 번 더 물러난다 — 좁은 조각에서 라벨을 피하려면 둘 다 필요하다', () => {
+    for (const id of ['frontTop', 'frontBottom', 'back']) {
+      const p = by(id);
+      expect(p.grainlineMm.y1Mm, id).toBeGreaterThan(p.yMm + p.heightMm / 2);
+    }
+  });
+
+  it('원은 높이만은 한가운데다 — 세로선이라 가로로만 비키면 된다', () => {
+    const p = by('circles');
+    const g = p.grainlineMm;
+    expect((g.y1Mm + g.y2Mm) / 2).toBeCloseTo(p.yMm + p.heightMm / 2, 9);
+  });
+
+  it('원의 세로선이 원주 안에 머문다', () => {
+    // 중심에서 물러난 만큼 쓸 수 있는 현이 짧아진다. 반지름으로 검산한다.
+    const p = by('circles');
+    const g = p.grainlineMm;
+    const rMm = p.finishedWidthMm / 2;
+    const dxMm = Math.abs(g.x1Mm - (p.xMm + p.widthMm / 2));
+    const halfChordMm = Math.sqrt(rMm * rMm - dxMm * dxMm);
+    expect((g.y2Mm - g.y1Mm) / 2).toBeLessThan(halfChordMm);
+  });
+
+  it('원의 세로선이 원 밖으로 나가지 않는다', () => {
+    // 지름을 그대로 쓰면 양 끝이 원주에 닿는다. 화살촉이 선 밖으로 나가므로
+    // 완성 지름보다 짧아야 한다.
+    const circle = by('circles');
+    const g = circle.grainlineMm;
+    expect(g.y2Mm - g.y1Mm).toBeLessThan(circle.finishedHeightMm);
+  });
+
+  it('가장 납작한 파우치에서도 조각을 벗어나지 않는다', () => {
+    const flat = buildRoundLayout({
+      diameterMm: ROUND_RANGES.diameterMm.min,
+      sideHeightMm: ROUND_RANGES.sideHeightMm.min,
+      lidHeightMm: ROUND_RANGES.lidHeightMm.min,
+    });
+    for (const piece of flat.pieces) {
+      const g = piece.grainlineMm;
+      expect(Math.min(g.x1Mm, g.x2Mm), piece.id).toBeGreaterThanOrEqual(piece.xMm);
+      expect(Math.max(g.x1Mm, g.x2Mm), piece.id).toBeLessThanOrEqual(piece.xMm + piece.widthMm);
+      expect(Math.min(g.y1Mm, g.y2Mm), piece.id).toBeGreaterThanOrEqual(piece.yMm);
+      expect(Math.max(g.y1Mm, g.y2Mm), piece.id).toBeLessThanOrEqual(piece.yMm + piece.heightMm);
+    }
+  });
+});

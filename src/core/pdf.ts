@@ -20,6 +20,7 @@ import {
   drawJoinMarks,
   drawPatternNote,
   drawScaleSquares,
+  drawGrainline,
   drawSourceBlock,
   loadFonts,
   MM_TO_PT,
@@ -29,7 +30,7 @@ import {
 } from './page';
 import { DEFAULT_LOCALE, type Locale } from './i18n/locales';
 import { t } from './i18n/messages';
-import { centerXMm, patternTitlePointMm, type Layout, type Line, type Point } from './layout';
+import { centerXMm, GRAIN_RESERVE_MM, patternTitlePointMm, type Layout, type Line, type Point } from './layout';
 import { patternTitle } from './dimensions';
 import type { Pagination, Page } from './tiling';
 
@@ -184,6 +185,27 @@ function drawFoldEdge(ctx: PageContext, layout: Layout, font: PDFFont, locale: L
  * 이름은 앞판 한가운데에 한 번만 찍는다. 전개도에서 가장 넓게 비어 있고,
  * 골선으로 절반만 남겨도 살아 있는 자리다.
  */
+/**
+ * 출처 덩어리를 앉힐 자리 (mm). 앞판에서 식서선 몫을 뺀 나머지다.
+ *
+ * 앞판 높이를 그대로 넘기던 자리다. drawSourceBlock은 받은 높이를 꽉 채우도록
+ * 배율을 키우므로, 안 빼면 덩어리가 앞판 아래끝까지 자라 식서선을 덮는다.
+ * 원통 쪽 titleBlockRegion이 조각 라벨에 대해 하는 일과 같다.
+ */
+export function frontTitleRegionMm(
+  layout: Layout,
+): { readonly centerYMm: number; readonly availableHeightMm: number } | undefined {
+  const point = patternTitlePointMm(layout);
+  const front = layout.bands.find((band) => band.id === 'front');
+  if (point === undefined || front === undefined) return undefined;
+
+  // 식서 띠가 아래쪽에 붙으므로 남는 자리의 한가운데는 그 절반만큼 위다.
+  return {
+    centerYMm: point.yMm - GRAIN_RESERVE_MM / 2,
+    availableHeightMm: front.heightMm - GRAIN_RESERVE_MM,
+  };
+}
+
 function drawCenterAndTitle(ctx: PageContext, layout: Layout, font: PDFFont, locale: Locale) {
   const { pagination, page } = ctx;
   const xMm = centerXMm(layout);
@@ -198,7 +220,8 @@ function drawCenterAndTitle(ctx: PageContext, layout: Layout, font: PDFFont, loc
 
   const point = patternTitlePointMm(layout);
   const front = layout.bands.find((band) => band.id === 'front');
-  if (point === undefined || front === undefined) return;
+  const region = frontTitleRegionMm(layout);
+  if (point === undefined || front === undefined || region === undefined) return;
 
   /*
    * 앞판 폭도 함께 넘긴다. 세로 자리만 보고 배율을 키우면 좁고 높은
@@ -207,8 +230,8 @@ function drawCenterAndTitle(ctx: PageContext, layout: Layout, font: PDFFont, loc
    */
   drawSourceBlock(ctx, font, locale, {
     xMm: point.xMm,
-    centerYMm: point.yMm,
-    availableHeightMm: front.heightMm,
+    centerYMm: region.centerYMm,
+    availableHeightMm: region.availableHeightMm,
     availableWidthMm: front.widthMm,
     title: patternTitle(layout.dimensions, layout.seamMm, locale),
   });
@@ -240,6 +263,10 @@ export async function buildPdf(
     // 접힘선은 layout이 완성선 기준으로 계산해 둔다. 밴드 경계로 다시
     // 그리면 시접만큼 밀린 자리에 선이 생긴다.
     for (const line of layout.foldLinesMm) drawFoldLine(ctx, line);
+
+    // 식서선은 도안 선 다음, 조립 표시보다 앞이다. 도면에 속한 선이라
+    // 맞춤표·칸 번호와 같은 층에 두면 종이 표시로 읽힌다.
+    drawGrainline(ctx, layout.grainlineMm);
 
     drawCenterAndTitle(ctx, layout, font, locale);
     drawFoldEdge(ctx, layout, font, locale);

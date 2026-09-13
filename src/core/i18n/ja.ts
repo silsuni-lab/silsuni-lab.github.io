@@ -75,6 +75,7 @@ export const ja: Catalog = {
   'legend.seamAllowance': (seamMm: number) => `縫い代 ${seamMm}mm — 込み済み`,
   'legend.centerLine': '中心線 — パターン幅の中央',
   'legend.foldEdge': '折り線 — 布の折り山に合わせます',
+  'legend.grainline': '布目方向 — 矢印を布の縦地に合わせて裁断します',
   'legend.tile': '印刷ページ境界 — ページ番号は PDF と同じ',
 
   // 오류

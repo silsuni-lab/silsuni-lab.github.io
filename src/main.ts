@@ -134,9 +134,14 @@ function refresh(): void {
   // 출처라 범례가 딴 색을 가리킬 수 없다.
   legendEl.innerHTML = legendItems(layout, locale)
     .map((item) => {
+      /*
+       * color도 함께 준다. 견본에 글자는 없지만, 화살촉처럼 가상 요소로
+       * 그리는 견본이 currentColor로 같은 색을 따라갈 수 있어야 한다.
+       * border-top-color만 주면 가상 요소가 물려받을 자리가 없다.
+       */
       const style = item.fill === undefined
-        ? `border-top-color: ${item.color}`
-        : `border-color: ${item.color}; background: ${item.fill}`;
+        ? `border-top-color: ${item.color}; color: ${item.color}`
+        : `border-color: ${item.color}; background: ${item.fill}; color: ${item.color}`;
       return `<li><span class="swatch ${item.swatch}" style="${style}"></span>${item.text}</li>`;
     })
     .join('');
