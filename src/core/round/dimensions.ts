@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 choisuing
 
-import { SEAM_MM, ZIPPER_ALLOWANCE_MM, type FieldSpec, type Range } from '../constants';
+import { FILE_NAME_CREDIT, SEAM_MM, ZIPPER_ALLOWANCE_MM, type FieldSpec, type Range } from '../constants';
 import { t } from '../i18n/messages';
 import { DEFAULT_LOCALE, type Locale } from '../i18n/locales';
 
@@ -164,5 +164,5 @@ export function roundPatternFileName(
   seamMm: number = SEAM_MM,
 ): string {
   const seam = seamMm === 0 ? '-noseam' : '';
-  return `round-pouch-${d.diameterMm}x${d.sideHeightMm}x${d.lidHeightMm}-${paper}${seam}.pdf`;
+  return `${FILE_NAME_CREDIT}-round-pouch-${d.diameterMm}x${d.sideHeightMm}x${d.lidHeightMm}-${paper}${seam}.pdf`;
 }

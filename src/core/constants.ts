@@ -15,6 +15,16 @@ export const SEAM_MM = 10;
 /** 지퍼가 차지하는 폭 (mm). 윗단 밴드 높이에서 절반씩 빠진다. */
 export const ZIPPER_ALLOWANCE_MM = 10;
 
+/**
+ * 내려받는 PDF 파일 이름 맨 앞에 늘 붙는 서명. 사각·원통이 함께 쓴다.
+ * 파일만 따로 돌아다녀도 누구 도안인지 남는다.
+ *
+ * 앞에 두는 까닭: 이름순으로 정렬하면 두 종류가 한데 모이고, 좁은 화면에서
+ * 긴 이름의 뒤가 잘려도 서명은 보인다. 띄어쓰기 없이 하이픈으로 잇는 것은
+ * 파일 이름을 영문 소문자·숫자·점·하이픈으로만 짓는 규칙을 지키기 위해서다.
+ */
+export const FILE_NAME_CREDIT = 'silsuni';
+
 export type DimensionField = 'widthMm' | 'depthMm' | 'heightMm';
 
 /*

@@ -77,8 +77,8 @@ describe('이름과 파일명', () => {
   });
 
   it('파일명이 사각 파우치와 겹치지 않는다', () => {
-    expect(roundPatternFileName(ok, 'a4', 10)).toBe('round-pouch-130x130x30-a4.pdf');
-    expect(roundPatternFileName(ok, 'a3', 0)).toBe('round-pouch-130x130x30-a3-noseam.pdf');
+    expect(roundPatternFileName(ok, 'a4', 10)).toBe('silsuni-round-pouch-130x130x30-a4.pdf');
+    expect(roundPatternFileName(ok, 'a3', 0)).toBe('silsuni-round-pouch-130x130x30-a3-noseam.pdf');
   });
 });
 

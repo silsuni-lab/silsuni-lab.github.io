@@ -495,7 +495,7 @@ describe('patternFileName — 내려받는 파일 이름', () => {
   it('치수를 가로x높이x바닥폭 순으로 적는다', () => {
     // 화면·도안 이름과 같은 순서여야 한다. 파일을 여러 개 받아 두면
     // 순서가 다른 쪽이 무엇인지 알 수 없다.
-    expect(patternFileName(dims, 'a4', false)).toBe('box-pouch-160x80x40-a4.pdf');
+    expect(patternFileName(dims, 'a4', false)).toBe('silsuni-box-pouch-160x80x40-a4.pdf');
   });
 
   it('도안 이름과 치수 순서가 같다', () => {
@@ -510,13 +510,13 @@ describe('patternFileName — 내려받는 파일 이름', () => {
   });
 
   it('골선으로 뽑으면 half를 붙인다', () => {
-    expect(patternFileName(dims, 'a4', true)).toBe('box-pouch-160x80x40-a4-half.pdf');
+    expect(patternFileName(dims, 'a4', true)).toBe('silsuni-box-pouch-160x80x40-a4-half.pdf');
   });
 
   it('시접 없이 뽑으면 noseam을 붙인다', () => {
     // 같은 치수를 시접 있이·없이 받아 두면 이름이 같아 구분할 수 없다.
-    expect(patternFileName(dims, 'a4', false, 0)).toBe('box-pouch-160x80x40-a4-noseam.pdf');
-    expect(patternFileName(dims, 'a4', true, 0)).toBe('box-pouch-160x80x40-a4-half-noseam.pdf');
+    expect(patternFileName(dims, 'a4', false, 0)).toBe('silsuni-box-pouch-160x80x40-a4-noseam.pdf');
+    expect(patternFileName(dims, 'a4', true, 0)).toBe('silsuni-box-pouch-160x80x40-a4-half-noseam.pdf');
   });
 
   it('시접이 있으면 이름이 지금까지와 같다', () => {
@@ -525,7 +525,18 @@ describe('patternFileName — 내려받는 파일 이름', () => {
 
   it('파일 이름에 쓸 수 없는 글자가 없다', () => {
     for (const half of [true, false]) {
-      expect(patternFileName(dims, 'a4', half)).toMatch(/^[a-z0-9x.-]+$/);
+      for (const seam of [0, SEAM_MM]) {
+        expect(patternFileName(dims, 'a4', half, seam)).toMatch(/^[a-z0-9x.-]+$/);
+      }
+    }
+  });
+
+  it('서명 silsuni가 맨 앞에 온다', () => {
+    // 이름순으로 정렬하면 사각·원통 파일이 한데 모인다.
+    for (const half of [true, false]) {
+      for (const seam of [0, SEAM_MM]) {
+        expect(patternFileName(dims, 'a4', half, seam)).toMatch(/^silsuni-box-pouch-/);
+      }
     }
   });
 });

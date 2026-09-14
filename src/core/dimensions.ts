@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // Copyright (C) 2026 choisuing
 
-import { DIMENSION_ORDER, RANGES, SEAM_MM, type DimensionField } from './constants';
+import { DIMENSION_ORDER, FILE_NAME_CREDIT, RANGES, SEAM_MM, type DimensionField } from './constants';
 import { t } from './i18n/messages';
 import { DEFAULT_LOCALE, type Locale } from './i18n/locales';
 
@@ -143,5 +143,5 @@ export function patternFileName(
   // 같은 치수를 골선·시접 조합만 바꿔 여러 번 받아 두면 이름이 같아진다.
   const half = foldHalf ? '-half' : '';
   const seam = seamMm === 0 ? '-noseam' : '';
-  return `box-pouch-${W}x${H}x${D}-${paper}${half}${seam}.pdf`;
+  return `${FILE_NAME_CREDIT}-box-pouch-${W}x${H}x${D}-${paper}${half}${seam}.pdf`;
 }
