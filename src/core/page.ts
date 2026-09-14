@@ -488,8 +488,11 @@ const GRAIN_ARM_MM = 3;
 const GRAIN_COS = Math.cos(Math.PI / 6);
 const GRAIN_SIN = Math.sin(Math.PI / 6);
 
-/** 식서선 굵기 (pt). 도안 선(재단 0.6·완성 0.4)보다 가늘게 둬서 도면을 방해하지 않는다. */
-const GRAIN_THICKNESS = 0.35;
+/**
+ * 식서선 굵기 (pt). 도안 선(재단 0.6·완성 0.4)보다 가늘게 둬서 도면을 방해하지 않는다.
+ * 이 굵기는 식서선만 쓴다 — 색이 재단선과 같은 검정이라, 테스트는 이 값으로 식서선을 찾는다.
+ */
+export const GRAIN_THICKNESS = 0.35;
 
 /**
  * 식서선을 그린다 — 선 하나와 양끝 화살촉 둘. 글자는 찍지 않는다.
@@ -497,8 +500,9 @@ const GRAIN_THICKNESS = 0.35;
  * 좌표는 도안 기준(mm)이라 toPagePoint를 쓴다. 조각을 걸쳐 인쇄해도 선이
  * 두 장에 나뉘어 제자리에 앉는다.
  *
- * 화살촉은 종이에서 이 선을 가르는 두 단서 중 하나다(다른 하나는 색).
- * 촉이 없으면 접힘선·중앙선과 같은 실선이 되어 뜻이 사라진다.
+ * 화살촉은 종이에서 이 선을 가르는 가장 큰 단서다. 색은 재단선과 같은
+ * 검정이라 단서가 못 된다. 촉이 없으면 접힘선·중앙선과 같은 실선이 되어
+ * 뜻이 사라진다.
  */
 export function drawGrainline(ctx: PageContext, line: Line): void {
   const { x1Mm, y1Mm, x2Mm, y2Mm } = line;

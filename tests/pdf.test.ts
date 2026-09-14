@@ -13,6 +13,7 @@ import {
 import { paginate, PAGE_MARGIN_MM, PAGE_OVERLAP_MM, type Page, type Pagination } from '../src/core/tiling';
 import { RANGES, SEAM_MM } from '../src/core/constants';
 import { CUT_COLOR, GRAIN_COLOR, hexToRgb01, SCALE_COLOR } from '../src/core/colors';
+import { GRAIN_THICKNESS } from '../src/core/page';
 import {
   MM_TO_PT,
   SCALE_SQUARE_MM,
@@ -845,7 +846,10 @@ describe('식서방향 — PDF', () => {
     const bytes = await buildPdf(layout, paginate(layout, 'a4'), 'ko');
     const doc = await PDFDocument.load(bytes);
     const pages = doc.getPages().map((_, i) => pageContent(doc, i));
-    expect(pages.some((c) => c.includes(colorOp(GRAIN_COLOR, 'RG')))).toBe(true);
+    // 색은 재단선과 같은 검정이라 색만으로는 식서선이 있는지 모른다. 식서만 쓰는 굵기로 찾는다.
+    expect(
+      pages.some((c) => c.includes(colorOp(GRAIN_COLOR, 'RG')) && c.includes(`${GRAIN_THICKNESS} w`)),
+    ).toBe(true);
   });
 
   it('출처 덩어리가 식서선 몫을 비켜 준다', () => {

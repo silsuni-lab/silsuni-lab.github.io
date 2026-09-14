@@ -11,7 +11,7 @@ import { buildRoundPdf, circleStackYMm, labelZoneHeightMm, pieceMarkRegion, titl
 import { paginate } from '../src/core/tiling';
 import { t } from '../src/core/i18n/messages';
 import {
-  KOREAN_FONT_CHARS, loadFonts, MM_TO_PT, sourceBlockSizeMm,
+  GRAIN_THICKNESS, KOREAN_FONT_CHARS, loadFonts, MM_TO_PT, sourceBlockSizeMm,
   titleScale, TITLE_MARGIN_MM, TITLE_SCALE_MIN,
 } from '../src/core/page';
 import { ROUND_PRESETS, SEAM_MM } from '../src/core/constants';
@@ -240,7 +240,8 @@ describe('식서방향 — 원통 PDF', () => {
     const { r, g, b } = hexToRgb01(GRAIN_COLOR);
     const op = `${r} ${g} ${b} RG`;
     const pages = doc.getPages().map((_, i) => roundPageContent(doc, i));
-    expect(pages.some((c) => c.includes(op))).toBe(true);
+    // 색은 재단선과 같은 검정이라 색만으로는 식서선이 있는지 모른다. 식서만 쓰는 굵기로 찾는다.
+    expect(pages.some((c) => c.includes(op) && c.includes(`${GRAIN_THICKNESS} w`))).toBe(true);
   });
 
   it('조각마다 하나씩, 조각 안에 머문다', () => {
