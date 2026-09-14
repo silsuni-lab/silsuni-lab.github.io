@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { buildRoundLayout, PIECE_GAP_MM, roundTitlePiece } from '../src/core/round/layout';
+import { buildRoundLayout, notchLengthMm, PIECE_GAP_MM, roundTitlePiece } from '../src/core/round/layout';
 import { paginate } from '../src/core/tiling';
-import { ROUND_RANGES, lidHeightMaxMm } from '../src/core/round/dimensions';
+import { BACK_RATIO_MAX, BACK_RATIO_MIN, ROUND_RANGES, lidHeightMaxMm } from '../src/core/round/dimensions';
 import { SEAM_MM, ZIPPER_ALLOWANCE_MM } from '../src/core/constants';
 
 const golden = { diameterMm: 130, sideHeightMm: 130, lidHeightMm: 30 };
@@ -266,6 +266,94 @@ describe('식서방향 — 원통 조각', () => {
       expect(Math.max(g.x1Mm, g.x2Mm), piece.id).toBeLessThanOrEqual(piece.xMm + piece.widthMm);
       expect(Math.min(g.y1Mm, g.y2Mm), piece.id).toBeGreaterThanOrEqual(piece.yMm);
       expect(Math.max(g.y1Mm, g.y2Mm), piece.id).toBeLessThanOrEqual(piece.yMm + piece.heightMm);
+    }
+  });
+});
+
+describe('너치 — 앞면 두 단', () => {
+  const layout = buildRoundLayout(golden);
+  const by = (id: string) => layout.pieces.find((p) => p.id === id)!;
+  const FRONTS = ['frontTop', 'frontBottom'] as const;
+
+  it('앞면 두 단에만 둘씩 있다', () => {
+    expect(by('frontTop').notchesMm).toHaveLength(2);
+    expect(by('frontBottom').notchesMm).toHaveLength(2);
+    expect(by('circles').notchesMm).toHaveLength(0);
+    expect(by('back').notchesMm).toHaveLength(0);
+  });
+
+  it('양 끝 완성선에서 뒷면 길이만큼 들어온 자리다', () => {
+    for (const id of FRONTS) {
+      const p = by(id);
+      const [left, right] = p.notchesMm.map((n) => n.x1Mm).sort((a, b) => a - b) as [number, number];
+      expect(left - (p.xMm + layout.seamMm), id).toBeCloseTo(layout.backLengthMm, 9);
+      expect(p.xMm + p.widthMm - layout.seamMm - right, id).toBeCloseTo(layout.backLengthMm, 9);
+    }
+  });
+
+  it('두 단의 가로 자리가 같다', () => {
+    const xs = (id: string) => by(id).notchesMm.map((n) => n.x1Mm - by(id).xMm);
+    expect(xs('frontTop')).toEqual(xs('frontBottom'));
+  });
+
+  it('원과 박는 변에서 안쪽으로 들어간다 — 윗단은 위 변, 아랫단은 아래 변', () => {
+    const top = by('frontTop');
+    for (const n of top.notchesMm) {
+      expect(n.y1Mm).toBe(top.yMm);
+      expect(n.y2Mm).toBeGreaterThan(n.y1Mm);
+    }
+    const bottom = by('frontBottom');
+    for (const n of bottom.notchesMm) {
+      expect(n.y1Mm).toBe(bottom.yMm + bottom.heightMm);
+      expect(n.y2Mm).toBeLessThan(n.y1Mm);
+    }
+  });
+
+  it('세로선이고, 시접 안에서 끝난다 — 완성선을 넘지 않는다', () => {
+    for (const id of FRONTS) {
+      for (const n of by(id).notchesMm) {
+        expect(n.x1Mm, id).toBe(n.x2Mm);
+        expect(Math.abs(n.y2Mm - n.y1Mm), id).toBe(notchLengthMm(layout.seamMm));
+        expect(Math.abs(n.y2Mm - n.y1Mm), id).toBeLessThan(layout.seamMm);
+      }
+    }
+  });
+
+  it('뒷면 비율과 치수 범위 끝에서도 두 너치가 완성선 안에서 엇갈리지 않는다', () => {
+    const small = {
+      diameterMm: ROUND_RANGES.diameterMm.min,
+      sideHeightMm: ROUND_RANGES.sideHeightMm.min,
+      lidHeightMm: ROUND_RANGES.lidHeightMm.min,
+    };
+    const large = {
+      diameterMm: ROUND_RANGES.diameterMm.max,
+      sideHeightMm: ROUND_RANGES.sideHeightMm.max,
+      lidHeightMm: lidHeightMaxMm(ROUND_RANGES.sideHeightMm.max),
+    };
+    for (const dims of [small, large]) {
+      for (const ratio of [BACK_RATIO_MIN, BACK_RATIO_MAX]) {
+        const l = buildRoundLayout(dims, SEAM_MM, ratio);
+        for (const id of FRONTS) {
+          const p = l.pieces.find((q) => q.id === id)!;
+          const [a, b] = p.notchesMm.map((n) => n.x1Mm).sort((m, n) => m - n) as [number, number];
+          const label = `${dims.diameterMm} r=${ratio} ${id}`;
+          expect(a, label).toBeGreaterThan(p.xMm + SEAM_MM);
+          expect(a, label).toBeLessThan(b);
+          expect(b, label).toBeLessThan(p.xMm + p.widthMm - SEAM_MM);
+        }
+      }
+    }
+  });
+
+  it('시접 없이 뽑으면 짧아져 식서선에 닿지 않는다', () => {
+    const l = buildRoundLayout(golden, 0);
+    const top = l.pieces.find((p) => p.id === 'frontTop')!;
+    const bottom = l.pieces.find((p) => p.id === 'frontBottom')!;
+    for (const n of top.notchesMm) {
+      expect(Math.max(n.y1Mm, n.y2Mm)).toBeLessThan(top.grainlineMm.y1Mm);
+    }
+    for (const n of bottom.notchesMm) {
+      expect(Math.min(n.y1Mm, n.y2Mm)).toBeGreaterThan(bottom.grainlineMm.y1Mm);
     }
   });
 });

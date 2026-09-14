@@ -39,6 +39,23 @@ export interface RoundPiece {
    * 기준 삼아야 결이 있는 원단에서 마개 무늬가 바로 선다.
    */
   readonly grainlineMm: Line;
+  /**
+   * 너치 (mm). 재단선에서 안쪽으로 들어가는 짧은 선이다. 앞면 두 단에만
+   * 둘씩 있고, 원과 뒷면에는 없다. 선의 1은 재단선 위, 2는 안쪽 끝이다.
+   */
+  readonly notchesMm: readonly Line[];
+}
+
+/**
+ * 너치 길이 (mm). 재단선에서 시접의 절반만 들어간다 — 완성선을 넘으면
+ * 박은 뒤에도 칼집이 겉에 남는다.
+ *
+ * 시접 없이 뽑으면 재단선이 곧 완성선이라 반으로 줄일 몫이 없다. 그때는
+ * 2mm로 둔다. 띠 조각의 식서선이 아래 완성선에서 GRAIN_BAND_EDGE_MM(3mm)
+ * 떨어져 있어, 그보다 짧아야 앞면 아랫단에서 너치가 식서선에 닿지 않는다.
+ */
+export function notchLengthMm(seamMm: number): number {
+  return seamMm > 0 ? seamMm / 2 : 2;
 }
 
 export interface RoundLayout {
@@ -86,7 +103,7 @@ export function buildRoundLayout(
 
   const row3Y = topCutHeight + PIECE_GAP_MM + bottomCutHeight + PIECE_GAP_MM;
 
-  const bare: readonly Omit<RoundPiece, 'grainlineMm'>[] = [
+  const bare: readonly Omit<RoundPiece, 'grainlineMm' | 'notchesMm'>[] = [
     {
       id: 'frontTop', count: 1, shape: 'rect',
       xMm: 0, yMm: 0,
@@ -135,7 +152,7 @@ export function buildRoundLayout(
    *
    * 방향이 곧 뜻이므로 방향만은 어떤 경우에도 안 바꾼다.
    */
-  const pieces: readonly RoundPiece[] = bare.map((piece) => {
+  const grained: readonly Omit<RoundPiece, 'notchesMm'>[] = bare.map((piece) => {
     const cxMm = piece.xMm + piece.widthMm / 2;
     const cyMm = piece.yMm + piece.heightMm / 2;
 
@@ -152,6 +169,27 @@ export function buildRoundLayout(
     // 완성선 아래 변에서 조금만 띄운다. 글자는 위쪽과 가운데를 쓴다.
     const yMm = piece.yMm + piece.heightMm - S - GRAIN_BAND_EDGE_MM;
     return { ...piece, grainlineMm: { x1Mm: xMm - halfMm, y1Mm: yMm, x2Mm: xMm + halfMm, y2Mm: yMm } };
+  });
+
+  /*
+   * 너치는 앞면 두 단이 원과 박는 긴 변에만 넣는다 — 윗단은 위 변(뚜껑 원),
+   * 아랫단은 아래 변(바닥 원). 지퍼를 다는 변에는 없다.
+   *
+   * 자리는 양 끝 완성선에서 뒷면 길이(Lb)만큼 들어온 곳, 한 변에 둘이다.
+   * 두 단의 가로 자리가 같다. 앞면이 늘 뒷면 두 배보다 길어서
+   * (Lf − 2Lb = C(1 − 3r), 뒷면 비율 r ≤ 0.3이면 0.1C 이상) 두 너치는
+   * 엇갈리지 않는다.
+   */
+  const notchMm = notchLengthMm(S);
+  const pieces: readonly RoundPiece[] = grained.map((piece) => {
+    if (piece.id !== 'frontTop' && piece.id !== 'frontBottom') return { ...piece, notchesMm: [] };
+    const edgeYMm = piece.id === 'frontTop' ? piece.yMm : piece.yMm + piece.heightMm;
+    const innerYMm = piece.id === 'frontTop' ? edgeYMm + notchMm : edgeYMm - notchMm;
+    const finishedLeftMm = piece.xMm + S;
+    const notchesMm = [finishedLeftMm + backLengthMm, finishedLeftMm + frontLengthMm - backLengthMm].map(
+      (xMm) => ({ x1Mm: xMm, y1Mm: edgeYMm, x2Mm: xMm, y2Mm: innerYMm }),
+    );
+    return { ...piece, notchesMm };
   });
 
   const totalWidthMm = Math.max(...pieces.map((p) => p.xMm + p.widthMm));

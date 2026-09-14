@@ -11,7 +11,7 @@ import { buildRoundPdf, circleStackYMm, labelZoneHeightMm, pieceMarkRegion, titl
 import { paginate } from '../src/core/tiling';
 import { t } from '../src/core/i18n/messages';
 import {
-  GRAIN_THICKNESS, KOREAN_FONT_CHARS, loadFonts, MM_TO_PT, sourceBlockSizeMm,
+  KOREAN_FONT_CHARS, loadFonts, MM_TO_PT, sourceBlockSizeMm, toPagePoint,
   titleScale, TITLE_MARGIN_MM, TITLE_SCALE_MIN,
 } from '../src/core/page';
 import { ROUND_PRESETS, SEAM_MM } from '../src/core/constants';
@@ -233,15 +233,46 @@ describe('조각마다 파우치 이름과 계정을 찍는다', () => {
   });
 });
 
+describe('너치 — 원통 PDF', () => {
+  it('앞면 두 단의 너치를 그 좌표에 긋는다', async () => {
+    const pagination = paginate(layout, 'a4');
+    const doc = await PDFDocument.load(await buildRoundPdf(layout, pagination, 'ko'));
+    const pages = doc.getPages().map((_, i) => roundPageContent(doc, i));
+    const notches = layout.pieces.flatMap((p) => p.notchesMm);
+    expect(notches).toHaveLength(4);
+    for (const n of notches) {
+      const found = pagination.pages.some((page, i) =>
+        hasSegment(
+          pages[i]!,
+          toPagePoint(pagination, page, n.x1Mm, n.y1Mm),
+          toPagePoint(pagination, page, n.x2Mm, n.y2Mm),
+        ),
+      );
+      expect(found, `${n.x1Mm},${n.y1Mm}`).toBe(true);
+    }
+  });
+});
+
 describe('식서방향 — 원통 PDF', () => {
   it('도안에 식서선을 그린다', async () => {
-    const bytes = await buildRoundPdf(layout, paginate(layout, 'a4'), 'ko');
-    const doc = await PDFDocument.load(bytes);
+    const pagination = paginate(layout, 'a4');
+    const doc = await PDFDocument.load(await buildRoundPdf(layout, pagination, 'ko'));
     const { r, g, b } = hexToRgb01(GRAIN_COLOR);
-    const op = `${r} ${g} ${b} RG`;
     const pages = doc.getPages().map((_, i) => roundPageContent(doc, i));
-    // 색은 재단선과 같은 검정이라 색만으로는 식서선이 있는지 모른다. 식서만 쓰는 굵기로 찾는다.
-    expect(pages.some((c) => c.includes(op) && c.includes(`${GRAIN_THICKNESS} w`))).toBe(true);
+    expect(pages.some((c) => c.includes(`${r} ${g} ${b} RG`))).toBe(true);
+    // 색은 재단선과 같은 검정이고 굵기도 다른 선과 같아 둘로는 식서선을 못 가린다.
+    // 조각마다 식서선 좌표에 그어진 선을 찾는다.
+    for (const piece of layout.pieces) {
+      const gl = piece.grainlineMm;
+      const found = pagination.pages.some((page, i) =>
+        hasSegment(
+          pages[i]!,
+          toPagePoint(pagination, page, gl.x1Mm, gl.y1Mm),
+          toPagePoint(pagination, page, gl.x2Mm, gl.y2Mm),
+        ),
+      );
+      expect(found, piece.id).toBe(true);
+    }
   });
 
   it('조각마다 하나씩, 조각 안에 머문다', () => {
@@ -315,4 +346,19 @@ function roundPageContent(doc: PDFDocument, index: number): string {
   const stream = contents instanceof PDFArray ? contents.lookup(0) : contents;
   if (!(stream instanceof PDFRawStream)) throw new Error('콘텐츠 스트림을 찾지 못했다');
   return inflateSync(Buffer.from(stream.asUint8Array())).toString('latin1');
+}
+
+/**
+ * 콘텐츠 스트림에 두 점(pt)을 잇는 선이 있는지. pdf-lib의 drawLine은 `x y m` 바로
+ * 뒤에 `x y l`을 쓴다. 방향은 가리지 않는다.
+ */
+function hasSegment(content: string, a: { x: number; y: number }, b: { x: number; y: number }): boolean {
+  const num = String.raw`(-?\d+(?:\.\d+)?)`;
+  const near = (p: { x: number; y: number }, x: number, y: number) =>
+    Math.abs(p.x - x) < 0.01 && Math.abs(p.y - y) < 0.01;
+  for (const m of content.matchAll(new RegExp(`${num} ${num} m\\n${num} ${num} l`, 'g'))) {
+    const [x1, y1, x2, y2] = m.slice(1, 5).map(Number) as [number, number, number, number];
+    if ((near(a, x1, y1) && near(b, x2, y2)) || (near(a, x2, y2) && near(b, x1, y1))) return true;
+  }
+  return false;
 }

@@ -15,7 +15,7 @@ import {
   SEAM_COLOR as SEAM_HEX,
 } from '../colors';
 import type { Pagination } from '../tiling';
-import { GRAIN_RESERVE_MM } from '../constants';
+import { GRAIN_RESERVE_MM, type Line } from '../constants';
 import {
   drawAlignmentMarks, drawJoinMarks, drawPatternNote, drawScaleSquares,
   drawGrainline, drawSourceBlock, loadFonts, MARK, MM_TO_PT, pdfColor, sourceBlockSizeMm,
@@ -38,6 +38,9 @@ import { roundTitlePiece, type RoundLayout, type RoundPiece } from './layout';
 const CUT_COLOR = pdfColor(CUT_HEX);
 const SEAM_COLOR = pdfColor(SEAM_HEX);
 const LABEL_COLOR = pdfColor(LABEL_HEX);
+
+/** 재단선 굵기 (pt). 가위가 지나갈 선이라 가장 굵다. 너치도 같은 굵기다. */
+const CUT_THICKNESS = 1.2;
 
 /** 조각 라벨 글자 크기. 출처 문구가 라벨 자리를 얼마나 비켜야 하는지 계산할 때도 같은 값을 쓴다. */
 const LABEL_SIZE = 9;
@@ -91,6 +94,19 @@ export function titleBlockRegion(
 }
 
 /** 조각 하나의 재단선. 원과 사각형을 같은 함수로 받는다. */
+/**
+ * 너치 하나. 재단선과 같은 색·굵기로 긋는다 — 가위를 짧게 넣을 자리라
+ * 재단선에 속한 표시다. 좌표는 layout이 정하고 여기서는 긋기만 한다.
+ */
+function drawNotch(ctx: PageContext, line: Line) {
+  ctx.pdfPage.drawLine({
+    start: toPagePoint(ctx.pagination, ctx.page, line.x1Mm, line.y1Mm),
+    end: toPagePoint(ctx.pagination, ctx.page, line.x2Mm, line.y2Mm),
+    thickness: CUT_THICKNESS,
+    color: CUT_COLOR,
+  });
+}
+
 function drawPieceOutline(
   ctx: PageContext,
   piece: RoundPiece,
@@ -366,7 +382,8 @@ export async function buildRoundPdf(
 
     for (const piece of layout.pieces) {
       // 재단선이 가장 굵고 진하다. 가위가 지나갈 선이다.
-      drawPieceOutline(ctx, piece, 0, CUT_COLOR, 1.2);
+      drawPieceOutline(ctx, piece, 0, CUT_COLOR, CUT_THICKNESS);
+      for (const notch of piece.notchesMm) drawNotch(ctx, notch);
       // 완성선은 시접만큼 안으로 들어간 자리. 시접이 0이면 그리지 않는다.
       if (layout.seamMm > 0) drawPieceOutline(ctx, piece, layout.seamMm, SEAM_COLOR, 0.5);
       // 식서선은 도안 선 다음, 글자보다 앞이다. 도면에 속한 선이다.

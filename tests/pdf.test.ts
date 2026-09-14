@@ -13,7 +13,6 @@ import {
 import { paginate, PAGE_MARGIN_MM, PAGE_OVERLAP_MM, type Page, type Pagination } from '../src/core/tiling';
 import { RANGES, SEAM_MM } from '../src/core/constants';
 import { CUT_COLOR, GRAIN_COLOR, hexToRgb01, SCALE_COLOR } from '../src/core/colors';
-import { GRAIN_THICKNESS } from '../src/core/page';
 import {
   MM_TO_PT,
   SCALE_SQUARE_MM,
@@ -314,6 +313,21 @@ function pageContent(doc: PDFDocument, index: number): string {
   const stream = contents instanceof PDFArray ? contents.lookup(0) : contents;
   if (!(stream instanceof PDFRawStream)) throw new Error('콘텐츠 스트림을 찾지 못했다');
   return inflateSync(Buffer.from(stream.asUint8Array())).toString('latin1');
+}
+
+/**
+ * 콘텐츠 스트림에 두 점(pt)을 잇는 선이 있는지. pdf-lib의 drawLine은 `x y m` 바로
+ * 뒤에 `x y l`을 쓴다. 방향은 가리지 않는다.
+ */
+function hasSegment(content: string, a: { x: number; y: number }, b: { x: number; y: number }): boolean {
+  const num = String.raw`(-?\d+(?:\.\d+)?)`;
+  const near = (p: { x: number; y: number }, x: number, y: number) =>
+    Math.abs(p.x - x) < 0.01 && Math.abs(p.y - y) < 0.01;
+  for (const m of content.matchAll(new RegExp(`${num} ${num} m\\n${num} ${num} l`, 'g'))) {
+    const [x1, y1, x2, y2] = m.slice(1, 5).map(Number) as [number, number, number, number];
+    if ((near(a, x1, y1) && near(b, x2, y2)) || (near(a, x2, y2) && near(b, x1, y1))) return true;
+  }
+  return false;
 }
 
 describe('도안 하단 강조 문구', () => {
@@ -843,13 +857,21 @@ describe('출처 문구는 앞판 폭도 넘지 않는다', () => {
  */
 describe('식서방향 — PDF', () => {
   it('앞판이 있는 장에 식서선을 그린다', async () => {
-    const bytes = await buildPdf(layout, paginate(layout, 'a4'), 'ko');
-    const doc = await PDFDocument.load(bytes);
+    const pagination = paginate(layout, 'a4');
+    const doc = await PDFDocument.load(await buildPdf(layout, pagination, 'ko'));
     const pages = doc.getPages().map((_, i) => pageContent(doc, i));
-    // 색은 재단선과 같은 검정이라 색만으로는 식서선이 있는지 모른다. 식서만 쓰는 굵기로 찾는다.
-    expect(
-      pages.some((c) => c.includes(colorOp(GRAIN_COLOR, 'RG')) && c.includes(`${GRAIN_THICKNESS} w`)),
-    ).toBe(true);
+    expect(pages.some((c) => c.includes(colorOp(GRAIN_COLOR, 'RG')))).toBe(true);
+    // 색은 재단선과 같은 검정이고 굵기(0.5)도 맞춤표 같은 다른 선과 같아 둘로는
+    // 식서선을 못 가린다. 식서선 좌표에 그어진 선을 찾는다.
+    const gl = layout.grainlineMm;
+    const found = pagination.pages.some((page, i) =>
+      hasSegment(
+        pages[i]!,
+        toPagePoint(pagination, page, gl.x1Mm, gl.y1Mm),
+        toPagePoint(pagination, page, gl.x2Mm, gl.y2Mm),
+      ),
+    );
+    expect(found).toBe(true);
   });
 
   it('출처 덩어리가 식서선 몫을 비켜 준다', () => {
