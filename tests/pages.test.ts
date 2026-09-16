@@ -43,16 +43,16 @@ const TRANSLATED = LANG_FILES.filter(([locale]) => locale !== DEFAULT_LOCALE);
 
 /** 원통(round) 페이지 파일. box와 같은 규칙 — 뿌리(ko)는 최상위, 나머지는 <locale>/ 아래. */
 const ROUND_LANG_FILE: Readonly<Record<Locale, string>> = {
-  ko: 'round-pouch-test/index.html',
-  en: 'round-pouch-test/en/index.html',
-  'zh-TW': 'round-pouch-test/zh-TW/index.html',
-  'zh-CN': 'round-pouch-test/zh-CN/index.html',
-  ja: 'round-pouch-test/ja/index.html',
+  ko: 'round-pouch/index.html',
+  en: 'round-pouch/en/index.html',
+  'zh-TW': 'round-pouch/zh-TW/index.html',
+  'zh-CN': 'round-pouch/zh-CN/index.html',
+  ja: 'round-pouch/ja/index.html',
 };
 const ROUND_FILES: readonly [Locale, string][] = LOCALES.map((l) => [l, ROUND_LANG_FILE[l]]);
 
 const roundSiteUrlOf = (locale: Locale) =>
-  locale === DEFAULT_LOCALE ? `${SITE_URL}/round-pouch-test/` : `${SITE_URL}/round-pouch-test/${locale}/`;
+  locale === DEFAULT_LOCALE ? `${SITE_URL}/round-pouch/` : `${SITE_URL}/round-pouch/${locale}/`;
 
 describe('정적 페이지 — 원통 다섯 언어', () => {
   it('각 언어에 원통 페이지가 있다', () => {
