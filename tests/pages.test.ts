@@ -51,31 +51,31 @@ const ROUND_LANG_FILE: Readonly<Record<Locale, string>> = {
 };
 const ROUND_FILES: readonly [Locale, string][] = LOCALES.map((l) => [l, ROUND_LANG_FILE[l]]);
 
-const roundSiteUrlOf = (locale: Locale) =>
-  locale === DEFAULT_LOCALE ? `${SITE_URL}/round-pouch/` : `${SITE_URL}/round-pouch/${locale}/`;
+/** 원통 도구는 silbap.com으로 옮겼다. /round-pouch/ 는 그리로 넘기는 안내 페이지뿐이다. */
+const ROUND_MOVED_TO = 'https://silbap.com/patterns/round-pouch';
 
-describe('정적 페이지 — 원통 다섯 언어', () => {
-  it('각 언어에 원통 페이지가 있다', () => {
+describe('정적 페이지 — 원통은 silbap으로 옮겼다', () => {
+  it('언어마다 안내 페이지가 있고 silbap으로 넘긴다', () => {
     for (const [locale, file] of ROUND_FILES) {
-      expect(read(file), file).toMatch(new RegExp(`<html lang="${locale}">`));
-      expect(read(file), `${file} 드롭다운`).toContain('id="lang-select"');
+      const html = read(file);
+      expect(html, file).toMatch(new RegExp(`<html lang="${locale}">`));
+      expect(html, `${file} refresh`).toContain(`<meta http-equiv="refresh" content="0; url=${ROUND_MOVED_TO}" />`);
+      expect(html, `${file} canonical`).toContain(`<link rel="canonical" href="${ROUND_MOVED_TO}" />`);
+      expect(html, `${file} noindex`).toContain('<meta name="robots" content="noindex, nofollow" />');
     }
   });
 
-  it('한국어가 아닌 원통 페이지에는 한글이 없다', () => {
+  it('안내 페이지는 도구 코드를 싣지 않는다', () => {
+    // 여기서 main.ts를 다시 물리면 silbap에서 잠근 도구가 이 주소로 새어 나간다.
+    for (const [, file] of ROUND_FILES) {
+      expect(read(file), file).not.toMatch(/<script[^>]+src=/);
+    }
+  });
+
+  it('한국어가 아닌 안내 페이지에는 한글이 없다', () => {
     for (const [locale, file] of ROUND_FILES) {
       if (locale === DEFAULT_LOCALE) continue;
       expect(read(file), `${locale} 원통 한글 잔존`).not.toMatch(/[가-힣]/);
-    }
-  });
-
-  it('원통 페이지에 로케일 전부의 교차 링크와 x-default가 있다', () => {
-    for (const [, file] of ROUND_FILES) {
-      const html = read(file);
-      for (const locale of LOCALES) {
-        expect(html, `${file} ${locale}`).toContain(`hreflang="${locale}" href="${roundSiteUrlOf(locale)}"`);
-      }
-      expect(html, `${file} x-default`).toContain(`hreflang="x-default" href="${roundSiteUrlOf(DEFAULT_LOCALE)}"`);
     }
   });
 });
@@ -160,15 +160,13 @@ describe('hreflang — 언어별 주소를 남긴다', () => {
 });
 
 describe('sitemap.xml', () => {
-  it('box·round 로케일마다 한 줄씩 담는다', () => {
+  it('box 로케일마다 한 줄씩 담고, 옮겨 간 round는 넣지 않는다', () => {
     const xml = read('public/sitemap.xml');
-    // box 5개 + round 5개 = 로케일 수의 두 배. 손으로 세면 두 화면을 나중에
-    // 넣을 때 잊는다.
-    expect(xml.match(/<loc>/g)).toHaveLength(LOCALES.length * 2);
+    expect(xml.match(/<loc>/g)).toHaveLength(LOCALES.length);
     for (const locale of LOCALES) {
       expect(xml).toContain(`<loc>${siteUrlOf(locale)}</loc>`);
-      expect(xml).toContain(`<loc>${roundSiteUrlOf(locale)}</loc>`);
     }
+    expect(xml).not.toContain('<loc>https://silsuni-lab.github.io/round-pouch/');
   });
 
   it('각 버전에 xhtml 교차 링크를 함께 남긴다', () => {

@@ -3,17 +3,12 @@
 완성 치수를 입력하면 파우치 전개도를 1:1 실치수 PDF로 만들어주는 정적 웹 도구. 두 가지를 만든다.
 
 - **사각사각 지퍼 파우치** — 가로·높이·바닥폭 → **https://silsuni-lab.github.io/**
-- **동글동글 원통 파우치** — 지름·옆면 높이·뚜껑 높이 → **https://silsuni-lab.github.io/round-pouch/** ([계산](#원통-파우치)) · *시험 중*
+- **동글동글 원통 파우치** — 지름·옆면 높이·뚜껑 높이 → **https://silbap.com/patterns/round-pouch** ([계산](#원통-파우치)) · *실밥 줍는 사이 회원 전용*
 
-> **원통 파우치는 아직 시험 중이다.** 사각 페이지에서 이리로 오는 안내 줄을 빼 두었고, 검색엔진에도 올리지 않으며, 다운로드 기록도 남기지 않는다. 주소를 치면 열리므로 잠근 것은 아니다.
->
-> 공개할 때 되돌릴 것 셋 — 셋은 늘 같이 움직인다.
->
-> 1. `index.html`의 `other-kind` 주석 풀기
-> 2. `round-pouch/index.html`의 `noindex` 한 줄 지우기
-> 3. `round-pouch/main.ts`의 `trackDownload` 주석 풀고 import 되살리기 — **그 전에 Apps Script에 `종류` 열부터 넣을 것**([다운로드 기록](#다운로드-기록))
->
-> 되돌린 뒤에는 스크린샷도 다시 찍는다(사각 화면에 링크 한 줄이 는다).
+> **원통 파우치는 실밥 줍는 사이(silbap.com)로 옮겼다.** 가입하고 글을 1개 올린 회원만 쓸 수 있다.
+> 이 저장소의 `/round-pouch/`(5개 언어)는 이제 silbap으로 넘기는 안내 페이지뿐이고 도구 코드를 싣지 않는다.
+> 계산·배치·PDF 코드(`src/core/round/`, `src/ui/round/`, `round-pouch/main.ts`)는 silbap으로 옮길 원본으로 남겨 둔다.
+> 안내 페이지에 `main.ts`를 다시 물리면 잠근 도구가 이 주소로 새어 나간다 — `tests/pages.test.ts`가 막는다.
 
 ![화면](docs/img/screenshot.jpg)
 
@@ -29,7 +24,7 @@
 A static web tool that turns finished dimensions into a print-ready, true-to-scale PDF sewing pattern. Two kinds:
 
 - **Boxy zipper pouch** — width, height, depth. → **https://silsuni-lab.github.io/**
-- **Round pouch with a hinged lid** — diameter, side height, lid height. → **https://silsuni-lab.github.io/round-pouch/**
+- **Round pouch with a hinged lid** — diameter, side height, lid height. → moved to **https://silbap.com/patterns/round-pouch** (members only)
 
 Enter the dimensions in millimetres. The tool drafts the flat pattern, tiles it across A4 or A3 sheets and hands you a PDF to print at 100&nbsp;% scale. A 10&nbsp;mm seam allowance is included by default. Both kinds share the same printing, seam allowance and multi-sheet assembly.
 
@@ -357,7 +352,7 @@ A4 3열을 예로 들면 겹침 구간은 도안 `184~194`이고 그 한가운�
 - `scripts/build-korean-font.py` — PDF용 한글 서브셋 폰트 생성기.
 - `src/ui/` — 입력 폼, 전개도 미리보기(`preview.ts`), 완성 예상 선화(`shape.ts`).
 - `src/ui/round/` — 원통의 미리보기와 완성 예상 그림.
-- `index.html` + `src/main.ts` — 사각 화면. `round-pouch/index.html` + `round-pouch/main.ts` — 원통 화면.
+- `index.html` + `src/main.ts` — 사각 화면. `round-pouch/main.ts` — 원통 화면 원본(silbap으로 옮겼고 이 사이트에서는 싣지 않는다). `round-pouch/*/index.html` — silbap으로 넘기는 안내.
 - `src/track.ts` — 다운로드 한 건을 기록으로 남긴다. 계산도 그리기도 아니라 어느 쪽에도 두지 않았다.
 - `src/stale.ts` — 배포가 지나간 낡은 화면을 스스로 되살린다.
 

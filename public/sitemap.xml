@@ -54,54 +54,7 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://silsuni-lab.github.io/" />
   </url>
   <!--
-    아래 round-pouch는 아직 시험 중이라 검색엔진에 noindex다. sitemap에
-    넣는 건(언어 교차 링크 포함) 언젠가 공개할 때를 위한 자리 — noindex라
-    지금 인덱싱되진 않지만, 공개 시 HTML에서 noindex만 떼면 그대로다.
-    tests/pages.test.ts가 이 목록을 지킨다.
+    round-pouch는 silbap.com/patterns/round-pouch 로 옮겨 가서 여기 넣지 않는다.
+    /round-pouch/ 주소는 그리로 넘기는 안내 페이지뿐이다.
   -->
-    <url>
-    <loc>https://silsuni-lab.github.io/round-pouch/</loc>
-    <xhtml:link rel="alternate" hreflang="ko" href="https://silsuni-lab.github.io/round-pouch/" />
-    <xhtml:link rel="alternate" hreflang="en" href="https://silsuni-lab.github.io/round-pouch/en/" />
-    <xhtml:link rel="alternate" hreflang="zh-TW" href="https://silsuni-lab.github.io/round-pouch/zh-TW/" />
-    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://silsuni-lab.github.io/round-pouch/zh-CN/" />
-    <xhtml:link rel="alternate" hreflang="ja" href="https://silsuni-lab.github.io/round-pouch/ja/" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://silsuni-lab.github.io/round-pouch/" />
-  </url>
-  <url>
-    <loc>https://silsuni-lab.github.io/round-pouch/en/</loc>
-    <xhtml:link rel="alternate" hreflang="ko" href="https://silsuni-lab.github.io/round-pouch/" />
-    <xhtml:link rel="alternate" hreflang="en" href="https://silsuni-lab.github.io/round-pouch/en/" />
-    <xhtml:link rel="alternate" hreflang="zh-TW" href="https://silsuni-lab.github.io/round-pouch/zh-TW/" />
-    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://silsuni-lab.github.io/round-pouch/zh-CN/" />
-    <xhtml:link rel="alternate" hreflang="ja" href="https://silsuni-lab.github.io/round-pouch/ja/" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://silsuni-lab.github.io/round-pouch/" />
-  </url>
-  <url>
-    <loc>https://silsuni-lab.github.io/round-pouch/zh-TW/</loc>
-    <xhtml:link rel="alternate" hreflang="ko" href="https://silsuni-lab.github.io/round-pouch/" />
-    <xhtml:link rel="alternate" hreflang="en" href="https://silsuni-lab.github.io/round-pouch/en/" />
-    <xhtml:link rel="alternate" hreflang="zh-TW" href="https://silsuni-lab.github.io/round-pouch/zh-TW/" />
-    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://silsuni-lab.github.io/round-pouch/zh-CN/" />
-    <xhtml:link rel="alternate" hreflang="ja" href="https://silsuni-lab.github.io/round-pouch/ja/" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://silsuni-lab.github.io/round-pouch/" />
-  </url>
-  <url>
-    <loc>https://silsuni-lab.github.io/round-pouch/zh-CN/</loc>
-    <xhtml:link rel="alternate" hreflang="ko" href="https://silsuni-lab.github.io/round-pouch/" />
-    <xhtml:link rel="alternate" hreflang="en" href="https://silsuni-lab.github.io/round-pouch/en/" />
-    <xhtml:link rel="alternate" hreflang="zh-TW" href="https://silsuni-lab.github.io/round-pouch/zh-TW/" />
-    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://silsuni-lab.github.io/round-pouch/zh-CN/" />
-    <xhtml:link rel="alternate" hreflang="ja" href="https://silsuni-lab.github.io/round-pouch/ja/" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://silsuni-lab.github.io/round-pouch/" />
-  </url>
-  <url>
-    <loc>https://silsuni-lab.github.io/round-pouch/ja/</loc>
-    <xhtml:link rel="alternate" hreflang="ko" href="https://silsuni-lab.github.io/round-pouch/" />
-    <xhtml:link rel="alternate" hreflang="en" href="https://silsuni-lab.github.io/round-pouch/en/" />
-    <xhtml:link rel="alternate" hreflang="zh-TW" href="https://silsuni-lab.github.io/round-pouch/zh-TW/" />
-    <xhtml:link rel="alternate" hreflang="zh-CN" href="https://silsuni-lab.github.io/round-pouch/zh-CN/" />
-    <xhtml:link rel="alternate" hreflang="ja" href="https://silsuni-lab.github.io/round-pouch/ja/" />
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://silsuni-lab.github.io/round-pouch/" />
-  </url>
 </urlset>
