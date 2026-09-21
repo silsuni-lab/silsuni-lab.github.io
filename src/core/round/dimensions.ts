@@ -143,17 +143,18 @@ export function validateRoundDimensions(
 }
 
 /**
- * 도안에 찍을 한 줄. 치수 순서는 화면·라벨과 같은 지름*옆면*뚜껑이다.
+ * 도안에 찍을 이름. 전체 치수(지름*옆면*뚜껑)는 붙이지 않는다 — 조각마다
+ * 그 조각의 치수를 따로 찍으므로, 여기에 세 치수가 또 있으면 어느 숫자가
+ * 무슨 치수인지 헷갈린다.
  *
  * 시접 없이 뽑았으면 그렇다고 못 박는다. 종이만 따로 돌아다니면 화면을
  * 볼 수 없고, 모르고 재단하면 원단을 버린다. 이름은 카탈로그가 로케일별로 든다.
  */
 export function roundPatternTitle(
-  d: RoundDimensions,
   seamMm: number = SEAM_MM,
   locale: Locale = DEFAULT_LOCALE,
 ): string {
-  const base = `${t(locale, 'round.pattern.name')} ${d.diameterMm}*${d.sideHeightMm}*${d.lidHeightMm}`;
+  const base = t(locale, 'round.pattern.name');
   return seamMm === 0 ? `${base} ${t(locale, 'round.pattern.noSeam')}` : base;
 }
 

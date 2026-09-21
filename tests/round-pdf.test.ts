@@ -7,7 +7,7 @@ import { PDFArray, PDFDocument, PDFName, PDFRawStream } from 'pdf-lib';
 import { inflateSync } from 'node:zlib';
 import { GRAIN_COLOR, hexToRgb01 } from '../src/core/colors';
 import { buildRoundLayout, roundTitlePiece } from '../src/core/round/layout';
-import { buildRoundPdf, circleStackYMm, labelZoneHeightMm, pieceMarkRegion, titleBlockRegion } from '../src/core/round/pdf';
+import { buildRoundPdf, circleStackYMm, labelZoneHeightMm, pieceLabelText, pieceMarkRegion, titleBlockRegion } from '../src/core/round/pdf';
 import { paginate } from '../src/core/tiling';
 import { t } from '../src/core/i18n/messages';
 import {
@@ -119,7 +119,7 @@ describe('출처 덩어리를 담을 수 있는 조각에 앉힌다', () => {
       for (const choice of roundBackRatioChoices('ko')) {
         const where = `${preset.id} r=${choice.value}`;
         const l = buildRoundLayout(preset, SEAM_MM, choice.value);
-        const title = roundPatternTitle(l.dimensions, l.seamMm, 'ko');
+        const title = roundPatternTitle(l.seamMm, 'ko');
         const block = sourceBlockSizeMm(font, title, 'ko');
         const piece = roundTitlePiece(l, {
           blockHeightMm: block.heightMm,
@@ -148,7 +148,7 @@ describe('출처 덩어리를 담을 수 있는 조각에 앉힌다', () => {
     const doc = await PDFDocument.create();
     const { font } = await loadFonts(doc, 'ko');
     const l = buildRoundLayout({ diameterMm: 130, sideHeightMm: 130, lidHeightMm: 30 });
-    const block = sourceBlockSizeMm(font, roundPatternTitle(l.dimensions, l.seamMm, 'ko'), 'ko');
+    const block = sourceBlockSizeMm(font, roundPatternTitle(l.seamMm, 'ko'), 'ko');
     const piece = roundTitlePiece(l, {
       blockHeightMm: block.heightMm,
       blockWidthMm: block.widthMm,
@@ -215,21 +215,43 @@ describe('조각마다 파우치 이름과 계정을 찍는다', () => {
     }
   });
 
-  it('치수는 조각에 되풀이하지 않는다', async () => {
+  it('조각 이름 줄에 그 조각의 완성 치수를 붙인다', () => {
+    const [frontTop, frontBottom, circles, back] = layout.pieces;
+    // 130/130/30: 둘레 408.4, 뒷면 20% → 앞면 326.7·뒷면 81.7, 몸통 130−30−10=90.
+    expect(pieceLabelText(frontTop!, 'ko')).toBe('앞면 윗단 327*30');
+    expect(pieceLabelText(frontBottom!, 'ko')).toBe('앞면 아랫단 327*90');
+    expect(pieceLabelText(circles!, 'ko')).toBe('뚜껑·바닥 2장 130*130');
+    expect(pieceLabelText(back!, 'ko')).toBe('뒷면 82*130');
+  });
+
+  it('치수를 붙인 조각 이름이 가장 좁은 조각에서도 폭 안에 들어간다', async () => {
     /*
-     * 치수는 출처 덩어리에 한 번만 적힌다. 조각마다 되풀이하면 종이가
-     * 빽빽해지고, 짧은 조각에서는 들어가지도 않는다.
+     * 뒷면은 지름 80·뒷면 10%에서 완성 폭이 25mm까지 좁아진다. 거기에 옆면
+     * 최대 300을 붙인 "뒷면 25*300"이 가장 긴 경우다.
      */
-    const l = buildRoundLayout({ diameterMm: 130, sideHeightMm: 130, lidHeightMm: 30 });
-    const bytes = await buildRoundPdf(l, paginate(l, 'a4'), 'ko');
-    const doc = await PDFDocument.load(bytes);
-    expect(doc.getPages().length).toBeGreaterThan(0);
-    // 치수 문자열이 도안 전체에서 한 번만 나오는지는 콘텐츠 스트림으로 세기
-    // 어렵다(서브셋 폰트라 글자가 코드로 바뀐다). 대신 조각 표시 쪽이 치수를
-    // 만들지 않는다는 것을 roundPatternTitle을 안 부르는 것으로 지킨다.
-    const source = readFileSync(new URL('../src/core/round/pdf.ts', import.meta.url), 'utf8');
-    const markFn = source.slice(source.indexOf('function drawPieceMark'));
-    expect(markFn.slice(0, markFn.indexOf('\n}'))).not.toContain('roundPatternTitle');
+    const cases = [
+      ...ROUND_PRESETS,
+      { diameterMm: 80, sideHeightMm: 300, lidHeightMm: 150 },
+      { diameterMm: 80, sideHeightMm: 40, lidHeightMm: 10 },
+      { diameterMm: 300, sideHeightMm: 300, lidHeightMm: 150 },
+    ];
+    for (const locale of ['ko', 'en', 'ja', 'zh-CN', 'zh-TW'] as const) {
+      const doc = await PDFDocument.create();
+      const { font } = await loadFonts(doc, locale);
+      for (const dims of cases) {
+        for (const { value } of roundBackRatioChoices(locale)) {
+          for (const piece of buildRoundLayout(dims, SEAM_MM, value).pieces) {
+            const text = pieceLabelText(piece, locale);
+            const widthMm = font.widthOfTextAtSize(text, 9) / MM_TO_PT;
+            expect(widthMm, `${locale} ${text}`).toBeLessThan(piece.finishedWidthMm - 2 * TITLE_MARGIN_MM);
+          }
+        }
+      }
+    }
+  });
+
+  it('치수 글자가 한글 서브셋 안에 있다', () => {
+    expect([...'0123456789* '].filter((c) => !KOREAN_FONT_CHARS.has(c))).toEqual([]);
   });
 });
 
@@ -335,7 +357,7 @@ describe('식서방향 — 원통 PDF', () => {
     const doc = await PDFDocument.create();
     const { font } = await loadFonts(doc, 'ko');
     const titlePiece = roundTitlePiece(layout)!;
-    const { widthMm } = sourceBlockSizeMm(font, roundPatternTitle(golden, SEAM_MM), 'ko');
+    const { widthMm } = sourceBlockSizeMm(font, roundPatternTitle(SEAM_MM), 'ko');
     expect(widthMm).toBeLessThan(titlePiece.finishedWidthMm * 0.3);
   });
 });

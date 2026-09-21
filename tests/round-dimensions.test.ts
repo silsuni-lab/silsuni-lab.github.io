@@ -67,13 +67,14 @@ describe('validateRoundDimensions', () => {
 });
 
 describe('이름과 파일명', () => {
-  it('도안 이름에 세 치수를 붙인다', () => {
-    expect(roundPatternTitle(ok, 10)).toBe('동글동글 원통 파우치 130*130*30');
+  it('도안 이름에는 전체 치수를 안 붙인다', () => {
+    // 조각마다 제 치수가 찍히므로, 세 치수가 또 있으면 어느 숫자인지 헷갈린다.
+    expect(roundPatternTitle(10)).toBe('동글동글 원통 파우치');
   });
 
   it('시접 없이 뽑았으면 못 박는다', () => {
     // 종이만 돌아다니면 화면을 볼 수 없고, 모르고 재단하면 원단을 버린다.
-    expect(roundPatternTitle(ok, 0)).toBe('동글동글 원통 파우치 130*130*30 시접없음');
+    expect(roundPatternTitle(0)).toBe('동글동글 원통 파우치 시접없음');
   });
 
   it('파일명이 사각 파우치와 겹치지 않는다', () => {

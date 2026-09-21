@@ -154,31 +154,46 @@ function drawPieceLabel(ctx: PageContext, piece: RoundPiece, font: PDFFont, seam
   );
 }
 
-/** 조각 이름과 장수. 몇 장을 재단할지 여기서만 알 수 있다. */
-function pieceLabelText(piece: RoundPiece, locale: Locale): string {
+/**
+ * 조각 이름·장수·완성 치수 한 줄. 몇 장을 재단할지, 얼마만 한 조각인지
+ * 여기서만 알 수 있다 — 도안 이름에는 전체 치수를 더 이상 안 붙인다.
+ *
+ * 치수는 시접을 뺀 완성 치수이고, 가로*세로 순서다. 원은 지름이 곧 가로·세로라
+ * 같은 꼴(130*130)로 적는다. "지름"이나 Ø를 쓰면 한글 서브셋 폰트에 없는
+ * 글자라 빈칸으로 인쇄된다.
+ *
+ * 정수 mm로 반올림한다. 둘레(지름×π)에서 나온 길이는 소수가 붙는데,
+ * 소수점도 서브셋에 없고 자로 재는 데 0.1mm는 쓸모가 없다. 선은 반올림 없이
+ * 정확히 그어지므로 앞면과 뒷면의 합이 둘레와 1mm쯤 어긋나 보여도 도안은 맞다.
+ *
+ * 가장 좁은 조각(지름 80, 뒷면 10%의 뒷면 25mm)에서도 한 줄에 들어간다 —
+ * tests/round-pdf.test.ts가 모든 로케일에서 지킨다.
+ */
+export function pieceLabelText(piece: RoundPiece, locale: Locale): string {
   const label = t(locale, `round.piece.${piece.id}` as never);
-  return piece.count > 1 ? `${label} ${t(locale, 'paper.sheets', piece.count)}` : label;
+  const name = piece.count > 1 ? `${label} ${t(locale, 'paper.sheets', piece.count)}` : label;
+  return `${name} ${Math.round(piece.finishedWidthMm)}*${Math.round(piece.finishedHeightMm)}`;
 }
 
 /**
- * 조각에 넣을 문구. 치수까지 붙인 것이 폭에 안 들어가면 치수를 뗀다.
+ * 조각에 넣을 도안 이름. "시접없음"까지 붙인 것이 폭에 안 들어가면 뗀다.
  *
- * 뒷면은 둘레의 10%까지 좁아질 수 있어(지름 80이면 25mm) 치수를 붙인 줄이
- * 조각 밖으로 나간다. 그때는 이름만 남긴다 — 치수는 출처 덩어리에 어차피
- * 한 번 적히므로, 조각 밖으로 삐져나간 글자보다 짧은 이름이 낫다.
+ * 뒷면은 둘레의 10%까지 좁아질 수 있어(지름 80이면 25mm) 긴 줄이 조각 밖으로
+ * 나간다. 그때는 이름만 남긴다 — "시접없음"은 출처 덩어리에 어차피 한 번
+ * 적히므로, 조각 밖으로 삐져나간 글자보다 짧은 이름이 낫다.
  *
  * 이름조차 안 들어가면 undefined다. 부르는 쪽이 그 줄을 통째로 건너뛴다.
  */
 function fitPieceTitle(
   font: PDFFont,
-  withSize: string,
+  full: string,
   nameOnly: string,
   sizePt: number,
   maxWidthMm: number,
 ): string | undefined {
   const widthMm = (value: string) => font.widthOfTextAtSize(value, sizePt) / MM_TO_PT;
   const room = maxWidthMm - 2 * TITLE_MARGIN_MM;
-  if (widthMm(withSize) <= room) return withSize;
+  if (widthMm(full) <= room) return full;
   if (widthMm(nameOnly) <= room) return nameOnly;
   return undefined;
 }
@@ -305,11 +320,10 @@ function drawCircleStack(
 }
 
 /**
- * 조각마다 파우치 이름과 계정을 찍는다. 치수는 넣지 않는다.
+ * 조각마다 파우치 이름과 계정을 찍는다. 치수는 여기 말고 조각 이름 줄에 있다.
  *
  * 조각이 넷으로 흩어져 있어, 다 오려 놓고 나면 어느 도안의 조각인지 알 
- * 방법이 없었다. 치수까지 조각마다 되풀이하면 종이가 빽빽해지고, 치수는
- * 어차피 가장 큰 조각의 출처 덩어리에 한 번 적힌다.
+ * 방법이 없었다.
  *
  * 그 출처 덩어리가 있는 조각은 건너뛴다. 거기엔 이름도 계정도 이미 있다.
  */
@@ -361,7 +375,7 @@ export async function buildRoundPdf(
    * 아주 낮은 조각이 뽑혀 글자가 재단선 밖으로 나간다 — layout.ts의
    * roundTitlePiece 주석 참고. 조각 이름 몫까지 더해 필요한 높이를 넘긴다.
    */
-  const title = roundPatternTitle(layout.dimensions, layout.seamMm, locale);
+  const title = roundPatternTitle(layout.seamMm, locale);
   const block = sourceBlockSizeMm(font, title, locale);
   const titlePiece = roundTitlePiece(layout, {
     blockHeightMm: block.heightMm,
