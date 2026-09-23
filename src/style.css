@@ -352,6 +352,8 @@ body {
 .swatch-tile { border-top-width: 2px; border-top-style: dashed; }
 .swatch-center { border-top-width: 1px; border-top-style: dashed; }
 .swatch-fold-edge { border-top-width: 2px; }
+/* 네모 파우치 손잡이의 반 접는 선. 도면과 같이 옅은 점선이다. */
+.swatch-fold { border-top-width: 1px; border-top-style: dashed; }
 
 /*
  * 식서선 견본. 도면에서 이 선을 가르는 것은 색과 양끝 화살촉이므로
