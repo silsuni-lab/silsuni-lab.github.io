@@ -34,6 +34,12 @@ const roundInputs = Object.fromEntries(
   ]),
 );
 
+/*
+ * 네모 파우치는 한국어 한 벌뿐이다. silbap으로 넘길 도구라 다른 언어 페이지를
+ * 만들지 않는다(silbap도 한국어만 옮긴다).
+ */
+const squareInputs = { square: resolve('square-pouch/index.html') };
+
 export default defineConfig({
   base: './',
   /*
@@ -47,6 +53,7 @@ export default defineConfig({
       input: {
         ...localeInputs,
         ...roundInputs,
+        ...squareInputs,
       },
     },
   },

@@ -198,3 +198,29 @@ describe('sitemap.xml', () => {
     }
   });
 });
+
+/*
+ * 네모 파우치는 silbap 회원 전용으로 넘길 도구다. 만드는 동안만 여기 감춰
+ * 두므로, 검색엔진과 사각 화면·sitemap 어디에서도 이리로 오는 길이 없어야 한다.
+ */
+describe('정적 페이지 — 네모 파우치는 감춰 둔다', () => {
+  const SQUARE_FILE = 'square-pouch/index.html';
+
+  it('한국어 한 벌이고 검색엔진에 올리지 않는다', () => {
+    const html = read(SQUARE_FILE);
+    expect(html).toContain('<html lang="ko">');
+    expect(html).toContain('<meta name="robots" content="noindex, nofollow" />');
+    expect(html).not.toContain('rel="canonical"');
+    expect(html).toContain('<script type="module" src="./main.ts"></script>');
+  });
+
+  it('사각 화면과 sitemap에서 링크하지 않는다', () => {
+    for (const [, file] of LANG_FILES) expect(read(file), file).not.toContain('square-pouch');
+    expect(read('public/sitemap.xml')).not.toContain('square-pouch');
+  });
+
+  it('다운로드 기록을 남기지 않는다', () => {
+    // silbap으로 넘길 도구다. 여기서 기록을 쌓으면 사각 시트에 섞인다.
+    expect(read('square-pouch/main.ts')).not.toMatch(/import[^;]*trackDownload|trackDownload\(/);
+  });
+});

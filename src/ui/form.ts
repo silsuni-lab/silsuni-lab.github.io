@@ -202,7 +202,8 @@ export function renderChoice<T>(
   container: HTMLElement,
   id: string,
   labelText: string,
-  choices: readonly { readonly value: T; readonly label: string }[],
+  // disabled는 치수에 따라 고를 수 없는 값이다(네모 파우치의 뒷면 30%). 보이되 못 고른다.
+  choices: readonly { readonly value: T; readonly label: string; readonly disabled?: boolean }[],
   selected: T,
   onChange: (next: T) => void,
 ): void {
@@ -223,6 +224,7 @@ export function renderChoice<T>(
     option.value = String(index);
     option.textContent = choice.label;
     option.selected = choice.value === selected;
+    option.disabled = choice.disabled === true;
     select.append(option);
   });
   select.addEventListener('change', () => {
