@@ -132,6 +132,27 @@ export const ko = {
   'round.preview.ariaLabel': (count: number) => `원통 파우치 조각 ${count}종 미리보기`,
   'round.legend.cut': '재단선 — 이 선을 따라 자릅니다',
   'round.legend.seam': (seamMm: number) => `완성선 — 재단선에서 ${seamMm}mm 안쪽`,
+  // 네모(square) — 별도 화면. 원통과 뜻이 같은 문구(오류·뒷면 비율·재단선)는 round.* 것을 같이 쓴다.
+  'square.field.widthMm': '가로',
+  'square.field.depthMm': '폭',
+  'square.field.sideHeightMm': '옆면 높이',
+  'square.field.lidHeightMm': '뚜껑 높이',
+  'square.preset.mini': '미니 파우치',
+  'square.preset.cosmetic': '화장품 파우치',
+  'square.preset.travel': '여행용 파우치',
+  'square.pattern.name': '네모네모 손잡이 파우치',
+  'square.piece.panels': '뚜껑·바닥',
+  'square.piece.frontTop': '앞면 윗단',
+  'square.piece.frontBottom': '앞면 아랫단',
+  'square.piece.back': '뒷면',
+  'square.piece.handle': '손잡이',
+  'square.error.depth': (widthMm: number) => `폭은 가로(${widthMm}mm)보다 클 수 없습니다.`,
+  'square.error.backRatio': (pct: number, widthMm: number) =>
+    `뒷면 ${pct}%는 가로 ${widthMm}mm보다 길어집니다. 더 작은 비율을 골라주세요.`,
+  'square.shape.ariaLabel': (widthMm: number, depthMm: number, sideHeightMm: number, lidHeightMm: number) =>
+    `가로 ${widthMm}mm, 폭 ${depthMm}mm, 옆면 높이 ${sideHeightMm}mm, 뚜껑 높이 ${lidHeightMm}mm 네모 파우치의 완성 예상 모습`,
+  'square.preview.ariaLabel': (count: number) => `네모 파우치 조각 ${count}종 미리보기`,
+  'square.legend.fold': '접힘선 — 손잡이를 반으로 접는 자리',
   // 언어
   'lang.switch': '언어',
 };

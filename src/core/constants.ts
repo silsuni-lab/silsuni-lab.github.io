@@ -7,7 +7,7 @@
  * 기록(track.ts)에서 시트의 두 도구를 가르는 값이자, 낡은 화면 되살리기
  * (stale.ts)에서 남의 화면 것을 집어가지 않게 막는 표식이다.
  */
-export type PouchKind = 'box' | 'round';
+export type PouchKind = 'box' | 'round' | 'square';
 
 /** 시접 (mm). 도안 치수에 이미 포함되므로 사용자가 따로 더하지 않는다. */
 export const SEAM_MM = 10;
@@ -179,6 +179,24 @@ export const ROUND_PRESETS: readonly RoundPreset[] = [
   { id: 'flat', diameterMm: 100, sideHeightMm: 50, lidHeightMm: 20 },
   { id: 'pencase', diameterMm: 80, sideHeightMm: 200, lidHeightMm: 50 },
   { id: 'cosmetic', diameterMm: 130, sideHeightMm: 130, lidHeightMm: 30 },
+];
+
+/**
+ * 네모 파우치 프리셋 (가로·폭·옆면·뚜껑). 작은 것, 사진 속 화장품 파우치, 큰 것.
+ * 셋 다 뒷면 비율 다섯을 모두 고를 수 있는 비례로 잡았다(폭 ≤ 가로의 2/3).
+ */
+export interface SquarePreset {
+  readonly id: 'mini' | 'cosmetic' | 'travel';
+  readonly widthMm: number;
+  readonly depthMm: number;
+  readonly sideHeightMm: number;
+  readonly lidHeightMm: number;
+}
+
+export const SQUARE_PRESETS: readonly SquarePreset[] = [
+  { id: 'mini', widthMm: 150, depthMm: 90, sideHeightMm: 100, lidHeightMm: 25 },
+  { id: 'cosmetic', widthMm: 220, depthMm: 140, sideHeightMm: 150, lidHeightMm: 30 },
+  { id: 'travel', widthMm: 280, depthMm: 180, sideHeightMm: 180, lidHeightMm: 40 },
 ];
 
 /**

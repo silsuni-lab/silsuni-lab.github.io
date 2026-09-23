@@ -140,7 +140,7 @@ export function parseState(raw: string): ScreenState | undefined {
   const v = value as Record<string, unknown>;
   const bool = (x: unknown) => (typeof x === 'boolean' ? x : undefined);
 
-  const kind = v['kind'] === 'box' || v['kind'] === 'round' ? v['kind'] : undefined;
+  const kind = v['kind'] === 'box' || v['kind'] === 'round' || v['kind'] === 'square' ? v['kind'] : undefined;
   const paper = v['paper'] === 'a4' || v['paper'] === 'a3' ? v['paper'] : undefined;
   const addSeam = bool(v['addSeam']);
   const values = parseValues(v['values']);

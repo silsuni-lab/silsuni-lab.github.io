@@ -129,6 +129,27 @@ export const ja: Catalog = {
   'round.preview.ariaLabel': (count: number) => `円筒ポーチのパターン、${count} 枚`,
   'round.legend.cut': '裁断線 — この線で切ります',
   'round.legend.seam': (seamMm: number) => `縫い代線 — 裁断線から ${seamMm}mm 内側`,
+  // 四角ポーチ — 意味が同じ文言は round.* を共用する。
+  'square.field.widthMm': '横幅',
+  'square.field.depthMm': 'マチ',
+  'square.field.sideHeightMm': '側面の高さ',
+  'square.field.lidHeightMm': 'ふたの高さ',
+  'square.preset.mini': 'ミニポーチ',
+  'square.preset.cosmetic': 'コスメポーチ',
+  'square.preset.travel': 'トラベルポーチ',
+  'square.pattern.name': '四角い持ち手ポーチ',
+  'square.piece.panels': 'ふた・底',
+  'square.piece.frontTop': '前面上段',
+  'square.piece.frontBottom': '前面下段',
+  'square.piece.back': '背面',
+  'square.piece.handle': '持ち手',
+  'square.error.depth': (widthMm: number) => `マチは横幅（${widthMm}mm）より大きくできません。`,
+  'square.error.backRatio': (pct: number, widthMm: number) =>
+    `背面 ${pct}% は横幅 ${widthMm}mm より長くなります。小さい割合を選んでください。`,
+  'square.shape.ariaLabel': (widthMm: number, depthMm: number, sideHeightMm: number, lidHeightMm: number) =>
+    `横幅 ${widthMm}mm、マチ ${depthMm}mm、側面 ${sideHeightMm}mm、ふた ${lidHeightMm}mm の四角ポーチの完成イメージ`,
+  'square.preview.ariaLabel': (count: number) => `四角ポーチのパターン、${count} 枚`,
+  'square.legend.fold': '折り線 — 持ち手をここで半分に折ります',
   // 언어
   'lang.switch': '言語',
 };

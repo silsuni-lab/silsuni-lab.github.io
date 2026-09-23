@@ -154,6 +154,27 @@ export const en: Catalog = {
   'round.preview.ariaLabel': (count: number) => `Round pouch pattern, ${count} pieces`,
   'round.legend.cut': 'Cutting line — cut along this line',
   'round.legend.seam': (seamMm: number) => `Stitching line — ${seamMm}mm inside the cutting line`,
+  // Square pouch — reuses round.* where the meaning is identical.
+  'square.field.widthMm': 'Width',
+  'square.field.depthMm': 'Depth',
+  'square.field.sideHeightMm': 'Side height',
+  'square.field.lidHeightMm': 'Lid height',
+  'square.preset.mini': 'Mini pouch',
+  'square.preset.cosmetic': 'Cosmetics pouch',
+  'square.preset.travel': 'Travel pouch',
+  'square.pattern.name': 'Square handle pouch',
+  'square.piece.panels': 'Lid & base',
+  'square.piece.frontTop': 'Front upper band',
+  'square.piece.frontBottom': 'Front lower band',
+  'square.piece.back': 'Back',
+  'square.piece.handle': 'Handle',
+  'square.error.depth': (widthMm: number) => `Depth cannot exceed the width (${widthMm}mm).`,
+  'square.error.backRatio': (pct: number, widthMm: number) =>
+    `A ${pct}% back would be longer than the ${widthMm}mm width. Pick a smaller ratio.`,
+  'square.shape.ariaLabel': (widthMm: number, depthMm: number, sideHeightMm: number, lidHeightMm: number) =>
+    `Finished square pouch, ${widthMm}mm wide, ${depthMm}mm deep, ${sideHeightMm}mm high with a ${lidHeightMm}mm lid`,
+  'square.preview.ariaLabel': (count: number) => `Square pouch pattern, ${count} pieces`,
+  'square.legend.fold': 'Fold line — fold the handle in half here',
   // 언어
   'lang.switch': 'Language',
 };

@@ -129,6 +129,27 @@ export const zhCN: Catalog = {
   'round.preview.ariaLabel': (count: number) => `圆筒袋版型，共 ${count} 片`,
   'round.legend.cut': '裁切线 — 沿此线裁剪',
   'round.legend.seam': (seamMm: number) => `缝合线 — 距裁切线向内 ${seamMm}mm`,
+  // 方形袋 — 意思相同的文字共用 round.*。
+  'square.field.widthMm': '宽',
+  'square.field.depthMm': '侧幅',
+  'square.field.sideHeightMm': '侧面高度',
+  'square.field.lidHeightMm': '盖子高度',
+  'square.preset.mini': '迷你收纳袋',
+  'square.preset.cosmetic': '化妆包',
+  'square.preset.travel': '旅行收纳袋',
+  'square.pattern.name': '方形提手收纳袋',
+  'square.piece.panels': '盖子・底部',
+  'square.piece.frontTop': '前片上段',
+  'square.piece.frontBottom': '前片下段',
+  'square.piece.back': '后片',
+  'square.piece.handle': '提手',
+  'square.error.depth': (widthMm: number) => `侧幅不能大于宽（${widthMm}mm）。`,
+  'square.error.backRatio': (pct: number, widthMm: number) =>
+    `后片 ${pct}% 会比宽 ${widthMm}mm 还长，请选择较小的比例。`,
+  'square.shape.ariaLabel': (widthMm: number, depthMm: number, sideHeightMm: number, lidHeightMm: number) =>
+    `宽 ${widthMm}mm、侧幅 ${depthMm}mm、侧面 ${sideHeightMm}mm、盖子 ${lidHeightMm}mm 的方形收纳袋完成示意`,
+  'square.preview.ariaLabel': (count: number) => `方形收纳袋版型，共 ${count} 片`,
+  'square.legend.fold': '折线 — 提手在此对折',
   // 언어
   'lang.switch': '语言',
 };
