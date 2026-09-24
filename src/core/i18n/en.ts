@@ -169,8 +169,13 @@ export const en: Catalog = {
   'square.piece.back': 'Back',
   'square.piece.handle': 'Handle',
   'square.error.depth': (widthMm: number) => `Depth cannot exceed the width (${widthMm}mm).`,
-  'square.error.backRatio': (pct: number, widthMm: number) =>
-    `A ${pct}% back would be longer than the ${widthMm}mm width. Pick a smaller ratio.`,
+  'square.error.backRatio': (pct: number, straightMm: number) =>
+    `A ${pct}% back would be longer than the straight part of the back edge (${straightMm}mm). Pick a smaller ratio.`,
+  'square.error.corner': (radiusMm: number, depthMm: number) =>
+    `A ${radiusMm}mm corner is too round for a ${depthMm}mm depth. Keep it to a quarter of the depth or less.`,
+  'square.control.corner': 'Corners',
+  'square.corner.none': 'Square',
+  'square.corner.round': (radiusMm: number) => `Rounded ${radiusMm}mm`,
   'square.shape.ariaLabel': (widthMm: number, depthMm: number, sideHeightMm: number, lidHeightMm: number) =>
     `Finished square pouch, ${widthMm}mm wide, ${depthMm}mm deep, ${sideHeightMm}mm high with a ${lidHeightMm}mm lid`,
   'square.preview.ariaLabel': (count: number) => `Square pouch pattern, ${count} pieces`,

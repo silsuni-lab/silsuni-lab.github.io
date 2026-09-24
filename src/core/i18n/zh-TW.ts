@@ -144,8 +144,13 @@ export const zhTW: Catalog = {
   'square.piece.back': '後片',
   'square.piece.handle': '提把',
   'square.error.depth': (widthMm: number) => `側幅不能大於寬（${widthMm}mm）。`,
-  'square.error.backRatio': (pct: number, widthMm: number) =>
-    `後片 ${pct}% 會比寬 ${widthMm}mm 還長，請選擇較小的比例。`,
+  'square.error.backRatio': (pct: number, straightMm: number) =>
+    `後片 ${pct}% 會比後側直線部分（${straightMm}mm）還長，請選擇較小的比例。`,
+  'square.error.corner': (radiusMm: number, depthMm: number) =>
+    `圓角 ${radiusMm}mm 對側幅 ${depthMm}mm 來說太大，請選擇側幅的 1/4 以下。`,
+  'square.control.corner': '邊角',
+  'square.corner.none': '直角',
+  'square.corner.round': (radiusMm: number) => `圓角 ${radiusMm}mm`,
   'square.shape.ariaLabel': (widthMm: number, depthMm: number, sideHeightMm: number, lidHeightMm: number) =>
     `寬 ${widthMm}mm、側幅 ${depthMm}mm、側面 ${sideHeightMm}mm、蓋子 ${lidHeightMm}mm 的方形收納袋完成示意`,
   'square.preview.ariaLabel': (count: number) => `方形收納袋版型，共 ${count} 片`,

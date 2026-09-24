@@ -17,6 +17,8 @@ import {
   SQUARE_FIELDS,
   squareBackRatioChoices,
   squareBackRatioFallback,
+  squareCornerChoices,
+  squareCornerFallback,
   squarePatternFileName,
   validateSquareDimensions,
 } from '../src/core/square/dimensions';
@@ -46,6 +48,7 @@ const presetsEl = document.getElementById('presets')!;
 const inputsEl = document.getElementById('inputs')!;
 const papersEl = document.getElementById('papers')!;
 const backFieldEl = document.getElementById('back-field')!;
+const cornerFieldEl = document.getElementById('corner-field')!;
 const seamFieldEl = document.getElementById('seam-field')!;
 const legendEl = document.getElementById('legend')!;
 const previewEl = document.getElementById('preview')!;
@@ -59,10 +62,31 @@ const kept = takeState('square');
 let paper: PaperSize = kept?.paper ?? 'a4';
 let addSeam = kept?.addSeam ?? true;
 let backRatio = kept?.backRatio ?? BACK_RATIO_DEFAULT;
+// 기본은 각지게. 둥글리는 건 고르는 사람 몫이다.
+let cornerRadiusMm = kept?.cornerRadiusMm ?? 0;
 
 function showError(messages: readonly string[]): void {
   errorEl.hidden = messages.length === 0;
   errorEl.textContent = messages.join(' ');
+}
+
+/**
+ * 모서리 선택지를 지금 폭에 맞춰 다시 그린다. 폭을 줄여 고른 반지름이 안
+ * 되면 되는 것 중 가장 큰 값으로 내린다. 뒷면 비율이 이 값에 딸려 있으므로
+ * 뒷면보다 먼저 그린다.
+ */
+function renderCornerChoice(): void {
+  const depthMm = Number(readInputs(SQUARE_FIELDS).depthMm);
+  const dims = Number.isInteger(depthMm) && depthMm > 0 ? { depthMm } : undefined;
+  if (dims !== undefined) cornerRadiusMm = squareCornerFallback(dims, cornerRadiusMm);
+  renderChoice(
+    cornerFieldEl, 'corner-radius', t(locale, 'square.control.corner'),
+    squareCornerChoices(locale, dims), cornerRadiusMm,
+    (next) => {
+      cornerRadiusMm = next;
+      refresh();
+    },
+  );
 }
 
 /**
@@ -78,10 +102,10 @@ function renderBackChoice(): void {
   const depthMm = Number(values.depthMm);
   const known = Number.isInteger(widthMm) && Number.isInteger(depthMm) && widthMm > 0 && depthMm > 0 && depthMm <= widthMm;
   const dims = known ? { widthMm, depthMm } : undefined;
-  if (dims !== undefined) backRatio = squareBackRatioFallback(dims, backRatio);
+  if (dims !== undefined) backRatio = squareBackRatioFallback(dims, backRatio, cornerRadiusMm);
   renderChoice(
     backFieldEl, 'back-ratio', t(locale, 'round.control.backRatio'),
-    squareBackRatioChoices(locale, dims), backRatio,
+    squareBackRatioChoices(locale, dims, cornerRadiusMm), backRatio,
     (next) => {
       backRatio = next;
       refresh();
@@ -90,8 +114,9 @@ function renderBackChoice(): void {
 }
 
 function refresh(): void {
+  renderCornerChoice();
   renderBackChoice();
-  const result = validateSquareDimensions(readInputs(SQUARE_FIELDS), backRatio, locale);
+  const result = validateSquareDimensions(readInputs(SQUARE_FIELDS), backRatio, locale, cornerRadiusMm);
 
   if (!result.ok) {
     showError(result.errors.map((e) => e.message));
@@ -106,9 +131,9 @@ function refresh(): void {
   }
 
   showError([]);
-  shapeEl.innerHTML = renderSquareShapeSvg(result.value, locale);
+  shapeEl.innerHTML = renderSquareShapeSvg(result.value, locale, cornerRadiusMm);
 
-  const layout = buildSquareLayout(result.value, addSeam ? SEAM_MM : 0, backRatio);
+  const layout = buildSquareLayout(result.value, addSeam ? SEAM_MM : 0, backRatio, cornerRadiusMm);
   const byPaper = { a4: paginate(layout, 'a4'), a3: paginate(layout, 'a3') };
   const pagination = byPaper[paper];
 
@@ -142,14 +167,15 @@ function currentState(): ScreenState {
     paper,
     addSeam,
     backRatio,
+    cornerRadiusMm,
   };
 }
 
 async function download(): Promise<void> {
-  const result = validateSquareDimensions(readInputs(SQUARE_FIELDS), backRatio, locale);
+  const result = validateSquareDimensions(readInputs(SQUARE_FIELDS), backRatio, locale, cornerRadiusMm);
   if (!result.ok) return;
 
-  const layout = buildSquareLayout(result.value, addSeam ? SEAM_MM : 0, backRatio);
+  const layout = buildSquareLayout(result.value, addSeam ? SEAM_MM : 0, backRatio, cornerRadiusMm);
   const pagination = paginate(layout, paper);
 
   if (pagination.pages.length > PAGE_WARN_THRESHOLD) {
@@ -165,7 +191,7 @@ async function download(): Promise<void> {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = squarePatternFileName(result.value, paper, layout.seamMm);
+    link.download = squarePatternFileName(result.value, paper, layout.seamMm, cornerRadiusMm);
     link.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   } catch (error) {

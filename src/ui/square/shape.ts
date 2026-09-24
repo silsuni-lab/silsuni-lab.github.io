@@ -58,7 +58,8 @@ export function handleRiseMm(widthMm: number): number {
  * 돌아 들어가는 끝과 경첩은 몸통에 가려 안 보인다. 왼쪽 옆면 지퍼는 사각
  * 사시도처럼 흐리게 비춘다.
  */
-export function renderSquareShapeSvg(dimensions: SquareDimensions, locale: Locale): string {
+export function renderSquareShapeSvg(dimensions: SquareDimensions, locale: Locale, cornerRadiusMm = 0): string {
+  if (cornerRadiusMm > 0) return renderRoundedShapeSvg(dimensions, locale, cornerRadiusMm);
   const { widthMm: W, depthMm: D, sideHeightMm: Hs, lidHeightMm: Hl } = dimensions;
 
   const radians = (DEPTH_ANGLE_DEG * Math.PI) / 180;
@@ -153,6 +154,166 @@ export function renderSquareShapeSvg(dimensions: SquareDimensions, locale: Local
     ` style="width: 100%; max-width: 100%; height: auto;" role="img" aria-label="${escapeXml(label)}">`,
     faces,
     hiddenEdges,
+    zipper,
+    handle,
+    labels,
+    `</svg>`,
+  ].join('');
+}
+
+/** 평면 윤곽 위의 한 점과 그 자리의 바깥 방향. z는 앞(0)에서 뒤(D)로 간다. */
+interface OutlinePoint {
+  readonly x: number;
+  readonly z: number;
+  readonly nx: number;
+  readonly nz: number;
+}
+
+/** 모서리 호 하나를 이 개수로 쪼갠다. 화면 크기에서 꺾임이 안 보이는 정도. */
+const ARC_STEPS = 12;
+
+/** 둥근 사각형 윤곽을 앞-왼쪽 모서리부터 한 바퀴 돈다. */
+function roundedOutline(W: number, D: number, R: number): OutlinePoint[] {
+  const corners: readonly [number, number, number][] = [
+    [R, R, 180], [W - R, R, 270], [W - R, D - R, 0], [R, D - R, 90],
+  ];
+  const points: OutlinePoint[] = [];
+  for (const [cx, cz, start] of corners) {
+    for (let i = 0; i <= ARC_STEPS; i++) {
+      const rad = ((start + (90 * i) / ARC_STEPS) * Math.PI) / 180;
+      const nx = Math.cos(rad);
+      const nz = Math.sin(rad);
+      points.push({ x: cx + R * nx, z: cz + R * nz, nx, nz });
+    }
+  }
+  return points;
+}
+
+/** 볼록 껍질 (monotone chain). 둥근 상자는 볼록해서 몸통 실루엣이 곧 이것이다. */
+function convexHull(points: readonly Point[]): Point[] {
+  const sorted = [...points].sort((a, b) => a.x - b.x || a.y - b.y);
+  const cross = (o: Point, a: Point, b: Point) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+  const half = (list: readonly Point[]) => {
+    const out: Point[] = [];
+    for (const p of list) {
+      while (out.length >= 2 && cross(out[out.length - 2]!, out[out.length - 1]!, p) <= 0) out.pop();
+      out.push(p);
+    }
+    out.pop();
+    return out;
+  };
+  return [...half(sorted), ...half([...sorted].reverse())];
+}
+
+/** 조건을 만족하는 점이 이어지는 구간들. 윤곽이 닫혀 있어 끝과 처음을 잇는다. */
+function runs<T>(items: readonly T[], keep: (item: T) => boolean): T[][] {
+  const n = items.length;
+  const startAt = items.findIndex((item) => !keep(item));
+  if (startAt === -1) return [[...items, items[0]!]];
+  const out: T[][] = [];
+  let current: T[] = [];
+  for (let k = 1; k <= n; k++) {
+    const item = items[(startAt + k) % n]!;
+    if (keep(item)) current.push(item);
+    else if (current.length > 0) {
+      out.push(current);
+      current = [];
+    }
+  }
+  if (current.length > 0) out.push(current);
+  return out;
+}
+
+/**
+ * 모서리를 둥글린 네모 파우치. 각진 그림과 같은 눈높이·같은 글자 자리다.
+ *
+ * 곡면이 있어 면을 셋으로 나눠 칠할 수 없다. 대신 윤곽을 촘촘히 찍어
+ * 투영하고, 몸통은 위·아래 윤곽의 볼록 껍질로 칠한다(둥근 상자는 볼록하다).
+ * 윤곽에서 보이는 쪽은 바깥 방향이 보는 사람을 향하는 곳이다 — 사선 투영에서는
+ * 앞(−z)과 오른쪽(+x)이 보이므로, kx·nx − nz > 0 이면 보인다.
+ */
+function renderRoundedShapeSvg(dimensions: SquareDimensions, locale: Locale, R: number): string {
+  const { widthMm: W, depthMm: D, sideHeightMm: Hs, lidHeightMm: Hl } = dimensions;
+
+  const radians = (DEPTH_ANGLE_DEG * Math.PI) / 180;
+  const kx = DEPTH_SCALE * Math.cos(radians);
+  const ky = DEPTH_SCALE * Math.sin(radians);
+  const dx = D * kx;
+  const dy = D * ky;
+  const rise = handleRiseMm(W);
+
+  const spanX = W + dx;
+  const pad = spanX * PAD_RATIO;
+  const topPad = spanX * TOP_PAD_RATIO;
+  const font = spanX * FONT_RATIO;
+  const stroke = spanX * STROKE_RATIO;
+  const rightPad = pad + font * 4;
+  const x0 = pad;
+  const y0 = topPad + rise + dy;
+
+  const project = (x: number, z: number, down: number): Point => ({ x: x0 + x + z * kx, y: y0 + down - z * ky });
+  const outline = roundedOutline(W, D, R);
+  const visible = (p: OutlinePoint) => kx * p.nx - p.nz > 1e-9;
+  const at = (down: number) => (p: OutlinePoint) => project(p.x, p.z, down);
+
+  const polyline = (cls: string, points: readonly Point[], color: string, width: number, extra = '') =>
+    `<polyline class="${cls}" points="${toPoints(points)}" fill="none" stroke="${color}"` +
+    ` stroke-width="${round1(width)}" stroke-linejoin="round" stroke-linecap="round"${extra} />`;
+
+  const hull = convexHull([...outline.map(at(0)), ...outline.map(at(Hs))]);
+  const body =
+    `<polygon class="body" points="${toPoints(hull)}" fill="${SHAPE_FACE_FRONT_FILL}"` +
+    ` stroke="${SHAPE_EDGE_COLOR}" stroke-width="${round1(stroke)}" stroke-linejoin="round" />`;
+  const top =
+    `<polygon class="face-top" points="${toPoints(outline.map(at(0)))}" fill="${SHAPE_FACE_TOP_FILL}"` +
+    ` stroke="${SHAPE_EDGE_COLOR}" stroke-width="${round1(stroke)}" stroke-linejoin="round" />`;
+
+  const dash = ` stroke-dasharray="${round1(stroke * 3)} ${round1(stroke * 2.2)}"`;
+  const hiddenBottom = runs(outline, (p) => !visible(p))
+    .map((run) => polyline('hidden-edge', run.map(at(Hs)), SHAPE_HIDDEN_COLOR, stroke * 0.65, dash))
+    .join('');
+
+  // 지퍼: 보이는 쪽은 진하게, 왼쪽으로 돌아가는 쪽은 흐리게. 뒤쪽(경첩)은 긋지 않는다.
+  const zw = stroke * 0.9;
+  const zipper =
+    runs(outline, (p) => !visible(p) && p.nz < 0.5)
+      .map((run) => polyline('zipper-hidden', run.map(at(Hl)), ZIPPER_COLOR, zw, ` stroke-opacity="${HIDDEN_SIDE_OPACITY}"`))
+      .join('') +
+    runs(outline, visible).map((run) => polyline('zipper', run.map(at(Hl)), ZIPPER_COLOR, zw)).join('');
+
+  const leftEnd = project(0, D / 2, 0);
+  const rightEnd = project(W, D / 2, 0);
+  const control = { x: (leftEnd.x + rightEnd.x) / 2, y: leftEnd.y - 2 * rise };
+  const d = `M ${round1(leftEnd.x)},${round1(leftEnd.y)} Q ${round1(control.x)},${round1(control.y)}` +
+    ` ${round1(rightEnd.x)},${round1(rightEnd.y)}`;
+  const band = Math.max(stroke * 3, HANDLE_WIDTH_MM * DEPTH_SCALE);
+  const handle =
+    `<path class="handle-edge" d="${d}" fill="none" stroke="${SHAPE_EDGE_COLOR}" stroke-width="${round1(band)}" stroke-linecap="butt" />` +
+    `<path class="handle" d="${d}" fill="none" stroke="${SHAPE_FACE_TOP_FILL}" stroke-width="${round1(band - 2 * stroke)}" stroke-linecap="butt" />`;
+
+  const dimLabel = (x: number, y: number, text: string, anchor: string, rotate?: string) =>
+    `<text class="dim-label" x="${round1(x)}" y="${round1(y)}" text-anchor="${anchor}"` +
+    ` font-size="${round1(font)}" fill="${SHAPE_DIM_COLOR}"${rotate ?? ''}>${escapeXml(text)}</text>`;
+  const heightLabelX = x0 - font * 0.7;
+  const heightLabelY = y0 + Hs / 2;
+  const sideX = x0 + W + dx + font * 0.4;
+  const labels =
+    dimLabel(x0 + W / 2, y0 + Hs + font * 1.2, `${round1(W)}mm`, 'middle') +
+    dimLabel(heightLabelX, heightLabelY, `${round1(Hs)}mm`, 'middle',
+      ` transform="rotate(-90 ${round1(heightLabelX)} ${round1(heightLabelY)})"`) +
+    dimLabel(sideX, y0 - dy + Hl / 2 + font * 0.35, `${round1(Hl)}mm`, 'start') +
+    dimLabel(sideX, y0 + Hs - dy / 2 + font * 0.4, `${round1(D)}mm`, 'start');
+
+  const viewWidth = spanX + pad + rightPad;
+  const viewHeight = topPad + rise + dy + Hs + pad;
+  const label = t(locale, 'square.shape.ariaLabel', round1(W), round1(D), round1(Hs), round1(Hl));
+
+  return [
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${round1(viewWidth)} ${round1(viewHeight)}"`,
+    ` style="width: 100%; max-width: 100%; height: auto;" role="img" aria-label="${escapeXml(label)}">`,
+    body,
+    hiddenBottom,
+    top,
     zipper,
     handle,
     labels,

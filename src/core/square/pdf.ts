@@ -72,7 +72,9 @@ export function titleBlockRegion(
 export function pieceLabelText(piece: SquarePiece, locale: Locale): string {
   const label = t(locale, `square.piece.${piece.id}` as never);
   const name = piece.count > 1 ? `${label} ${t(locale, 'paper.sheets', piece.count)}` : label;
-  return `${name} ${Math.round(piece.finishedWidthMm)}*${Math.round(piece.finishedHeightMm)}`;
+  // 둥근 모서리면 반지름을 붙인다(R20). 치수만 보고 각진 본으로 착각하지 않게.
+  const corner = piece.cornerRadiusMm > 0 ? ` R${piece.cornerRadiusMm}` : '';
+  return `${name} ${Math.round(piece.finishedWidthMm)}*${Math.round(piece.finishedHeightMm)}${corner}`;
 }
 
 function drawLine(ctx: PageContext, line: Line, thickness: number, color: ReturnType<typeof pdfColor>, dashArray?: number[]) {
@@ -85,6 +87,28 @@ function drawLine(ctx: PageContext, line: Line, thickness: number, color: Return
   });
 }
 
+/** 1/4 원을 3차 베지어로 그릴 때 조절점까지의 비율. */
+const ARC_K = 0.5522847498;
+
+/**
+ * 모서리가 둥근 사각형의 SVG 경로 (pt, 왼쪽 위가 원점, y는 아래로).
+ * pdf-lib의 drawSvgPath가 y를 뒤집어 페이지 좌표로 옮긴다.
+ */
+export function roundedRectPath(widthPt: number, heightPt: number, radiusPt: number): string {
+  const w = widthPt;
+  const h = heightPt;
+  const r = radiusPt;
+  const k = r * ARC_K;
+  const f = (v: number) => Math.round(v * 1000) / 1000;
+  return [
+    `M ${f(r)} 0`, `L ${f(w - r)} 0`,
+    `C ${f(w - r + k)} 0 ${f(w)} ${f(r - k)} ${f(w)} ${f(r)}`, `L ${f(w)} ${f(h - r)}`,
+    `C ${f(w)} ${f(h - r + k)} ${f(w - r + k)} ${f(h)} ${f(w - r)} ${f(h)}`, `L ${f(r)} ${f(h)}`,
+    `C ${f(r - k)} ${f(h)} 0 ${f(h - r + k)} 0 ${f(h - r)}`, `L 0 ${f(r)}`,
+    `C 0 ${f(r - k)} ${f(r - k)} 0 ${f(r)} 0`, 'Z',
+  ].join(' ');
+}
+
 function drawRect(
   ctx: PageContext,
   piece: SquarePiece,
@@ -93,6 +117,24 @@ function drawRect(
   thickness: number,
 ) {
   const topLeft = toPagePoint(ctx.pagination, ctx.page, piece.xMm + insetMm, piece.yMm + insetMm);
+  /*
+   * 둥근 모서리. 재단선(inset 0)은 완성선의 호에서 시접만큼 바깥으로 나간
+   * 곡선이라 반지름이 R + S이고, 완성선(inset S)은 R이다 — 둘이 같은 중심을
+   * 나눠 가져 시접 폭이 모서리에서도 고르다.
+   */
+  if (piece.cornerRadiusMm > 0) {
+    const seamMm = (piece.widthMm - piece.finishedWidthMm) / 2;
+    const radiusMm = piece.cornerRadiusMm + seamMm - insetMm;
+    ctx.pdfPage.drawSvgPath(
+      roundedRectPath(
+        (piece.widthMm - 2 * insetMm) * MM_TO_PT,
+        (piece.heightMm - 2 * insetMm) * MM_TO_PT,
+        radiusMm * MM_TO_PT,
+      ),
+      { x: topLeft.x, y: topLeft.y, borderColor: color, borderWidth: thickness },
+    );
+    return;
+  }
   ctx.pdfPage.drawRectangle({
     x: topLeft.x,
     y: topLeft.y - (piece.heightMm - 2 * insetMm) * MM_TO_PT,

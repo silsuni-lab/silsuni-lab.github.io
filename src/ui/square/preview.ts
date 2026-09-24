@@ -23,13 +23,19 @@ const THIN_STROKE_RATIO = 0.002;
 const LABEL_RATIO = 0.026;
 const TILE_LABEL_RATIO = 0.024;
 
-/** 조각 사각형 하나. insetMm이 0이면 재단선, 시접 폭이면 완성선이다. */
+/**
+ * 조각 사각형 하나. insetMm이 0이면 재단선, 시접 폭이면 완성선이다.
+ * 둥근 모서리는 PDF와 같은 셈이다 — 재단선 반지름 R + S, 완성선 R.
+ */
 function pieceRect(piece: SquarePiece, insetMm: number, cls: string, width: number, fill: string): string {
   const w = piece.widthMm - 2 * insetMm;
   const h = piece.heightMm - 2 * insetMm;
   if (w <= 0 || h <= 0) return '';
+  const seamMm = (piece.widthMm - piece.finishedWidthMm) / 2;
+  const r = piece.cornerRadiusMm > 0 ? piece.cornerRadiusMm + seamMm - insetMm : 0;
+  const rx = r > 0 ? ` rx="${round1(r)}" ry="${round1(r)}"` : '';
   return `<rect class="${cls}" x="${round1(piece.xMm + insetMm)}" y="${round1(piece.yMm + insetMm)}"` +
-    ` width="${round1(w)}" height="${round1(h)}"` +
+    ` width="${round1(w)}" height="${round1(h)}"${rx}` +
     ` fill="${fill}" stroke="${PREVIEW_LINE_COLOR}" stroke-width="${round1(width)}" />`;
 }
 

@@ -128,3 +128,31 @@ describe('글자가 조각 안에 들어간다', () => {
     }
   });
 });
+
+describe('모서리 라운드 — PDF', () => {
+  it('둥근 뚜껑·바닥도 만들어지고, 너치와 식서선을 그 좌표에 긋는다', async () => {
+    const l = buildSquareLayout(golden, SEAM_MM, 0.2, 30);
+    const pagination = paginate(l, 'a4');
+    const doc = await PDFDocument.load(await buildSquarePdf(l, pagination, 'ko'));
+    const pages = doc.getPages().map((_, i) => pageContent(doc, i));
+    for (const line of l.pieces.flatMap((p) => [...p.notchesMm, p.grainlineMm])) {
+      const found = pagination.pages.some((page, i) =>
+        hasSegment(pages[i]!, toPagePoint(pagination, page, line.x1Mm, line.y1Mm), toPagePoint(pagination, page, line.x2Mm, line.y2Mm)),
+      );
+      expect(found, `${line.x1Mm},${line.y1Mm}`).toBe(true);
+    }
+    // 곡선(베지어) 연산자가 들어 있다 — 둥근 모서리를 실제로 그렸다.
+    expect(pages.some((c) => / c\n/.test(c))).toBe(true);
+  });
+
+  it('조각 이름에 반지름이 붙고, 가장 좁은 조각에서도 폭 안에 들어간다', async () => {
+    const doc = await PDFDocument.create();
+    const { font } = await loadFonts(doc, 'ko');
+    const tight = buildSquareLayout({ widthMm: 100, depthMm: 50, sideHeightMm: 300, lidHeightMm: 150 }, SEAM_MM, 0.1, 10);
+    for (const piece of tight.pieces) {
+      const text = pieceLabelText(piece, 'ko');
+      if (piece.id === 'panels') expect(text).toBe('뚜껑·바닥 2장 100*50 R10');
+      expect(font.widthOfTextAtSize(text, 9) / MM_TO_PT, text).toBeLessThan(piece.finishedWidthMm - 2 * TITLE_MARGIN_MM);
+    }
+  });
+});

@@ -36,6 +36,8 @@ export interface ScreenState {
   readonly foldHalf?: boolean;
   /** 원통의 뒷면 비율. 사각에는 없다. */
   readonly backRatio?: number;
+  /** 네모 파우치의 모서리 반지름. */
+  readonly cornerRadiusMm?: number;
 }
 
 const STATE_KEY = 'pouch-stale-state';
@@ -162,12 +164,15 @@ export function parseState(raw: string): ScreenState | undefined {
   const foldHalf = bool(v['foldHalf']);
   const rawRatio = v['backRatio'];
   const backRatio = typeof rawRatio === 'number' && Number.isFinite(rawRatio) ? rawRatio : undefined;
+  const rawCorner = v['cornerRadiusMm'];
+  const cornerRadiusMm = typeof rawCorner === 'number' && Number.isFinite(rawCorner) ? rawCorner : undefined;
 
   const state: ScreenState = { kind, values, paper, addSeam };
   return {
     ...state,
     ...(foldHalf === undefined ? {} : { foldHalf }),
     ...(backRatio === undefined ? {} : { backRatio }),
+    ...(cornerRadiusMm === undefined ? {} : { cornerRadiusMm }),
   };
 }
 

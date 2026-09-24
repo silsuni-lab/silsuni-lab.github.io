@@ -58,3 +58,24 @@ describe('renderSquareShapeSvg', () => {
     expect(handleRiseMm(220)).toBeCloseTo(91.4, 1);
   });
 });
+
+describe('모서리 라운드 — 화면', () => {
+  it('미리보기의 뚜껑·바닥은 재단선 R + S, 완성선 R로 둥글다', () => {
+    const l = buildSquareLayout(golden, 10, 0.2, 20);
+    const out = renderSquarePreviewSvg(l, paginate(l, 'a4'), 'ko');
+    expect(out).toMatch(/class="piece piece-panels"[^>]*rx="30"/);
+    expect(out).toContain('rx="20"');
+    expect(out).not.toMatch(/class="piece piece-back"[^>]*rx=/);
+  });
+
+  it('완성 예상 그림은 둥근 윤곽으로 그리고, 지퍼·손잡이·치수를 그대로 담는다', () => {
+    const out = renderSquareShapeSvg(golden, 'ko', 20);
+    expect(out).toContain('class="body"');
+    expect(out).toContain('class="face-top"');
+    expect(out).toContain('class="zipper"');
+    expect(out).toContain('class="handle"');
+    for (const v of ['220mm', '140mm', '150mm', '30mm']) expect(out).toContain(v);
+    // 각진 그림의 세 면 폴리곤은 쓰지 않는다.
+    expect(out).not.toContain('face-front');
+  });
+});

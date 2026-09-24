@@ -64,6 +64,18 @@ describe('parseState — 맡겨 둔 값을 되돌린다', () => {
     expect(parseState(JSON.stringify(round))).toEqual(round);
   });
 
+  it('네모 상태는 모서리 반지름까지 돌려준다', () => {
+    const square = {
+      kind: 'square',
+      values: { widthMm: '220', depthMm: '140', sideHeightMm: '150', lidHeightMm: '30' },
+      paper: 'a3',
+      addSeam: true,
+      backRatio: 0.2,
+      cornerRadiusMm: 20,
+    };
+    expect(parseState(JSON.stringify(square))).toEqual(square);
+  });
+
   it('모양이 안 맞으면 버린다', () => {
     // 되살리려다 더 망가뜨리느니 첫 프리셋으로 시작하는 편이 낫다.
     expect(parseState('{')).toBeUndefined();

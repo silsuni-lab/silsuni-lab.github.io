@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { SQUARE_PRESETS } from '../src/core/constants';
 import {
+  squareCornerChoices,
+  squareCornerFallback,
+  squarePerimeterMm,
   squareBackLengthMm,
   squareBackRatioAllowed,
   squareBackRatioChoices,
@@ -95,5 +98,54 @@ describe('이름', () => {
   it('시접 없이 뽑으면 도안 이름에 못 박는다', () => {
     expect(squarePatternTitle()).toBe('네모네모 손잡이 파우치');
     expect(squarePatternTitle(0)).toBe('네모네모 손잡이 파우치 시접없음');
+  });
+});
+
+describe('모서리 라운드', () => {
+  it('둥글리면 모서리마다 (2 − π/2)R씩 둘레가 준다', () => {
+    expect(squarePerimeterMm(ok, 0)).toBe(720);
+    expect(squarePerimeterMm(ok, 20)).toBeCloseTo(720 - (8 - 2 * Math.PI) * 20);
+  });
+
+  it('반지름은 폭의 1/4까지 — 폭 50은 10, 80부터 20, 120부터 30', () => {
+    const disabled = (depthMm: number) => squareCornerChoices('ko', { depthMm }).map((c) => c.disabled);
+    expect(disabled(50)).toEqual([false, false, true, true]);
+    expect(disabled(80)).toEqual([false, false, false, true]);
+    expect(disabled(120)).toEqual([false, false, false, false]);
+    expect(squareCornerChoices('ko').map((c) => c.label)).toEqual(['각지게', '둥글게 10mm', '둥글게 20mm', '둥글게 30mm']);
+  });
+
+  it('폭이 줄어 반지름이 안 되면 되는 것 중 가장 큰 값으로 내린다', () => {
+    expect(squareCornerFallback({ depthMm: 90 }, 30)).toBe(20);
+    expect(squareCornerFallback({ depthMm: 140 }, 30)).toBe(30);
+  });
+
+  it('반지름이 폭에 너무 크면 거부한다', () => {
+    const result = validateSquareDimensions({ ...ok, depthMm: 90 }, 0.2, 'ko', 30);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.errors[0]!.field).toBe('cornerRadius');
+  });
+
+  it('경첩은 뒷변의 곧은 부분(W − 2R) 안에만 — 둥글리면 25%도 잠길 수 있다', () => {
+    // 200·200, R 20 → 둘레 765.7, 25%는 191.4 > 곧은 부분 160
+    const sq = { ...ok, widthMm: 200, depthMm: 200 };
+    expect(squareBackRatioChoices('ko', sq, 20).map((c) => c.disabled)).toEqual([false, false, false, true, true]);
+    const bad = validateSquareDimensions(sq, 0.25, 'ko', 20);
+    expect(bad.ok).toBe(false);
+    if (!bad.ok) expect(bad.errors[0]!.message).toContain('160mm');
+    expect(squareBackRatioFallback(sq, 0.3, 20)).toBe(0.2);
+  });
+
+  it('프리셋 셋은 반지름 넷 모두에서 20%를 쓸 수 있다', () => {
+    for (const preset of SQUARE_PRESETS) {
+      for (const r of [0, 10, 20, 30]) {
+        if (r > preset.depthMm / 4) continue;
+        expect(validateSquareDimensions(preset, 0.2, 'ko', r).ok, `${preset.id} R${r}`).toBe(true);
+      }
+    }
+  });
+
+  it('파일 이름에 반지름을 붙인다', () => {
+    expect(squarePatternFileName(ok, 'a4', 10, 20)).toBe('silsuni-square-pouch-220x140x150x30-r20-a4.pdf');
   });
 });

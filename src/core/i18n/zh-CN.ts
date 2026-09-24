@@ -144,8 +144,13 @@ export const zhCN: Catalog = {
   'square.piece.back': '后片',
   'square.piece.handle': '提手',
   'square.error.depth': (widthMm: number) => `侧幅不能大于宽（${widthMm}mm）。`,
-  'square.error.backRatio': (pct: number, widthMm: number) =>
-    `后片 ${pct}% 会比宽 ${widthMm}mm 还长，请选择较小的比例。`,
+  'square.error.backRatio': (pct: number, straightMm: number) =>
+    `后片 ${pct}% 会比后侧直线部分（${straightMm}mm）还长，请选择较小的比例。`,
+  'square.error.corner': (radiusMm: number, depthMm: number) =>
+    `圆角 ${radiusMm}mm 对侧幅 ${depthMm}mm 来说太大，请选择侧幅的 1/4 以下。`,
+  'square.control.corner': '边角',
+  'square.corner.none': '直角',
+  'square.corner.round': (radiusMm: number) => `圆角 ${radiusMm}mm`,
   'square.shape.ariaLabel': (widthMm: number, depthMm: number, sideHeightMm: number, lidHeightMm: number) =>
     `宽 ${widthMm}mm、侧幅 ${depthMm}mm、侧面 ${sideHeightMm}mm、盖子 ${lidHeightMm}mm 的方形收纳袋完成示意`,
   'square.preview.ariaLabel': (count: number) => `方形收纳袋版型，共 ${count} 片`,

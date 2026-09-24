@@ -147,8 +147,13 @@ export const ko = {
   'square.piece.back': '뒷면',
   'square.piece.handle': '손잡이',
   'square.error.depth': (widthMm: number) => `폭은 가로(${widthMm}mm)보다 클 수 없습니다.`,
-  'square.error.backRatio': (pct: number, widthMm: number) =>
-    `뒷면 ${pct}%는 가로 ${widthMm}mm보다 길어집니다. 더 작은 비율을 골라주세요.`,
+  'square.error.backRatio': (pct: number, straightMm: number) =>
+    `뒷면 ${pct}%는 뒷변의 곧은 부분(${straightMm}mm)보다 길어집니다. 더 작은 비율을 골라주세요.`,
+  'square.error.corner': (radiusMm: number, depthMm: number) =>
+    `모서리 ${radiusMm}mm는 폭 ${depthMm}mm에 너무 큽니다. 폭의 1/4 이하로 골라주세요.`,
+  'square.control.corner': '모서리',
+  'square.corner.none': '각지게',
+  'square.corner.round': (radiusMm: number) => `둥글게 ${radiusMm}mm`,
   'square.shape.ariaLabel': (widthMm: number, depthMm: number, sideHeightMm: number, lidHeightMm: number) =>
     `가로 ${widthMm}mm, 폭 ${depthMm}mm, 옆면 높이 ${sideHeightMm}mm, 뚜껑 높이 ${lidHeightMm}mm 네모 파우치의 완성 예상 모습`,
   'square.preview.ariaLabel': (count: number) => `네모 파우치 조각 ${count}종 미리보기`,

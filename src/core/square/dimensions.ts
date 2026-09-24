@@ -49,27 +49,77 @@ export const SQUARE_FIELDS: FieldSpec<SquareField> = {
 
 const RATIO_STEPS = [10, 15, 20, 25, 30] as const;
 
-/** 둘레 2(가로 + 폭). 지퍼와 경첩이 이것을 나눠 갖는다. */
-export function squarePerimeterMm(d: Pick<SquareDimensions, 'widthMm' | 'depthMm'>): number {
-  return 2 * (d.widthMm + d.depthMm);
+type Plan = Pick<SquareDimensions, 'widthMm' | 'depthMm'>;
+
+/**
+ * 뚜껑·바닥 모서리를 둥글릴 반지름 (완성선 기준, mm). 0이면 각지다.
+ *
+ * 자유 입력이 아니라 넷 중에 고른다. 뒷면 비율처럼 뜻이 좁은 값이라,
+ * 고를 수 있는 것만 보여 주면 틀린 값을 칠 자리가 없다.
+ */
+export const CORNER_RADIUS_CHOICES = [0, 10, 20, 30] as const;
+
+/**
+ * 반지름 상한은 폭의 1/4이다. 폭 쪽 곧은 부분이 폭의 절반은 남아야 옆면이
+ * 면으로 선다. 폭 50이면 10까지, 80부터 20, 120부터 30이 된다.
+ */
+export function squareCornerAllowed(d: Pick<SquareDimensions, 'depthMm'>, radiusMm: number): boolean {
+  return radiusMm <= d.depthMm / 4;
+}
+
+/** 모서리 선택지. 치수를 주면 그 폭에서 안 되는 것에 disabled를 단다. */
+export function squareCornerChoices(
+  locale: Locale,
+  d?: Pick<SquareDimensions, 'depthMm'>,
+): readonly { readonly value: number; readonly label: string; readonly disabled: boolean }[] {
+  return CORNER_RADIUS_CHOICES.map((value) => ({
+    value,
+    label: value === 0 ? t(locale, 'square.corner.none') : t(locale, 'square.corner.round', value),
+    disabled: d !== undefined && !squareCornerAllowed(d, value),
+  }));
+}
+
+/** 고른 반지름이 새 폭에서 안 되면 되는 것 중 가장 큰 값으로 내린다. */
+export function squareCornerFallback(d: Pick<SquareDimensions, 'depthMm'>, radiusMm: number): number {
+  if (squareCornerAllowed(d, radiusMm)) return radiusMm;
+  const allowed = CORNER_RADIUS_CHOICES.filter((r) => squareCornerAllowed(d, r));
+  return allowed[allowed.length - 1] ?? 0;
+}
+
+/**
+ * 둘레. 지퍼와 경첩이 이것을 나눠 갖는다.
+ *
+ * 모서리를 둥글리면 직각 두 변(2R) 대신 1/4 원호(πR/2)가 들어가, 모서리
+ * 하나에 (2 − π/2)R씩 줄어든다. 넷이면 (8 − 2π)R. 앞면 띠가 이만큼 짧아져야
+ * 뚜껑 둘레와 맞는다.
+ */
+export function squarePerimeterMm(d: Plan, cornerRadiusMm = 0): number {
+  return 2 * (d.widthMm + d.depthMm) - (8 - 2 * Math.PI) * cornerRadiusMm;
 }
 
 /** 뒷면(경첩) 길이. 원통처럼 둘레에 대한 비율로 받는다. */
-export function squareBackLengthMm(d: Pick<SquareDimensions, 'widthMm' | 'depthMm'>, ratio: number): number {
-  return squarePerimeterMm(d) * ratio;
+export function squareBackLengthMm(d: Plan, ratio: number, cornerRadiusMm = 0): number {
+  return squarePerimeterMm(d, cornerRadiusMm) * ratio;
+}
+
+/** 뒷변에서 경첩이 놓일 수 있는 곧은 부분. 양 끝 모서리 호를 뺀 길이다. */
+export function squareBackStraightMm(d: Pick<SquareDimensions, 'widthMm'>, cornerRadiusMm = 0): number {
+  return d.widthMm - 2 * cornerRadiusMm;
 }
 
 /**
  * 이 비율을 쓸 수 있는가. 경첩은 뒷면 안에 있어야 한다 — 가로보다 길어지면
  * 경첩이 옆 모서리를 돌아 뚜껑이 비틀려 열린다.
  *
- * 가로 ≥ 폭이면 둘레가 가로의 네 배를 넘지 않으므로 25%까지는 늘 된다.
- * 잠길 수 있는 것은 30%뿐이고, 폭이 가로의 2/3를 넘을 때다.
+ * 각진 모서리에서는 가로 ≥ 폭이면 둘레가 가로의 네 배를 넘지 않으므로 25%까지는
+ * 늘 된다. 잠길 수 있는 것은 30%뿐이고, 폭이 가로의 2/3를 넘을 때다. 모서리를
+ * 둥글리면 곧은 부분이 2R만큼 줄어 25%도 잠길 수 있다.
  *
  * 부동소수 오차로 딱 맞는 경우(가로 = 뒷면)가 떨어지지 않게 0.001mm 봐준다.
  */
-export function squareBackRatioAllowed(d: Pick<SquareDimensions, 'widthMm' | 'depthMm'>, ratio: number): boolean {
-  return squareBackLengthMm(d, ratio) <= d.widthMm + 1e-3;
+export function squareBackRatioAllowed(d: Plan, ratio: number, cornerRadiusMm = 0): boolean {
+  // 모서리를 둥글리면 경첩은 뒷변의 곧은 부분 안에만 들어간다 — 호 위에 걸치면 뚜껑이 비틀린다.
+  return squareBackLengthMm(d, ratio, cornerRadiusMm) <= squareBackStraightMm(d, cornerRadiusMm) + 1e-3;
 }
 
 /**
@@ -78,14 +128,15 @@ export function squareBackRatioAllowed(d: Pick<SquareDimensions, 'widthMm' | 'de
  */
 export function squareBackRatioChoices(
   locale: Locale,
-  d?: Pick<SquareDimensions, 'widthMm' | 'depthMm'>,
+  d?: Plan,
+  cornerRadiusMm = 0,
 ): readonly { readonly value: number; readonly label: string; readonly disabled: boolean }[] {
   return RATIO_STEPS.map((pct) => {
     const value = pct / 100;
     return {
       value,
       label: t(locale, `round.backRatio.${pct}` as never),
-      disabled: d !== undefined && !squareBackRatioAllowed(d, value),
+      disabled: d !== undefined && !squareBackRatioAllowed(d, value, cornerRadiusMm),
     };
   });
 }
@@ -94,14 +145,14 @@ export function squareBackRatioChoices(
  * 고른 비율이 새 치수에서 안 되면 되는 것 중 가장 큰 값으로 내린다.
  * 폭을 키우다 30%가 잠겼을 때, 경첩을 넓게 쓰려던 뜻에 가장 가까운 값이다.
  */
-export function squareBackRatioFallback(d: Pick<SquareDimensions, 'widthMm' | 'depthMm'>, ratio: number): number {
-  if (squareBackRatioAllowed(d, ratio)) return ratio;
-  const allowed = RATIO_STEPS.map((pct) => pct / 100).filter((r) => squareBackRatioAllowed(d, r));
+export function squareBackRatioFallback(d: Plan, ratio: number, cornerRadiusMm = 0): number {
+  if (squareBackRatioAllowed(d, ratio, cornerRadiusMm)) return ratio;
+  const allowed = RATIO_STEPS.map((pct) => pct / 100).filter((r) => squareBackRatioAllowed(d, r, cornerRadiusMm));
   return allowed[allowed.length - 1] ?? BACK_RATIO_MIN;
 }
 
 export interface SquareFieldError {
-  readonly field: SquareField | 'backRatio';
+  readonly field: SquareField | 'backRatio' | 'cornerRadius';
   readonly message: string;
 }
 
@@ -113,6 +164,7 @@ export function validateSquareDimensions(
   input: Record<SquareField, unknown>,
   backRatio: number = BACK_RATIO_DEFAULT,
   locale: Locale = DEFAULT_LOCALE,
+  cornerRadiusMm = 0,
 ): SquareValidationResult {
   const errors: SquareFieldError[] = [];
   const values: Partial<Record<SquareField, number>> = {};
@@ -151,6 +203,9 @@ export function validateSquareDimensions(
       errors.push({ field: 'lidHeightMm', message: t(locale, 'round.error.lidHeight', sideHeightMm, cap) });
     }
   }
+  if (depthMm !== undefined && !squareCornerAllowed({ depthMm }, cornerRadiusMm)) {
+    errors.push({ field: 'cornerRadius', message: t(locale, 'square.error.corner', cornerRadiusMm, depthMm) });
+  }
   if (backRatio < BACK_RATIO_MIN || backRatio > BACK_RATIO_MAX) {
     errors.push({
       field: 'backRatio',
@@ -158,11 +213,15 @@ export function validateSquareDimensions(
     });
   } else if (
     widthMm !== undefined && depthMm !== undefined && depthMm <= widthMm &&
-    !squareBackRatioAllowed({ widthMm, depthMm }, backRatio)
+    squareCornerAllowed({ depthMm }, cornerRadiusMm) &&
+    !squareBackRatioAllowed({ widthMm, depthMm }, backRatio, cornerRadiusMm)
   ) {
     errors.push({
       field: 'backRatio',
-      message: t(locale, 'square.error.backRatio', Math.round(backRatio * 100), widthMm),
+      message: t(
+        locale, 'square.error.backRatio',
+        Math.round(backRatio * 100), squareBackStraightMm({ widthMm }, cornerRadiusMm),
+      ),
     });
   }
 
@@ -186,12 +245,17 @@ export function squarePatternTitle(
   return seamMm === 0 ? `${base} ${t(locale, 'round.pattern.noSeam')}` : base;
 }
 
-/** 내려받는 PDF의 파일 이름. 사각(box-pouch-)·원통(round-pouch-)과 겹치지 않게 한다. */
+/**
+ * 내려받는 PDF의 파일 이름. 사각(box-pouch-)·원통(round-pouch-)과 겹치지 않게 한다.
+ * 모서리를 둥글렸으면 `-r20`처럼 붙인다 — 같은 치수라도 띠 길이가 달라 섞이면 안 맞는다.
+ */
 export function squarePatternFileName(
   d: SquareDimensions,
   paper: string,
   seamMm: number = SEAM_MM,
+  cornerRadiusMm = 0,
 ): string {
   const seam = seamMm === 0 ? '-noseam' : '';
-  return `${FILE_NAME_CREDIT}-square-pouch-${d.widthMm}x${d.depthMm}x${d.sideHeightMm}x${d.lidHeightMm}-${paper}${seam}.pdf`;
+  const corner = cornerRadiusMm > 0 ? `-r${cornerRadiusMm}` : '';
+  return `${FILE_NAME_CREDIT}-square-pouch-${d.widthMm}x${d.depthMm}x${d.sideHeightMm}x${d.lidHeightMm}${corner}-${paper}${seam}.pdf`;
 }

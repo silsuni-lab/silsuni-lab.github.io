@@ -144,8 +144,13 @@ export const ja: Catalog = {
   'square.piece.back': '背面',
   'square.piece.handle': '持ち手',
   'square.error.depth': (widthMm: number) => `マチは横幅（${widthMm}mm）より大きくできません。`,
-  'square.error.backRatio': (pct: number, widthMm: number) =>
-    `背面 ${pct}% は横幅 ${widthMm}mm より長くなります。小さい割合を選んでください。`,
+  'square.error.backRatio': (pct: number, straightMm: number) =>
+    `背面 ${pct}% は背面の直線部分（${straightMm}mm）より長くなります。小さい割合を選んでください。`,
+  'square.error.corner': (radiusMm: number, depthMm: number) =>
+    `角の丸み ${radiusMm}mm はマチ ${depthMm}mm には大きすぎます。マチの1/4以下にしてください。`,
+  'square.control.corner': '角',
+  'square.corner.none': '角ばった形',
+  'square.corner.round': (radiusMm: number) => `丸み ${radiusMm}mm`,
   'square.shape.ariaLabel': (widthMm: number, depthMm: number, sideHeightMm: number, lidHeightMm: number) =>
     `横幅 ${widthMm}mm、マチ ${depthMm}mm、側面 ${sideHeightMm}mm、ふた ${lidHeightMm}mm の四角ポーチの完成イメージ`,
   'square.preview.ariaLabel': (count: number) => `四角ポーチのパターン、${count} 枚`,

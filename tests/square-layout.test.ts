@@ -146,3 +146,68 @@ describe('squareTitlePiece', () => {
     expect(squareTitlePiece(layout)!.id).toBe('frontBottom');
   });
 });
+
+describe('모서리 라운드', () => {
+  const R = 20;
+  const rounded = buildSquareLayout(golden, 10, 0.2, R);
+  const q = (Math.PI * R) / 2;
+
+  it('앞면 띠가 둥근 둘레만큼 짧아진다', () => {
+    const P = 720 - (8 - 2 * Math.PI) * R;
+    expect(rounded.perimeterMm).toBeCloseTo(P);
+    expect(rounded.frontLengthMm + rounded.backLengthMm).toBeCloseTo(P);
+    expect(piece('frontTop', rounded).finishedWidthMm).toBeCloseTo(P * 0.8);
+  });
+
+  it('뚜껑·바닥에만 반지름이 붙는다', () => {
+    for (const p of rounded.pieces) expect(p.cornerRadiusMm).toBe(p.id === 'panels' ? R : 0);
+  });
+
+  it('띠의 너치는 네 호의 한가운데다', () => {
+    const Lb = rounded.backLengthMm;
+    const a = (220 - 2 * R - Lb) / 2;
+    const c1 = a + q / 2;
+    const c2 = c1 + q + (140 - 2 * R);
+    const c3 = c2 + q + (220 - 2 * R);
+    const c4 = c3 + q + (140 - 2 * R);
+    const xs = notchXs(piece('frontTop', rounded));
+    [c1, c2, c3, c4].forEach((c, i) => expect(xs[i]).toBeCloseTo(c, 2));
+    // 띠 끝에서 끝까지 호 네 개와 곧은 변을 돌면 앞면 길이가 된다.
+    expect(c4 + q / 2 + a).toBeCloseTo(rounded.frontLengthMm);
+  });
+
+  it('뚜껑·바닥은 네 호의 45° 자리에 너치를 받고, 너치는 재단선에서 시작한다', () => {
+    const p = piece('panels', rounded);
+    const diagonal = p.notchesMm.filter((n) => n.x1Mm !== n.x2Mm && n.y1Mm !== n.y2Mm);
+    expect(diagonal).toHaveLength(4);
+    const cx = p.xMm + 10 + R;
+    const cy = p.yMm + 10 + R;
+    const first = diagonal[0]!;
+    expect(Math.hypot(first.x1Mm - cx, first.y1Mm - cy)).toBeCloseTo(R + 10);
+    expect(Math.hypot(first.x2Mm - cx, first.y2Mm - cy)).toBeCloseTo(R + 10 - 5);
+  });
+
+  it('경첩 너치는 뒷변의 곧은 부분 안에 있다', () => {
+    const p = piece('panels', rounded);
+    const hinge = p.notchesMm.filter((n) => n.y1Mm === p.yMm);
+    expect(hinge).toHaveLength(2);
+    for (const n of hinge) {
+      expect(n.x1Mm).toBeGreaterThanOrEqual(p.xMm + 10 + R);
+      expect(n.x1Mm).toBeLessThanOrEqual(p.xMm + 10 + 220 - R);
+    }
+  });
+
+  it('식서선은 둥근 모서리 안쪽에 머문다 — 가장 좁은 폭에 가장 큰 반지름에서도', () => {
+    const tight = buildSquareLayout({ widthMm: 120, depthMm: 120, sideHeightMm: 100, lidHeightMm: 20 }, 10, 0.1, 30);
+    const p = piece('panels', tight);
+    const g = p.grainlineMm;
+    const inside = (x: number, y: number) => {
+      const left = p.xMm + 10, right = left + 120, top = p.yMm + 10, low = top + 120;
+      const cx = Math.min(Math.max(x, left + 30), right - 30);
+      const cy = Math.min(Math.max(y, top + 30), low - 30);
+      return Math.hypot(x - cx, y - cy) <= 30;
+    };
+    expect(inside(g.x1Mm, g.y1Mm)).toBe(true);
+    expect(inside(g.x2Mm, g.y2Mm)).toBe(true);
+  });
+});
